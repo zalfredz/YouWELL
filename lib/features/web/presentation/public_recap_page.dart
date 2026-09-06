@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 
-/// Public-safe recap preview. Server-issued share tokens replace this demo route.
+/// Public-safe recap shell. Server-issued share tokens replace this demo route.
 class PublicRecapPage extends StatelessWidget {
   const PublicRecapPage({super.key, required this.controller});
   final WellnessController controller;

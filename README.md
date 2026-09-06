@@ -1,7 +1,8 @@
 # YouWell
 
-Preview Flutter web untuk mengeksplorasi seluruh alur produk sebelum login dan
-backend Supabase dihubungkan. Data tersimpan secara lokal di browser.
+YouWell Web App untuk landing publik, companion workspace desktop, recap, dan
+Community Admin. Selama Supabase belum dihubungkan, data development masih
+tersimpan secara lokal di browser.
 
 ## Menjalankan aplikasi
 
@@ -40,18 +41,17 @@ Landing page dan halaman recap tetap responsif di layar HP. Area workspace dan
 moderasi khusus desktop; browser HP yang membuka area tersebut akan menerima
 ajakan untuk menggunakan aplikasi mobile.
 
-## Rute preview web
+## Rute web
 
 | Halaman | Rute hash lokal | Tujuan |
 | --- | --- | --- |
-| Landing publik | `/#/` | Visi YouWell, preview produk, dan CTA download |
+| Landing publik | `/#/` | Visi YouWell, produk, dan CTA download |
 | Web workspace | `/#/app` | Checklist, Relief Room, Insights, dan community read-only |
 | Wrapped publik | `/#/recap` | Contoh recap aman untuk dibagikan |
-| Moderation | `/#/admin` | Antrean konten moderator versi preview lokal |
+| Community Admin | `/#/admin` | Menu tambahan untuk admin: terima/tolak post dan laporan |
 
-Untuk mencoba workspace tanpa akun, buka `/#/app` lalu pilih **Coba web
-workspace**. Profil demo dan seluruh datanya hanya tersimpan di browser lokal.
-Google Login/Supabase belum dihubungkan.
+Pilih **Join Us!** dari landing untuk masuk ke web app. Google Login/Supabase
+belum dihubungkan; mode development sementara membuat akun lokal di browser.
 
 ## File yang biasa diubah
 

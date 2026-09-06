@@ -10,8 +10,13 @@ import 'package:youwell/shared/widgets/ui_helpers.dart';
 
 /// Desktop companion for tasks, relief, insight and lightweight community use.
 class WebWorkspacePage extends StatefulWidget {
-  const WebWorkspacePage({super.key, required this.controller});
+  const WebWorkspacePage({
+    super.key,
+    required this.controller,
+    this.isAdmin = false,
+  });
   final WellnessController controller;
+  final bool isAdmin;
 
   @override
   State<WebWorkspacePage> createState() => _WebWorkspacePageState();
@@ -26,7 +31,7 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
     widget.controller.draw();
   }
 
-  Future<void> _startPreview() async {
+  Future<void> _joinWebApp() async {
     await widget.controller.setup({
       'alias': 'web_guest',
       'path': 'wellness',
@@ -47,18 +52,20 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
     onReturnToLanding: () =>
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
     child: widget.controller.profile == null
-        ? _PreviewAccess(onStart: _startPreview)
+        ? _JoinAccess(onJoin: _joinWebApp, isAdmin: widget.isAdmin)
         : _WorkspaceShell(
             controller: widget.controller,
+            isAdmin: widget.isAdmin,
             tab: tab,
             onSelect: (value) => setState(() => tab = value),
           ),
   );
 }
 
-class _PreviewAccess extends StatelessWidget {
-  const _PreviewAccess({required this.onStart});
-  final Future<void> Function() onStart;
+class _JoinAccess extends StatelessWidget {
+  const _JoinAccess({required this.onJoin, required this.isAdmin});
+  final Future<void> Function() onJoin;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -72,25 +79,30 @@ class _PreviewAccess extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              tag('WEB PREVIEW • DATA LOKAL'),
+              tag(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
               gap(22),
               const Icon(Icons.desk_rounded, size: 46, color: green),
               gap(20),
-              title('Masuk ke\nweb workspace.', size: 42),
+              title(
+                isAdmin
+                    ? 'Masuk ke\nCommunity Admin.'
+                    : 'Join YouWell\ndi browser.',
+                size: 42,
+              ),
               gap(14),
               const Text(
-                'Login Supabase akan dipasang setelah alur web tervalidasi. Untuk sekarang, kamu dapat mencoba workspace dengan profil lokal yang hanya tersimpan di browser ini.',
+                'YouWell Web menyatukan ruang fokus, insight, dan komunitas untuk layar besar. Login Google akan menyambungkan akun yang sama dengan aplikasi mobile.',
                 style: TextStyle(color: muted, fontSize: 16, height: 1.6),
               ),
               gap(28),
               FilledButton.icon(
-                onPressed: () async => onStart(),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Coba web workspace'),
+                onPressed: () async => onJoin(),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: Text(isAdmin ? 'Masuk sebagai admin' : 'Join Us!'),
               ),
               gap(12),
               caption(
-                'Nanti tombol ini diganti Google Login / email dari Supabase.',
+                'Mode pengembangan saat ini membuat akun lokal sementara. Supabase akan menggantikannya saat autentikasi diaktifkan.',
               ),
             ],
           ),
@@ -103,28 +115,38 @@ class _PreviewAccess extends StatelessWidget {
 class _WorkspaceShell extends StatelessWidget {
   const _WorkspaceShell({
     required this.controller,
+    required this.isAdmin,
     required this.tab,
     required this.onSelect,
   });
 
   final WellnessController controller;
+  final bool isAdmin;
   final int tab;
   final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
+    final pages = <Widget>[
       _TodayView(controller: controller),
       _ReliefRoom(controller: controller),
       _InsightsView(controller: controller),
       _CommunityView(controller: controller),
+      if (isAdmin) _CommunityAdminView(controller: controller),
     ];
-    const labels = ['Hari ini', 'Relief room', 'Insights', 'Komunitas'];
-    const icons = [
+    final labels = [
+      'Hari ini',
+      'Relief room',
+      'Insights',
+      'Komunitas',
+      if (isAdmin) 'Community Admin',
+    ];
+    final icons = [
       Icons.wb_sunny_outlined,
       Icons.air_rounded,
       Icons.insights_rounded,
       Icons.groups_rounded,
+      if (isAdmin) Icons.admin_panel_settings_outlined,
     ];
 
     return Scaffold(
@@ -154,7 +176,7 @@ class _WorkspaceShell extends StatelessWidget {
                   ],
                 ),
                 gap(8),
-                caption('WEB COMPANION'),
+                caption(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
                 gap(34),
                 ...List.generate(
                   labels.length,
@@ -200,7 +222,7 @@ class _WorkspaceShell extends StatelessWidget {
                   ),
                 ),
                 gap(12),
-                tag('LOCAL PREVIEW'),
+                tag(isAdmin ? 'ADMIN ACCOUNT' : 'MEMBER ACCOUNT'),
               ],
             ),
           ),
@@ -1080,6 +1102,196 @@ class _WallPost extends StatelessWidget {
               onSelected: (_) => controller.react(reactionId),
             );
           }).toList(),
+        ),
+      ],
+    ),
+  );
+}
+
+/// The only extra web-app menu for moderators and admins.
+class _CommunityAdminView extends StatelessWidget {
+  const _CommunityAdminView({required this.controller});
+  final WellnessController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = controller.posts
+        .where((post) => post['status'] == 'pending')
+        .toList();
+    return ListView(
+      key: const ValueKey('community-admin'),
+      padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
+      children: [
+        const Text(
+          'Community\nAdmin.',
+          style: TextStyle(
+            color: ink,
+            fontSize: 39,
+            height: 1.04,
+            letterSpacing: -1.5,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        gap(8),
+        const Text(
+          'Keputusan tayang selalu dibuat manusia. Gunakan ruang ini untuk menerima atau menolak post yang menunggu review.',
+          style: TextStyle(color: muted, height: 1.5),
+        ),
+        gap(22),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xfffff0e4),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.person_search_rounded, color: Color(0xffb66738)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${pending.length} post menunggu keputusan manual. Sistem otomatis nanti hanya membantu memberi sinyal, bukan memutuskan.',
+                  style: const TextStyle(color: ink, height: 1.45),
+                ),
+              ),
+            ],
+          ),
+        ),
+        gap(24),
+        const Text(
+          'Antrean post',
+          style: TextStyle(
+            color: ink,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        gap(12),
+        if (pending.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Tidak ada post yang menunggu. Setelah Supabase tersambung, post dari aplikasi mobile akan masuk ke antrean ini.',
+              style: TextStyle(color: muted, height: 1.55),
+            ),
+          ),
+        ...pending.map(
+          (post) => _ModerationPostCard(controller: controller, post: post),
+        ),
+        gap(24),
+        const Text(
+          'Laporan konten',
+          style: TextStyle(
+            color: ink,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        gap(12),
+        if (controller.reports.isEmpty)
+          caption('Belum ada laporan yang perlu ditinjau.'),
+        ...controller.reports.map(
+          (report) => Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.flag_outlined, color: muted),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${report['reason']} • ${report['post']}',
+                    style: const TextStyle(
+                      color: ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      controller.resolveReport(report['id'].toString()),
+                  child: const Text('Tutup'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModerationPostCard extends StatelessWidget {
+  const _ModerationPostCard({required this.controller, required this.post});
+  final WellnessController controller;
+  final Map<String, dynamic> post;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 17,
+              backgroundColor: const Color(0xffe2edda),
+              foregroundColor: green,
+              child: Text(
+                post['alias'].toString().substring(0, 1).toUpperCase(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '@${post['alias']}',
+              style: const TextStyle(color: ink, fontWeight: FontWeight.w800),
+            ),
+            const Spacer(),
+            tag('MENUNGGU REVIEW', color: const Color(0xffb66738)),
+          ],
+        ),
+        gap(14),
+        Text(
+          post['body'].toString(),
+          style: const TextStyle(color: ink, fontSize: 16, height: 1.55),
+        ),
+        gap(18),
+        Wrap(
+          spacing: 10,
+          children: [
+            FilledButton.icon(
+              onPressed: () => controller.updatePost(
+                post['id'].toString(),
+                'approved',
+                'Disetujui melalui Community Admin.',
+              ),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Setujui'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.updatePost(
+                post['id'].toString(),
+                'rejected',
+                'Post tidak ditayangkan setelah tinjauan manual.',
+              ),
+              icon: const Icon(Icons.close_rounded),
+              label: const Text('Tolak'),
+            ),
+          ],
         ),
       ],
     ),

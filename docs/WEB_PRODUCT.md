@@ -25,15 +25,17 @@ atau memakai aplikasi mobile.
 - **Komunitas:** membaca encouragement wall dan memberi reaksi cepat; tidak ada
   composer atau upload dari web.
 
-## Batas preview lokal
+## Akses akun saat development
 
-Tombol `Coba web workspace` membuat profil `web_guest` di browser. Ini bukan
-login atau akun produksi. Route `/admin` juga hanya meninjau post yang tersimpan
-di browser yang sama.
+Tombol **Join Us!** sementara membuat profil `web_guest` di browser. Ini adalah
+mode development sampai Google Login/Supabase dihubungkan. Route `/admin`
+menampilkan web app yang sama dengan satu menu tambahan: **Community Admin**.
+Ia hanya meninjau post yang tersimpan di browser yang sama saat ini.
 
 Ketika Supabase ditambahkan, implementasikan:
 
-1. autentikasi dan role `user`, `moderator`, `admin`;
+1. autentikasi dan role `user`, `moderator`, `admin`; role menentukan apakah
+   menu Community Admin tampil;
 2. RLS untuk post, reaction, report, dan data recap;
 3. status post `pending`, `approved`, `rejected`, dan `removed`;
 4. token recap acak yang dapat kedaluwarsa atau dicabut;
