@@ -1,0 +1,24 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+/build/
+
+# Platform-generated files
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Local configuration and OS files
+.env
+.env.*
+config/env/*.json
+!config/env/*.example.json
+.DS_Store
+.tools/
+node_modules/
+test-results/

@@ -1,0 +1,8 @@
+{
+  "APP_NAME": "YouWell",
+  "APP_ENV": "production",
+  "LOCAL_STORAGE_KEY": "youwell.local.v2",
+  "SHOW_PREVIEW_TOOLS": "false",
+  "SUPABASE_URL": "",
+  "SUPABASE_PUBLISHABLE_KEY": ""
+}
