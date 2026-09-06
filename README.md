@@ -36,8 +36,22 @@ Salin template ketika membuat environment baru. `SUPABASE_URL` dan
 berikutnya, tetapi belum dipakai aplikasi. Jangan menaruh service-role key atau
 client secret di file Flutter karena nilai build web dapat dilihat pengguna.
 Isi `PLAY_STORE_URL` dan `APP_STORE_URL` setelah aplikasi mobile diterbitkan.
-Pengunjung website dari layar di bawah 1080 px akan melihat halaman download;
-tombolnya otomatis memilih store sesuai perangkat.
+Landing page dan halaman recap tetap responsif di layar HP. Area workspace dan
+moderasi khusus desktop; browser HP yang membuka area tersebut akan menerima
+ajakan untuk menggunakan aplikasi mobile.
+
+## Rute preview web
+
+| Halaman | Rute hash lokal | Tujuan |
+| --- | --- | --- |
+| Landing publik | `/#/` | Visi YouWell, preview produk, dan CTA download |
+| Web workspace | `/#/app` | Checklist, Relief Room, Insights, dan community read-only |
+| Wrapped publik | `/#/recap` | Contoh recap aman untuk dibagikan |
+| Moderation | `/#/admin` | Antrean konten moderator versi preview lokal |
+
+Untuk mencoba workspace tanpa akun, buka `/#/app` lalu pilih **Coba web
+workspace**. Profil demo dan seluruh datanya hanya tersimpan di browser lokal.
+Google Login/Supabase belum dihubungkan.
 
 ## File yang biasa diubah
 
@@ -46,8 +60,11 @@ tombolnya otomatis memilih store sesuai perangkat.
 | Warna aplikasi | `lib/core/theme/app_colors.dart` |
 | Theme, tombol, dan input | `lib/core/theme/app_theme.dart` |
 | Menu/sidebar/bottom navigation | `lib/app/app_shell.dart` |
-| Frame web 16:9 dan halaman download mobile | `lib/app/web_experience_gate.dart` |
-| Landing dan onboarding | `lib/features/onboarding/presentation/onboarding_page.dart` |
+| Frame workspace desktop dan prompt mobile | `lib/app/web_experience_gate.dart` |
+| Landing publik web | `lib/features/web/presentation/web_landing_page.dart` |
+| Workspace dan Relief Room web | `lib/features/web/presentation/web_workspace_page.dart` |
+| Wrapped publik web | `lib/features/web/presentation/public_recap_page.dart` |
+| Onboarding aplikasi mobile | `lib/features/onboarding/presentation/onboarding_page.dart` |
 | Tampilan Home | `lib/features/home/presentation/home_page.dart` |
 | Daftar dan aturan misi | `lib/features/home/domain/quest_generator.dart` |
 | XP, streak, freeze, difficulty | `lib/features/home/domain/progress_calculator.dart` |
@@ -63,7 +80,8 @@ tombolnya otomatis memilih store sesuai perangkat.
 | JavaScript foto/audio/download web | `web/scripts/platform.js` |
 
 Penjelasan lengkap ada di [struktur project](docs/PROJECT_STRUCTURE.md). Cakupan
-fitur dan batas preview ada di [daftar fitur](docs/FEATURES.md).
+fitur dan batas preview ada di [daftar fitur](docs/FEATURES.md), termasuk
+[pembagian produk web](docs/WEB_PRODUCT.md).
 
 ## Build untuk hosting
 

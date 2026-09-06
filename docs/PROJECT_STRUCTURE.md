@@ -22,7 +22,8 @@ lib/
 │   ├── recap/                        # kartu progress PNG
 │   ├── relief/                       # craving, vent, soundscape
 │   ├── statistics/                   # dashboard statistik
-│   └── support/                      # crisis signal dan bantuan
+│   ├── support/                      # crisis signal dan bantuan
+│   └── web/                          # landing, workspace, recap publik
 └── shared/widgets/                   # komponen UI lintas fitur
 ```
 
@@ -55,9 +56,13 @@ diganti tanpa memindahkan UI ke file baru.
 `main.dart` hanya memanggil `app/bootstrap.dart`. Bootstrap memilih repository,
 membaca data lama, membuat controller, lalu menjalankan aplikasi.
 
-`app/web_experience_gate.dart` memberi web frame desktop 16:9. Browser sempit
-menampilkan halaman download aplikasi, sedangkan build Android/iOS melewati gate
-dan memakai layout native layar penuh.
+`app/web_experience_gate.dart` memberi workspace dan dashboard moderasi frame
+desktop 16:9. Landing serta recap publik tidak melewati gate agar tetap nyaman
+di HP. Browser sempit yang membuka workspace menerima prompt aplikasi mobile;
+build Android/iOS tetap memakai layout native layar penuh.
+
+Halaman web publik dan workspace tinggal di `features/web/presentation/`.
+Keputusan cakupan dan rute tercatat dalam `docs/WEB_PRODUCT.md`.
 
 Nilai environment dibaca di `core/config/app_environment.dart` melalui
 `--dart-define-from-file`. File `*.example.json` masuk Git; file environment

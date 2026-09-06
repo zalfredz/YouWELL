@@ -6,12 +6,17 @@ import 'package:youwell/core/config/app_environment.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
 
-/// Gives the website a desktop-only workspace while native apps stay full-screen.
-class WebExperienceGate extends StatelessWidget {
-  const WebExperienceGate({super.key, required this.child});
+/// Keeps product workspaces desktop-first while public web pages stay responsive.
+class WebWorkspaceGate extends StatelessWidget {
+  const WebWorkspaceGate({
+    super.key,
+    required this.child,
+    required this.onReturnToLanding,
+  });
 
-  static const desktopBreakpoint = 1080.0;
+  static const desktopBreakpoint = 860.0;
   final Widget child;
+  final VoidCallback onReturnToLanding;
 
   @override
   Widget build(BuildContext context) {
@@ -20,46 +25,42 @@ class WebExperienceGate extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < desktopBreakpoint) {
-          return const _MobileDownloadPage();
+          return _MobileWorkspacePrompt(onReturnToLanding: onReturnToLanding);
         }
-
-        return _DesktopFrame(
-          availableSize: Size(constraints.maxWidth, constraints.maxHeight),
-          child: child,
-        );
+        return WebDesktopFrame(child: child);
       },
     );
   }
 }
 
-class _DesktopFrame extends StatelessWidget {
-  const _DesktopFrame({required this.availableSize, required this.child});
+/// A focused 16:9 canvas for signed-in web workspaces and admin tools.
+class WebDesktopFrame extends StatelessWidget {
+  const WebDesktopFrame({super.key, required this.child});
 
-  final Size availableSize;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    const margin = 24.0;
-    final availableWidth = math.max(0.0, availableSize.width - margin * 2);
-    final availableHeight = math.max(0.0, availableSize.height - margin * 2);
-    final width = math.min(
-      1600.0,
-      math.min(availableWidth, availableHeight * 16 / 9),
-    );
-    final height = width * 9 / 16;
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const margin = 24.0;
+      final availableWidth = math.max(0.0, constraints.maxWidth - margin * 2);
+      final availableHeight = math.max(0.0, constraints.maxHeight - margin * 2);
+      final width = math.min(
+        1600.0,
+        math.min(availableWidth, availableHeight * 16 / 9),
+      );
+      final height = width * 9 / 16;
 
-    return ColoredBox(
-      color: const Color(0xffdfe5dc),
-      child: Center(
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+      return ColoredBox(
+        color: const Color(0xffdfe5dc),
+        child: Center(
+          child: SizedBox(
+            width: width,
+            height: height,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: cream,
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: ink.withValues(alpha: .12),
@@ -68,25 +69,30 @@ class _DesktopFrame extends StatelessWidget {
                   ),
                 ],
               ),
-              child: child,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: child,
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
-class _MobileDownloadPage extends StatelessWidget {
-  const _MobileDownloadPage();
+class _MobileWorkspacePrompt extends StatelessWidget {
+  const _MobileWorkspacePrompt({required this.onReturnToLanding});
+
+  final VoidCallback onReturnToLanding;
 
   @override
   Widget build(BuildContext context) {
     final isApple = defaultTargetPlatform == TargetPlatform.iOS;
     final storeName = isApple ? 'App Store' : 'Google Play';
-    final storeUrl =
-        isApple ? AppEnvironment.appStoreUrl : AppEnvironment.playStoreUrl;
-    final available = storeUrl.isNotEmpty;
+    final storeUrl = isApple
+        ? AppEnvironment.appStoreUrl
+        : AppEnvironment.playStoreUrl;
 
     return Scaffold(
       backgroundColor: const Color(0xffeef2e9),
@@ -129,7 +135,7 @@ class _MobileDownloadPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
                   const Text(
-                    'YouWell lebih nyaman di aplikasi.',
+                    'Workspace ini dibuat untuk layar besar.',
                     style: TextStyle(
                       color: ink,
                       fontSize: 36,
@@ -140,27 +146,28 @@ class _MobileDownloadPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Versi mobile dirancang khusus untuk check-in, misi harian, dan teman tumbuh yang selalu ikut bersamamu.',
+                    'Gunakan aplikasi YouWell untuk check-in saat bepergian. Landing page dan recap publik tetap dapat dibuka di browser ini.',
                     style: TextStyle(color: muted, fontSize: 16, height: 1.55),
                   ),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed:
-                          available ? () => platform.openLink(storeUrl) : null,
+                      onPressed: storeUrl.isEmpty
+                          ? null
+                          : () => platform.openLink(storeUrl),
                       icon: Icon(isApple ? Icons.apple : Icons.shop_rounded),
                       label: Text(
-                        available
-                            ? 'Download di $storeName'
-                            : 'Aplikasi mobile segera hadir',
+                        storeUrl.isEmpty
+                            ? 'Aplikasi mobile segera hadir'
+                            : 'Download di $storeName',
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Website YouWell tersedia untuk layar desktop.',
-                    style: TextStyle(color: muted, fontSize: 12),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: onReturnToLanding,
+                    child: const Text('Kembali ke landing page'),
                   ),
                 ],
               ),
