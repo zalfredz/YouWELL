@@ -143,6 +143,21 @@ class AppAuthController extends ChangeNotifier {
     await _client.auth.signOut();
   }
 
+  /// Clears only YouWell's device state and its local Supabase session.
+  /// It deliberately leaves the account's cloud snapshot untouched.
+  Future<void> resetBrowserData() async {
+    await _localRepository.clear();
+    if (_client != null) {
+      await _client.auth.signOut(scope: SignOutScope.local);
+    }
+    _activeUserId = null;
+    _loadingUserId = null;
+    _role = null;
+    error = null;
+    _wellness.setPersistence(_localRepository.write);
+    _wellness.restoreFrom(null);
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

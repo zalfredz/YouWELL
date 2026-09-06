@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,6 +25,8 @@ Future<void> bootstrap() async {
           wellness: controller,
           localRepository: localRepository,
         );
+  final resetBrowserData = kIsWeb && Uri.base.queryParameters['reset'] == '1';
+  if (resetBrowserData) await auth.resetBrowserData();
   await auth.initialize();
   runApp(YouWellApp(controller: controller, auth: auth));
 }
