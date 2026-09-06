@@ -48,18 +48,21 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
   }
 
   @override
-  Widget build(BuildContext context) => WebWorkspaceGate(
-    onReturnToLanding: () =>
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
-    child: widget.controller.profile == null
-        ? _JoinAccess(onJoin: _joinWebApp, isAdmin: widget.isAdmin)
-        : _WorkspaceShell(
-            controller: widget.controller,
-            isAdmin: widget.isAdmin,
-            tab: tab,
-            onSelect: (value) => setState(() => tab = value),
-          ),
-  );
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: widget.controller,
+        builder: (context, _) => WebWorkspaceGate(
+          onReturnToLanding: () =>
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
+          child: widget.controller.profile == null
+              ? _JoinAccess(onJoin: _joinWebApp, isAdmin: widget.isAdmin)
+              : _WorkspaceShell(
+                  controller: widget.controller,
+                  isAdmin: widget.isAdmin,
+                  tab: tab,
+                  onSelect: (value) => setState(() => tab = value),
+                ),
+        ),
+      );
 }
 
 class _JoinAccess extends StatelessWidget {
@@ -69,47 +72,47 @@ class _JoinAccess extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: cream,
-    body: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Padding(
-          padding: const EdgeInsets.all(42),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              tag(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
-              gap(22),
-              const Icon(Icons.desk_rounded, size: 46, color: green),
-              gap(20),
-              title(
-                isAdmin
-                    ? 'Masuk ke\nCommunity Admin.'
-                    : 'Join YouWell\ndi browser.',
-                size: 42,
+        backgroundColor: cream,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Padding(
+              padding: const EdgeInsets.all(42),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  tag(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
+                  gap(22),
+                  const Icon(Icons.desk_rounded, size: 46, color: green),
+                  gap(20),
+                  title(
+                    isAdmin
+                        ? 'Masuk ke\nCommunity Admin.'
+                        : 'Join YouWell\ndi browser.',
+                    size: 42,
+                  ),
+                  gap(14),
+                  const Text(
+                    'YouWell Web menyatukan ruang fokus, insight, dan komunitas untuk layar besar. Login Google akan menyambungkan akun yang sama dengan aplikasi mobile.',
+                    style: TextStyle(color: muted, fontSize: 16, height: 1.6),
+                  ),
+                  gap(28),
+                  FilledButton.icon(
+                    onPressed: () async => onJoin(),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: Text(isAdmin ? 'Masuk sebagai admin' : 'Join Us!'),
+                  ),
+                  gap(12),
+                  caption(
+                    'Mode pengembangan saat ini membuat akun lokal sementara. Supabase akan menggantikannya saat autentikasi diaktifkan.',
+                  ),
+                ],
               ),
-              gap(14),
-              const Text(
-                'YouWell Web menyatukan ruang fokus, insight, dan komunitas untuk layar besar. Login Google akan menyambungkan akun yang sama dengan aplikasi mobile.',
-                style: TextStyle(color: muted, fontSize: 16, height: 1.6),
-              ),
-              gap(28),
-              FilledButton.icon(
-                onPressed: () async => onJoin(),
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: Text(isAdmin ? 'Masuk sebagai admin' : 'Join Us!'),
-              ),
-              gap(12),
-              caption(
-                'Mode pengembangan saat ini membuat akun lokal sementara. Supabase akan menggantikannya saat autentikasi diaktifkan.',
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _WorkspaceShell extends StatelessWidget {
@@ -127,27 +130,33 @@ class _WorkspaceShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pages = <Widget>[
+    final primaryPages = <Widget>[
       _TodayView(controller: controller),
       _ReliefRoom(controller: controller),
       _InsightsView(controller: controller),
       _CommunityView(controller: controller),
       if (isAdmin) _CommunityAdminView(controller: controller),
     ];
-    final labels = [
+    final navigationLabels = [
       'Hari ini',
       'Relief room',
       'Insights',
       'Komunitas',
       if (isAdmin) 'Community Admin',
     ];
-    final icons = [
+    final navigationIcons = [
       Icons.wb_sunny_outlined,
       Icons.air_rounded,
       Icons.insights_rounded,
       Icons.groups_rounded,
       if (isAdmin) Icons.admin_panel_settings_outlined,
     ];
+    final profileIndex = primaryPages.length;
+    final pages = <Widget>[
+      ...primaryPages,
+      _ProfileView(controller: controller, onBack: () => onSelect(0)),
+    ];
+    final labels = [...navigationLabels, 'Profil'];
 
     return Scaffold(
       backgroundColor: cream,
@@ -179,7 +188,7 @@ class _WorkspaceShell extends StatelessWidget {
                 caption(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
                 gap(34),
                 ...List.generate(
-                  labels.length,
+                  navigationLabels.length,
                   (index) => Padding(
                     padding: const EdgeInsets.only(bottom: 7),
                     child: ListTile(
@@ -190,10 +199,10 @@ class _WorkspaceShell extends StatelessWidget {
                       selected: tab == index,
                       selectedTileColor: const Color(0xffe5eddf),
                       leading: Icon(
-                        icons[index],
+                        navigationIcons[index],
                         color: tab == index ? green : muted,
                       ),
-                      title: Text(labels[index]),
+                      title: Text(navigationLabels[index]),
                       onTap: () => onSelect(index),
                     ),
                   ),
@@ -243,14 +252,24 @@ class _WorkspaceShell extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      CircleAvatar(
-                        backgroundColor: const Color(0xffe2edda),
-                        foregroundColor: green,
-                        child: Text(
-                          controller.profile!['alias']
-                              .toString()
-                              .substring(0, 1)
-                              .toUpperCase(),
+                      Tooltip(
+                        message: 'Buka profil',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () => onSelect(profileIndex),
+                          child: CircleAvatar(
+                            backgroundColor: tab == profileIndex
+                                ? green
+                                : const Color(0xffe2edda),
+                            foregroundColor:
+                                tab == profileIndex ? Colors.white : green,
+                            child: Text(
+                              controller.profile!['alias']
+                                  .toString()
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -277,9 +296,8 @@ class _TodayView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completed = controller.quests
-        .where((quest) => quest['done'] == true)
-        .length;
+    final completed =
+        controller.quests.where((quest) => quest['done'] == true).length;
     return ListView(
       key: const ValueKey('today'),
       padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
@@ -296,7 +314,7 @@ class _TodayView extends StatelessWidget {
         ),
         gap(8),
         const Text(
-          'Centang yang bisa kamu lakukan dari laptop. Aktivitas fisik dan foto dilanjutkan di aplikasi.',
+          'Kartu hari ini tersimpan bersama akunmu. Centang yang bisa dilakukan dari laptop; aktivitas fisik dan foto dilanjutkan di aplikasi.',
           style: TextStyle(color: muted, height: 1.5),
         ),
         gap(25),
@@ -322,19 +340,57 @@ class _TodayView extends StatelessWidget {
           ],
         ),
         gap(28),
-        const Text(
-          'Quick checklist',
-          style: TextStyle(
-            color: ink,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gacha Cards hari ini',
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Kartu dipilih untuk ritmemu hari ini dan akan berganti besok.',
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            tag('$completed / ${controller.quests.length} SELESAI'),
+          ],
         ),
-        gap(12),
-        ...controller.quests.map(
-          (quest) => _QuestTile(controller: controller, quest: quest),
+        gap(14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = constraints.maxWidth >= 960
+                ? (constraints.maxWidth - 24) / 3
+                : constraints.maxWidth >= 620
+                    ? (constraints.maxWidth - 12) / 2
+                    : constraints.maxWidth;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: controller.quests
+                  .map(
+                    (quest) => SizedBox(
+                      width: cardWidth,
+                      child: _GachaTaskCard(
+                        controller: controller,
+                        quest: quest,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
-        gap(12),
+        gap(16),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -371,103 +427,335 @@ class _MiniMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: green),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(label, style: const TextStyle(color: muted, fontSize: 11)),
-              ],
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
           ),
-        ],
-      ),
-    ),
-  );
+          child: Row(
+            children: [
+              Icon(icon, color: green),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: ink,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(label,
+                        style: const TextStyle(color: muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
-class _QuestTile extends StatelessWidget {
-  const _QuestTile({required this.controller, required this.quest});
+class _GachaTaskCard extends StatelessWidget {
+  const _GachaTaskCard({required this.controller, required this.quest});
   final WellnessController controller;
   final Map<String, dynamic> quest;
 
   bool get _isMobileAction =>
       quest['category'] == 'Gerak' || quest['category'] == 'Nutrisi';
 
+  Color get _background => switch (quest['category']) {
+        'Mental' => const Color(0xffe2edda),
+        'Habit swap' => const Color(0xffffeadb),
+        'Sosial' => const Color(0xffe5edf3),
+        'Nutrisi' => const Color(0xffe6eff2),
+        _ => const Color(0xffedf1e9),
+      };
+
+  IconData get _icon => switch (quest['category']) {
+        'Mental' => Icons.favorite_outline_rounded,
+        'Habit swap' => Icons.swap_horiz_rounded,
+        'Sosial' => Icons.waving_hand_outlined,
+        'Nutrisi' => Icons.water_drop_outlined,
+        _ => Icons.directions_walk_outlined,
+      };
+
+  void _completeWithUndo(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    controller.complete(quest['id'].toString());
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Gacha Card ditandai selesai.'),
+          action: SnackBarAction(
+            label: 'BATALKAN',
+            onPressed: () => controller.undoComplete(quest['id'].toString()),
+          ),
+        ),
+      );
+  }
+
+  void _undo(BuildContext context) {
+    controller.undoComplete(quest['id'].toString());
+    toast(context, 'Kartu dikembalikan ke daftar hari ini.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final complete = quest['done'] == true;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(18, 13, 12, 13),
+      constraints: const BoxConstraints(minHeight: 236),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: _background,
+        borderRadius: BorderRadius.circular(22),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            complete ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: complete ? green : muted,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  complete ? Icons.check_circle_rounded : _icon,
+                  color: complete ? green : ink,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                quest['category'].toString().toUpperCase(),
+                style: const TextStyle(
+                  color: muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .7,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  quest['title'].toString(),
-                  style: TextStyle(
-                    color: complete ? muted : ink,
-                    decoration: complete ? TextDecoration.lineThrough : null,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  quest['category'].toString(),
-                  style: const TextStyle(color: muted, fontSize: 12),
-                ),
-              ],
+          gap(18),
+          Text(
+            quest['title'].toString(),
+            style: TextStyle(
+              color: complete ? muted : ink,
+              fontSize: 18,
+              height: 1.25,
+              decoration: complete ? TextDecoration.lineThrough : null,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 8),
+          const Spacer(),
           if (complete)
-            const Icon(Icons.done_rounded, color: green)
+            OutlinedButton.icon(
+              onPressed: () => _undo(context),
+              icon: const Icon(Icons.undo_rounded),
+              label: const Text('Batalkan'),
+            )
           else if (_isMobileAction)
-            OutlinedButton(
+            OutlinedButton.icon(
               onPressed: () => toast(
                 context,
-                'Aktivitas ini dilanjutkan di aplikasi mobile.',
+                'Buka aplikasi mobile untuk menyelesaikan kartu ini.',
               ),
-              child: const Text('Di aplikasi'),
+              icon: const Icon(Icons.phone_iphone_rounded),
+              label: const Text('Di aplikasi'),
             )
           else
-            FilledButton(
-              onPressed: () => controller.complete(quest['id'].toString()),
-              child: const Text('Selesai'),
+            FilledButton.icon(
+              onPressed: () => _completeWithUndo(context),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Selesai'),
             ),
         ],
       ),
     );
   }
+}
+
+class _ProfileView extends StatelessWidget {
+  const _ProfileView({required this.controller, required this.onBack});
+  final WellnessController controller;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = controller.profile!;
+    final path = profile['path'] == 'reduction'
+        ? 'Kurangi rokok / vape'
+        : 'Bangun kebiasaan baik';
+    return ListView(
+      key: const ValueKey('profile'),
+      padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
+      children: [
+        TextButton.icon(
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back_rounded),
+          label: const Text('Kembali ke Hari ini'),
+        ),
+        gap(16),
+        const Text(
+          'Profil\nkamu.',
+          style: TextStyle(
+            color: ink,
+            fontSize: 39,
+            height: 1.04,
+            letterSpacing: -1.5,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        gap(24),
+        Container(
+          padding: const EdgeInsets.all(25),
+          decoration: BoxDecoration(
+            color: const Color(0xffe2edda),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 34,
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                child: Text(
+                  profile['alias'].toString().substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 17),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '@${profile['alias']}',
+                      style: const TextStyle(
+                        color: ink,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(path, style: const TextStyle(color: muted)),
+                  ],
+                ),
+              ),
+              tag('LEVEL ${controller.level}'),
+            ],
+          ),
+        ),
+        gap(20),
+        const Text(
+          'Preferensi perjalanan',
+          style: TextStyle(
+            color: ink,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        gap(12),
+        _ProfileDetail(icon: Icons.spa_outlined, label: 'Jalur', value: path),
+        _ProfileDetail(
+          icon: Icons.accessibility_new_rounded,
+          label: 'Ritme gerak',
+          value: profile['lowImpact'] == true
+              ? 'Low-impact dan istirahat nyaman'
+              : 'Sesuai tingkat energi hari ini',
+        ),
+        _ProfileDetail(
+          icon: Icons.pets_outlined,
+          label: 'Teman tumbuh',
+          value: {
+                'plant': 'Mori',
+                'cat': 'Milo',
+                'cloud': 'Awan',
+              }[profile['companion']] ??
+              'Teman tumbuh',
+        ),
+        gap(18),
+        Container(
+          padding: const EdgeInsets.all(19),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.privacy_tip_outlined, color: green),
+              const SizedBox(width: 13),
+              const Expanded(
+                child: Text(
+                  'Data web dan mobile akan tersinkron ke akun yang sama setelah Supabase aktif.',
+                  style: TextStyle(color: ink, height: 1.45),
+                ),
+              ),
+              TextButton(
+                onPressed: () => toast(
+                  context,
+                  'Kontrol data lengkap akan tersedia setelah akun dihubungkan.',
+                ),
+                child: const Text('Detail'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileDetail extends StatelessWidget {
+  const _ProfileDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: green),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(color: muted, fontSize: 12)),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                        color: ink, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _ReliefRoom extends StatefulWidget {
@@ -528,131 +816,132 @@ class _ReliefRoomState extends State<_ReliefRoom> {
 
   @override
   Widget build(BuildContext context) => Padding(
-    key: const ValueKey('relief'),
-    padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff183d32), Color(0xff2e6e54)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -90,
-            top: -80,
-            child: _Glow(size: 310, color: const Color(0x337fd1a3)),
+        key: const ValueKey('relief'),
+        padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xff183d32), Color(0xff2e6e54)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(30),
           ),
-          Positioned(
-            left: -100,
-            bottom: -130,
-            child: _Glow(size: 360, color: const Color(0x2272cfc7)),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(42),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: Column(
-                  children: [
-                    const Text(
-                      'RELIEF ROOM',
-                      style: TextStyle(
-                        color: Color(0xffb8d9ad),
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      playing
-                          ? 'Tarik napas.\nLepaskan perlahan.'
-                          : 'Beri dirimu\nsedikit ruang.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        height: 1.05,
-                        letterSpacing: -1.4,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    AnimatedContainer(
-                      duration: const Duration(seconds: 4),
-                      curve: Curves.easeInOut,
-                      width: playing && remaining % 8 < 4 ? 230 : 170,
-                      height: playing && remaining % 8 < 4 ? 230 : 170,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xffdceacb).withValues(alpha: .88),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x5578ba8f),
-                            blurRadius: 48,
-                            spreadRadius: 12,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -90,
+                top: -80,
+                child: _Glow(size: 310, color: const Color(0x337fd1a3)),
+              ),
+              Positioned(
+                left: -100,
+                bottom: -130,
+                child: _Glow(size: 360, color: const Color(0x2272cfc7)),
+              ),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(42),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'RELIEF ROOM',
+                          style: TextStyle(
+                            color: Color(0xffb8d9ad),
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
                           playing
-                              ? '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}'
-                              : '${duration ~/ 60} min',
+                              ? 'Tarik napas.\nLepaskan perlahan.'
+                              : 'Beri dirimu\nsedikit ruang.',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: ink,
-                            fontSize: 34,
+                            color: Colors.white,
+                            fontSize: 40,
+                            height: 1.05,
+                            letterSpacing: -1.4,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      playing
-                          ? (remaining % 8 < 4
-                                ? 'Tarik napas perlahan'
-                                : 'Hembuskan perlahan')
-                          : 'Pilih suara, pilih durasi, lalu cukup hadir.',
-                      style: const TextStyle(
-                        color: Color(0xffe1eee2),
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    if (!playing) ...[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [300, 600]
-                            .map(
-                              (value) => ChoiceChip(
-                                label: Text('${value ~/ 60} menit'),
-                                selected: duration == value,
-                                onSelected: (_) => setState(() {
-                                  duration = value;
-                                  remaining = value;
-                                }),
+                        const SizedBox(height: 30),
+                        AnimatedContainer(
+                          duration: const Duration(seconds: 4),
+                          curve: Curves.easeInOut,
+                          width: playing && remaining % 8 < 4 ? 230 : 170,
+                          height: playing && remaining % 8 < 4 ? 230 : 170,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                const Color(0xffdceacb).withValues(alpha: .88),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x5578ba8f),
+                                blurRadius: 48,
+                                spreadRadius: 12,
                               ),
-                            )
-                            .toList(),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children:
-                            {
-                                  'rain': '🌧 Hujan lembut',
-                                  'ambient': '♫ Ambient tones',
-                                  'breathing': '◯ Panduan napas',
-                                }.entries
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              playing
+                                  ? '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}'
+                                  : '${duration ~/ 60} min',
+                              style: const TextStyle(
+                                color: ink,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          playing
+                              ? (remaining % 8 < 4
+                                  ? 'Tarik napas perlahan'
+                                  : 'Hembuskan perlahan')
+                              : 'Pilih suara, pilih durasi, lalu cukup hadir.',
+                          style: const TextStyle(
+                            color: Color(0xffe1eee2),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 26),
+                        if (!playing) ...[
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [300, 600]
+                                .map(
+                                  (value) => ChoiceChip(
+                                    label: Text('${value ~/ 60} menit'),
+                                    selected: duration == value,
+                                    onSelected: (_) => setState(() {
+                                      duration = value;
+                                      remaining = value;
+                                    }),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: {
+                              'rain': '🌧 Hujan lembut',
+                              'ambient': '♫ Ambient tones',
+                              'breathing': '◯ Panduan napas',
+                            }
+                                .entries
                                 .map(
                                   (entry) => ChoiceChip(
                                     label: Text(entry.value),
@@ -662,45 +951,47 @@ class _ReliefRoomState extends State<_ReliefRoom> {
                                   ),
                                 )
                                 .toList(),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    FilledButton.icon(
-                      onPressed: playing ? _stop : _start,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: ink,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 18,
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                        FilledButton.icon(
+                          onPressed: playing ? _stop : _start,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: ink,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 18,
+                            ),
+                          ),
+                          icon: Icon(
+                            playing
+                                ? Icons.stop_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(
+                            playing ? 'Akhiri sesi' : 'Mulai relaxation mode',
+                          ),
                         ),
-                      ),
-                      icon: Icon(
-                        playing ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                      ),
-                      label: Text(
-                        playing ? 'Akhiri sesi' : 'Mulai relaxation mode',
-                      ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Audio berjalan setelah kamu menekan tombol putar. Kamu boleh berhenti kapan saja.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xffb7cfbb),
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Audio berjalan setelah kamu menekan tombol putar. Kamu boleh berhenti kapan saja.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xffb7cfbb),
-                        fontSize: 12,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _Glow extends StatelessWidget {
@@ -710,10 +1001,10 @@ class _Glow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
 }
 
 class _InsightsView extends StatelessWidget {
@@ -819,12 +1110,10 @@ class _InsightsView extends StatelessWidget {
                   children: days.map((day) {
                     final quests =
                         (controller.days[day]?['quests'] ?? []) as List;
-                    final completed = quests
-                        .where((quest) => quest['done'] == true)
-                        .length;
-                    final rate = quests.isEmpty
-                        ? 0.08
-                        : completed / quests.length;
+                    final completed =
+                        quests.where((quest) => quest['done'] == true).length;
+                    final rate =
+                        quests.isEmpty ? 0.08 : completed / quests.length;
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -918,29 +1207,29 @@ class _InsightStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(19),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: muted, fontSize: 12)),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: ink,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-          ),
+        padding: const EdgeInsets.all(19),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
         ),
-        const SizedBox(height: 4),
-        Text(detail, style: const TextStyle(color: muted, fontSize: 11)),
-      ],
-    ),
-  );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: muted, fontSize: 12)),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                color: ink,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(detail, style: const TextStyle(color: muted, fontSize: 11)),
+          ],
+        ),
+      );
 }
 
 class _CommunityView extends StatelessWidget {
@@ -1058,54 +1347,56 @@ class _WallPost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(19),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(19),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 17,
-              backgroundColor: const Color(0xffe2edda),
-              foregroundColor: green,
-              child: Text(
-                post['alias'].toString().substring(0, 1).toUpperCase(),
-              ),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: const Color(0xffe2edda),
+                  foregroundColor: green,
+                  child: Text(
+                    post['alias'].toString().substring(0, 1).toUpperCase(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '@${post['alias']}',
+                  style:
+                      const TextStyle(color: ink, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                const Text('Wall',
+                    style: TextStyle(color: muted, fontSize: 12)),
+              ],
             ),
-            const SizedBox(width: 10),
+            const SizedBox(height: 14),
             Text(
-              '@${post['alias']}',
-              style: const TextStyle(color: ink, fontWeight: FontWeight.w800),
+              post['body'].toString(),
+              style: const TextStyle(color: ink, height: 1.55),
             ),
-            const Spacer(),
-            const Text('Wall', style: TextStyle(color: muted, fontSize: 12)),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              children: ['👏', '💛', '🌿'].map((emoji) {
+                final reactionId = '${post['id']}-$emoji';
+                return FilterChip(
+                  label: Text(emoji),
+                  selected: controller.hasReaction(reactionId),
+                  onSelected: (_) => controller.react(reactionId),
+                );
+              }).toList(),
+            ),
           ],
         ),
-        const SizedBox(height: 14),
-        Text(
-          post['body'].toString(),
-          style: const TextStyle(color: ink, height: 1.55),
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 8,
-          children: ['👏', '💛', '🌿'].map((emoji) {
-            final reactionId = '${post['id']}-$emoji';
-            return FilterChip(
-              label: Text(emoji),
-              selected: controller.hasReaction(reactionId),
-              onSelected: (_) => controller.react(reactionId),
-            );
-          }).toList(),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 /// The only extra web-app menu for moderators and admins.
@@ -1115,9 +1406,8 @@ class _CommunityAdminView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pending = controller.posts
-        .where((post) => post['status'] == 'pending')
-        .toList();
+    final pending =
+        controller.posts.where((post) => post['status'] == 'pending').toList();
     return ListView(
       key: const ValueKey('community-admin'),
       padding: const EdgeInsets.fromLTRB(34, 10, 34, 34),
@@ -1234,66 +1524,92 @@ class _ModerationPostCard extends StatelessWidget {
   final WellnessController controller;
   final Map<String, dynamic> post;
 
+  void _decide(BuildContext context, String status, String note) {
+    final previousStatus = post['status'].toString();
+    final messenger = ScaffoldMessenger.of(context);
+    controller.updatePost(post['id'].toString(), status, note);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            status == 'approved'
+                ? 'Post disetujui dan siap muncul di komunitas.'
+                : 'Post ditolak dan tidak akan ditayangkan.',
+          ),
+          action: SnackBarAction(
+            label: 'BATALKAN',
+            onPressed: () => controller.updatePost(
+              post['id'].toString(),
+              previousStatus,
+              'Keputusan moderator dibatalkan.',
+            ),
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 17,
-              backgroundColor: const Color(0xffe2edda),
-              foregroundColor: green,
-              child: Text(
-                post['alias'].toString().substring(0, 1).toUpperCase(),
-              ),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: const Color(0xffe2edda),
+                  foregroundColor: green,
+                  child: Text(
+                    post['alias'].toString().substring(0, 1).toUpperCase(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '@${post['alias']}',
+                  style:
+                      const TextStyle(color: ink, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                tag('MENUNGGU REVIEW', color: const Color(0xffb66738)),
+              ],
             ),
-            const SizedBox(width: 10),
+            gap(14),
             Text(
-              '@${post['alias']}',
-              style: const TextStyle(color: ink, fontWeight: FontWeight.w800),
+              post['body'].toString(),
+              style: const TextStyle(color: ink, fontSize: 16, height: 1.55),
             ),
-            const Spacer(),
-            tag('MENUNGGU REVIEW', color: const Color(0xffb66738)),
-          ],
-        ),
-        gap(14),
-        Text(
-          post['body'].toString(),
-          style: const TextStyle(color: ink, fontSize: 16, height: 1.55),
-        ),
-        gap(18),
-        Wrap(
-          spacing: 10,
-          children: [
-            FilledButton.icon(
-              onPressed: () => controller.updatePost(
-                post['id'].toString(),
-                'approved',
-                'Disetujui melalui Community Admin.',
-              ),
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('Setujui'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => controller.updatePost(
-                post['id'].toString(),
-                'rejected',
-                'Post tidak ditayangkan setelah tinjauan manual.',
-              ),
-              icon: const Icon(Icons.close_rounded),
-              label: const Text('Tolak'),
+            gap(18),
+            Wrap(
+              spacing: 10,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => _decide(
+                    context,
+                    'approved',
+                    'Disetujui melalui Community Admin.',
+                  ),
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Setujui'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _decide(
+                    context,
+                    'rejected',
+                    'Post tidak ditayangkan setelah tinjauan manual.',
+                  ),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Tolak'),
+                ),
+              ],
             ),
           ],
         ),
-      ],
-    ),
-  );
+      );
 }

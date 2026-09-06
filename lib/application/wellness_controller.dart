@@ -147,6 +147,16 @@ class WellnessController extends ChangeNotifier {
     _save();
   }
 
+  /// Restores a task completion when a user changes their mind.
+  void undoComplete(String id) {
+    final list = quests;
+    final i = list.indexWhere((q) => q['id'] == id);
+    if (i < 0 || list[i]['done'] != true) return;
+    list[i]['done'] = false;
+    _data['days'][today]['quests'] = list;
+    _save();
+  }
+
   bool freeze() {
     final yesterday = dayKey(now.subtract(const Duration(days: 1)));
     final before = dayKey(now.subtract(const Duration(days: 2)));
