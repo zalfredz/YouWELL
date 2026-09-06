@@ -9,6 +9,7 @@ import 'package:youwell/data/repositories/supabase_wellness_repository.dart';
 
 /// Owns the signed-in session, role and safe handoff from local to cloud data.
 class AppAuthController extends ChangeNotifier {
+  static const _syncTimeout = Duration(seconds: 12);
   AppAuthController.connected({
     required SupabaseClient client,
     required WellnessController wellness,
@@ -83,8 +84,9 @@ class AppAuthController extends ChangeNotifier {
           .from('profiles')
           .select('role')
           .eq('id', user.id)
-          .maybeSingle();
-      var remoteState = await _remoteRepository!.read();
+          .maybeSingle()
+          .timeout(_syncTimeout);
+      var remoteState = await _remoteRepository!.read().timeout(_syncTimeout);
 
       // A visitor's existing local work is moved to their first signed-in row.
       if (remoteState == null) {

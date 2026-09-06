@@ -41,44 +41,46 @@ class WebDesktopFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      const margin = 24.0;
-      final availableWidth = math.max(0.0, constraints.maxWidth - margin * 2);
-      final availableHeight = math.max(0.0, constraints.maxHeight - margin * 2);
-      final width = math.min(
-        1600.0,
-        math.min(availableWidth, availableHeight * 16 / 9),
-      );
-      final height = width * 9 / 16;
+        builder: (context, constraints) {
+          const margin = 24.0;
+          final availableWidth =
+              math.max(0.0, constraints.maxWidth - margin * 2);
+          final availableHeight =
+              math.max(0.0, constraints.maxHeight - margin * 2);
+          final width = math.min(
+            1600.0,
+            math.min(availableWidth, availableHeight * 16 / 9),
+          );
+          final height = width * 9 / 16;
 
-      return ColoredBox(
-        color: const Color(0xffdfe5dc),
-        child: Center(
-          child: SizedBox(
-            width: width,
-            height: height,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: cream,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: ink.withValues(alpha: .12),
-                    blurRadius: 40,
-                    offset: const Offset(0, 16),
+          return ColoredBox(
+            color: const Color(0xff08090b),
+            child: Center(
+              child: SizedBox(
+                width: width,
+                height: height,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xff0d0e11),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: .55),
+                        blurRadius: 40,
+                        offset: const Offset(0, 16),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: child,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: child,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
-    },
-  );
 }
 
 class _MobileWorkspacePrompt extends StatelessWidget {
@@ -90,9 +92,8 @@ class _MobileWorkspacePrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final isApple = defaultTargetPlatform == TargetPlatform.iOS;
     final storeName = isApple ? 'App Store' : 'Google Play';
-    final storeUrl = isApple
-        ? AppEnvironment.appStoreUrl
-        : AppEnvironment.playStoreUrl;
+    final storeUrl =
+        isApple ? AppEnvironment.appStoreUrl : AppEnvironment.playStoreUrl;
 
     return Scaffold(
       backgroundColor: const Color(0xffeef2e9),
