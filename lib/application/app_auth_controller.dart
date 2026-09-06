@@ -51,7 +51,15 @@ class AppAuthController extends ChangeNotifier {
     _subscription = _client.auth.onAuthStateChange.listen(
       (event) => unawaited(_applySession(event.session)),
     );
-    await _applySession(_client.auth.currentSession);
+    await _applySession(_client.auth.currentSession).timeout(
+      _syncTimeout + const Duration(seconds: 1),
+      onTimeout: () {
+        _loadingUserId = null;
+        error = 'Koneksi akun terlalu lama. Kamu dapat mencoba lagi.';
+        isReady = true;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> _applySession(Session? session) async {

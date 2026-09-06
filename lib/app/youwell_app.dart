@@ -71,22 +71,25 @@ class _AdminEntry extends StatelessWidget {
   final AppAuthController auth;
 
   @override
-  Widget build(BuildContext context) {
-    if (!auth.isReady) return const _LoadingPage();
-    if (!auth.isAuthenticated) {
-      return _AppEntry(controller: controller, auth: auth);
-    }
-    if (!auth.isAdmin) return const _AdminAccessDenied();
-    if (controller.profile == null) {
-      return OnboardingPage(controller: controller);
-    }
-    return WebWorkspacePage(
-      controller: controller,
-      isAdmin: true,
-      accountEmail: auth.email,
-      onSignOut: auth.signOut,
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: Listenable.merge([controller, auth]),
+        builder: (context, _) {
+          if (!auth.isReady) return const _LoadingPage();
+          if (!auth.isAuthenticated) {
+            return _AppEntry(controller: controller, auth: auth);
+          }
+          if (!auth.isAdmin) return const _AdminAccessDenied();
+          if (controller.profile == null) {
+            return OnboardingPage(controller: controller);
+          }
+          return WebWorkspacePage(
+            controller: controller,
+            isAdmin: true,
+            accountEmail: auth.email,
+            onSignOut: auth.signOut,
+          );
+        },
+      );
 }
 
 class _LoadingPage extends StatelessWidget {
