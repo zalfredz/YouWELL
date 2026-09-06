@@ -55,6 +55,10 @@ diganti tanpa memindahkan UI ke file baru.
 `main.dart` hanya memanggil `app/bootstrap.dart`. Bootstrap memilih repository,
 membaca data lama, membuat controller, lalu menjalankan aplikasi.
 
+`app/web_experience_gate.dart` memberi web frame desktop 16:9. Browser sempit
+menampilkan halaman download aplikasi, sedangkan build Android/iOS melewati gate
+dan memakai layout native layar penuh.
+
 Nilai environment dibaca di `core/config/app_environment.dart` melalui
 `--dart-define-from-file`. File `*.example.json` masuk Git; file environment
 lokal tanpa suffix `.example` diabaikan Git.

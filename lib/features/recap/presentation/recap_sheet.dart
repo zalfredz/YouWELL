@@ -63,8 +63,9 @@ class _RecapSheetState extends State<RecapSheet> {
               : () async {
                   setState(() => exporting = true);
                   try {
-                    final b = imageKey.currentContext!.findRenderObject()
-                        as RenderRepaintBoundary;
+                    final b =
+                        imageKey.currentContext!.findRenderObject()
+                            as RenderRepaintBoundary;
                     final im = await b.toImage(pixelRatio: 3);
                     final bytes = await im.toByteData(
                       format: ui.ImageByteFormat.png,

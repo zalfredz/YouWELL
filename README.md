@@ -35,6 +35,9 @@ Salin template ketika membuat environment baru. `SUPABASE_URL` dan
 `SUPABASE_PUBLISHABLE_KEY` sudah disediakan sebagai placeholder untuk integrasi
 berikutnya, tetapi belum dipakai aplikasi. Jangan menaruh service-role key atau
 client secret di file Flutter karena nilai build web dapat dilihat pengguna.
+Isi `PLAY_STORE_URL` dan `APP_STORE_URL` setelah aplikasi mobile diterbitkan.
+Pengunjung website dari layar di bawah 1080 px akan melihat halaman download;
+tombolnya otomatis memilih store sesuai perangkat.
 
 ## File yang biasa diubah
 
@@ -43,6 +46,7 @@ client secret di file Flutter karena nilai build web dapat dilihat pengguna.
 | Warna aplikasi | `lib/core/theme/app_colors.dart` |
 | Theme, tombol, dan input | `lib/core/theme/app_theme.dart` |
 | Menu/sidebar/bottom navigation | `lib/app/app_shell.dart` |
+| Frame web 16:9 dan halaman download mobile | `lib/app/web_experience_gate.dart` |
 | Landing dan onboarding | `lib/features/onboarding/presentation/onboarding_page.dart` |
 | Tampilan Home | `lib/features/home/presentation/home_page.dart` |
 | Daftar dan aturan misi | `lib/features/home/domain/quest_generator.dart` |

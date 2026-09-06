@@ -3,21 +3,21 @@ import 'package:youwell/core/types/json_map.dart';
 
 /// Version-2 storage schema. Keep existing keys compatible to retain local progress.
 JsonMap createEmptyWellnessState() => {
-      'version': 2,
-      'dayOffset': 0,
-      'profile': null,
-      'days': <String, dynamic>{},
-      'meals': [],
-      'activities': [],
-      'moods': [],
-      'cravings': [],
-      'posts': [],
-      'reactions': [],
-      'reports': [],
-      'frozen': [],
-      'buddy': null,
-      'squad': false,
-    };
+  'version': 2,
+  'dayOffset': 0,
+  'profile': null,
+  'days': <String, dynamic>{},
+  'meals': [],
+  'activities': [],
+  'moods': [],
+  'cravings': [],
+  'posts': [],
+  'reactions': [],
+  'reports': [],
+  'frozen': [],
+  'buddy': null,
+  'squad': false,
+};
 
 JsonMap restoreWellnessState(String serialized) {
   final decoded = jsonDecode(serialized);

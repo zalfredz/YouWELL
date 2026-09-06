@@ -6,8 +6,11 @@ import 'package:youwell/features/support/presentation/support_card.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
 
 class PostComposerSheet extends StatefulWidget {
-  const PostComposerSheet(
-      {super.key, required this.controller, required this.room});
+  const PostComposerSheet({
+    super.key,
+    required this.controller,
+    required this.room,
+  });
   final WellnessController controller;
   final String room;
   @override
@@ -26,47 +29,46 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          title(
-            widget.room == 'Wall' ? 'Rayakan langkah kecil' : '#${widget.room}',
-          ),
-          gap(8),
-          caption(
-            'Tanpa data pribadi, foto, promosi, atau kata kasar. Filter aturan lokal → antrean moderator. Belum memakai AI.',
-          ),
-          gap(),
-          TextField(
-            controller: body,
-            maxLength: 1000,
-            maxLines: 5,
-            onChanged: (t) => setState(() => help = crisisSignal(t)),
-            decoration: const InputDecoration(hintText: 'Hari ini aku...'),
-          ),
-          if (help) const SupportCard(),
-          if (error != null)
-            Text(error!, style: const TextStyle(color: Colors.deepOrange)),
-          gap(),
-          FilledButton(
-            onPressed: () {
-              final text = body.text.trim();
-              final reason = moderationReason(text);
-              if (text.isEmpty || reason != null) {
-                setState(
-                    () => error = reason ?? 'Tulis cerita terlebih dahulu.');
-                return;
-              }
-              widget.controller.submitPost({
-                'alias': widget.controller.profile!['alias'],
-                'room': widget.room,
-                'body': text,
-                'status': 'pending',
-              });
-              Navigator.pop(context);
-              toast(context, 'Kiriman masuk antrean tinjauan lokal.');
-            },
-            child: const Text('Kirim untuk ditinjau'),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      title(
+        widget.room == 'Wall' ? 'Rayakan langkah kecil' : '#${widget.room}',
+      ),
+      gap(8),
+      caption(
+        'Tanpa data pribadi, foto, promosi, atau kata kasar. Filter aturan lokal → antrean moderator. Belum memakai AI.',
+      ),
+      gap(),
+      TextField(
+        controller: body,
+        maxLength: 1000,
+        maxLines: 5,
+        onChanged: (t) => setState(() => help = crisisSignal(t)),
+        decoration: const InputDecoration(hintText: 'Hari ini aku...'),
+      ),
+      if (help) const SupportCard(),
+      if (error != null)
+        Text(error!, style: const TextStyle(color: Colors.deepOrange)),
+      gap(),
+      FilledButton(
+        onPressed: () {
+          final text = body.text.trim();
+          final reason = moderationReason(text);
+          if (text.isEmpty || reason != null) {
+            setState(() => error = reason ?? 'Tulis cerita terlebih dahulu.');
+            return;
+          }
+          widget.controller.submitPost({
+            'alias': widget.controller.profile!['alias'],
+            'room': widget.room,
+            'body': text,
+            'status': 'pending',
+          });
+          Navigator.pop(context);
+          toast(context, 'Kiriman masuk antrean tinjauan lokal.');
+        },
+        child: const Text('Kirim untuk ditinjau'),
+      ),
+    ],
+  );
 }

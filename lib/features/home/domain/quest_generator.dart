@@ -4,20 +4,21 @@ import 'package:youwell/core/types/json_map.dart';
 /// Daily mission catalog and path filtering. No UI or persistence dependencies.
 class QuestGenerator {
   const QuestGenerator();
-  List<JsonMap> generate(
-      {required String today,
-      required int difficulty,
-      required bool lowImpact,
-      required bool reduction}) {
+  List<JsonMap> generate({
+    required String today,
+    required int difficulty,
+    required bool lowImpact,
+    required bool reduction,
+  }) {
     final d = difficulty;
     final gentle = lowImpact;
     final rng = Random();
     JsonMap pick(String category, List<String> titles) => {
-          'id': '$today-$category',
-          'category': category,
-          'title': titles[rng.nextInt(titles.length)],
-          'done': false,
-        };
+      'id': '$today-$category',
+      'category': category,
+      'title': titles[rng.nextInt(titles.length)],
+      'done': false,
+    };
     final list = [
       pick(
         'Gerak',

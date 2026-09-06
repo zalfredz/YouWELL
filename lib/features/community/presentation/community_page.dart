@@ -19,9 +19,10 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     final s = widget.controller;
-    final posts = [...s.posts.reversed, ...demoPosts].where(
-      (p) => p['room'] == tab && !s.isReported(p['id'].toString()),
-    );
+    final posts = [
+      ...s.posts.reversed,
+      ...demoPosts,
+    ].where((p) => p['room'] == tab && !s.isReported(p['id'].toString()));
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
       children: [
@@ -39,22 +40,23 @@ class _CommunityPageState extends State<CommunityPage> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: [
-            'Wall',
-            'BurnoutSekolah',
-            'RunningAndFit',
-            'BebasVapeTogether',
-            'Squad & Buddy',
-            'Vibe Map',
-          ]
-              .map(
-                (t) => ChoiceChip(
-                  label: Text(t),
-                  selected: tab == t,
-                  onSelected: (_) => setState(() => tab = t),
-                ),
-              )
-              .toList(),
+          children:
+              [
+                    'Wall',
+                    'BurnoutSekolah',
+                    'RunningAndFit',
+                    'BebasVapeTogether',
+                    'Squad & Buddy',
+                    'Vibe Map',
+                  ]
+                  .map(
+                    (t) => ChoiceChip(
+                      label: Text(t),
+                      selected: tab == t,
+                      onSelected: (_) => setState(() => tab = t),
+                    ),
+                  )
+                  .toList(),
         ),
         gap(20),
         if (tab == 'Squad & Buddy') ...[
@@ -151,9 +153,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     .map(
                       (t) => FilterChip(
                         label: Text(t),
-                        selected: s.hasReaction(
-                          'buddy-$t',
-                        ),
+                        selected: s.hasReaction('buddy-$t'),
                         onSelected: (_) => s.react('buddy-$t'),
                       ),
                     )
@@ -268,8 +268,8 @@ class _CommunityPageState extends State<CommunityPage> {
                     p['status'] == 'pending'
                         ? 'Sedang ditinjau'
                         : p['status'] == 'rejected'
-                            ? 'Perlu diubah'
-                            : '#$tab',
+                        ? 'Perlu diubah'
+                        : '#$tab',
                   ),
                 ],
               ),
@@ -291,9 +291,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     ].map(
                       (r) => FilterChip(
                         label: Text(r),
-                        selected: s.hasReaction(
-                          '${p['id']}-$r',
-                        ),
+                        selected: s.hasReaction('${p['id']}-$r'),
                         onSelected: (_) => s.react('${p['id']}-$r'),
                       ),
                     ),
@@ -302,7 +300,9 @@ class _CommunityPageState extends State<CommunityPage> {
                       onPressed: () => sheet(
                         context,
                         ReportContentSheet(
-                            controller: s, post: p['id'].toString()),
+                          controller: s,
+                          post: p['id'].toString(),
+                        ),
                       ),
                       icon: const Icon(Icons.flag_outlined),
                     ),

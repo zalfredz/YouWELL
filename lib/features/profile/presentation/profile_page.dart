@@ -187,24 +187,35 @@ class ProfilePage extends StatelessWidget {
             title('Simulasikan pergantian hari', size: 22),
             gap(8),
             caption(
-                'Tanggal aplikasi: ${s.today}. Majukan tanggal untuk mencoba kartu baru, adaptasi, dan freeze tanpa menunggu. Tanggal perangkat tidak berubah. Reset data untuk kembali ke tanggal sebenarnya.'),
+              'Tanggal aplikasi: ${s.today}. Majukan tanggal untuk mencoba kartu baru, adaptasi, dan freeze tanpa menunggu. Tanggal perangkat tidak berubah. Reset data untuk kembali ke tanggal sebenarnya.',
+            ),
             gap(),
-            Wrap(spacing: 10, runSpacing: 10, children: [
-              OutlinedButton(
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton(
                   onPressed: () {
                     s.advancePreviewDays(1);
-                    toast(context,
-                        'Tanggal preview: ${s.today}. Buka kartu baru di Home.');
+                    toast(
+                      context,
+                      'Tanggal preview: ${s.today}. Buka kartu baru di Home.',
+                    );
                   },
-                  child: const Text('Maju 1 hari')),
-              OutlinedButton(
+                  child: const Text('Maju 1 hari'),
+                ),
+                OutlinedButton(
                   onPressed: () {
                     s.advancePreviewDays(2);
-                    toast(context,
-                        'Tanggal preview: ${s.today}. Kemarin terlewat; coba freeze jika ada streak.');
+                    toast(
+                      context,
+                      'Tanggal preview: ${s.today}. Kemarin terlewat; coba freeze jika ada streak.',
+                    );
                   },
-                  child: const Text('Lewati 1 hari (+2)')),
-            ]),
+                  child: const Text('Lewati 1 hari (+2)'),
+                ),
+              ],
+            ),
           ]),
         const SupportCard(),
       ],

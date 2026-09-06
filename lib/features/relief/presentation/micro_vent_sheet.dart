@@ -23,66 +23,64 @@ class _MicroVentSheetState extends State<MicroVentSheet> {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          title('Boleh dilepaskan.'),
-          gap(8),
-          caption(
-            'Tulisan ini tidak disimpan atau dikirim. Setelah dilepas, teks dihapus dari tampilan.',
-          ),
-          gap(22),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 700),
-            transitionBuilder: (child, animation) => ScaleTransition(
-              scale: animation,
-              child: FadeTransition(opacity: animation, child: child),
-            ),
-            child: released
-                ? Container(
-                    key: const ValueKey('released'),
-                    height: 190,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.spa, size: 56, color: green),
-                        gap(),
-                        const Text('Sudah dilepas. Ambil satu napas lagi.'),
-                      ],
-                    ),
-                  )
-                : TextField(
-                    key: const ValueKey('writing'),
-                    controller: text,
-                    maxLines: 5,
-                    maxLength: 1000,
-                    onChanged: (t) => setState(() => help = crisisSignal(t)),
-                    decoration: const InputDecoration(
-                      hintText: 'Yang lagi memenuhi pikiranku...',
-                    ),
-                  ),
-          ),
-          if (help) const SupportCard(),
-          gap(),
-          FilledButton.icon(
-            onPressed: released
-                ? () => setState(() => released = false)
-                : () {
-                    if (text.text.trim().isEmpty) {
-                      toast(context, 'Tulis perasaanmu dulu.');
-                      return;
-                    }
-                    platform.sound('release');
-                    text.clear();
-                    setState(() => released = true);
-                  },
-            icon: Icon(
-              released
-                  ? Icons.edit_outlined
-                  : Icons.local_fire_department_outlined,
-            ),
-            label: Text(released ? 'Tulis lagi' : 'Lepaskan tulisan'),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      title('Boleh dilepaskan.'),
+      gap(8),
+      caption(
+        'Tulisan ini tidak disimpan atau dikirim. Setelah dilepas, teks dihapus dari tampilan.',
+      ),
+      gap(22),
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 700),
+        transitionBuilder: (child, animation) => ScaleTransition(
+          scale: animation,
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: released
+            ? Container(
+                key: const ValueKey('released'),
+                height: 190,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.spa, size: 56, color: green),
+                    gap(),
+                    const Text('Sudah dilepas. Ambil satu napas lagi.'),
+                  ],
+                ),
+              )
+            : TextField(
+                key: const ValueKey('writing'),
+                controller: text,
+                maxLines: 5,
+                maxLength: 1000,
+                onChanged: (t) => setState(() => help = crisisSignal(t)),
+                decoration: const InputDecoration(
+                  hintText: 'Yang lagi memenuhi pikiranku...',
+                ),
+              ),
+      ),
+      if (help) const SupportCard(),
+      gap(),
+      FilledButton.icon(
+        onPressed: released
+            ? () => setState(() => released = false)
+            : () {
+                if (text.text.trim().isEmpty) {
+                  toast(context, 'Tulis perasaanmu dulu.');
+                  return;
+                }
+                platform.sound('release');
+                text.clear();
+                setState(() => released = true);
+              },
+        icon: Icon(
+          released ? Icons.edit_outlined : Icons.local_fire_department_outlined,
+        ),
+        label: Text(released ? 'Tulis lagi' : 'Lepaskan tulisan'),
+      ),
+    ],
+  );
 }

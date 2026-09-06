@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
@@ -35,11 +36,12 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 1000;
+    final wide = kIsWeb || MediaQuery.sizeOf(context).width >= 1000;
     final pages = [
       HomePage(
-          controller: widget.controller,
-          onStats: () => setState(() => tab = 1)),
+        controller: widget.controller,
+        onStats: () => setState(() => tab = 1),
+      ),
       StatisticsPage(controller: widget.controller),
       CommunityPage(controller: widget.controller),
       ProfilePage(controller: widget.controller),
@@ -73,10 +75,12 @@ class _AppShellState extends State<AppShell> {
                         const Icon(Icons.spa, color: green),
                         const SizedBox(width: 8),
                         Expanded(
-                            child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: title('youwell.', size: 30))),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: title('youwell.', size: 30),
+                          ),
+                        ),
                       ],
                     ),
                     gap(8),

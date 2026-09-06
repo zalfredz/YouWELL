@@ -13,7 +13,8 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = controller.quests.where((q) => q['done'] == true).length;
-    final frozen = controller.frozenDays.contains(
+    final frozen =
+        controller.frozenDays.contains(
           dayKey(controller.now.subtract(const Duration(days: 1))),
         ) &&
         !controller.completedDays.contains(controller.today);
@@ -179,7 +180,9 @@ class HomePage extends StatelessWidget {
                   gap(12),
                   OutlinedButton(
                     onPressed: () => sheet(
-                        context, MoodCheckInSheet(controller: controller)),
+                      context,
+                      MoodCheckInSheet(controller: controller),
+                    ),
                     child: const Text('Check-in perasaan'),
                   ),
                 ]),
@@ -206,10 +209,10 @@ class HomePage extends StatelessWidget {
                       frozen
                           ? 'Aku istirahat dulu, ya.'
                           : done == controller.quests.length && done > 0
-                              ? 'Kita tumbuh bersama hari ini!'
-                              : controller.streak == 0
-                                  ? 'Senang kamu ada di sini.'
-                                  : 'Satu langkah lagi. Aku temani.',
+                          ? 'Kita tumbuh bersama hari ini!'
+                          : controller.streak == 0
+                          ? 'Senang kamu ada di sini.'
+                          : 'Satu langkah lagi. Aku temani.',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),

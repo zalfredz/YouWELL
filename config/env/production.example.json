@@ -3,6 +3,8 @@
   "APP_ENV": "production",
   "LOCAL_STORAGE_KEY": "youwell.local.v2",
   "SHOW_PREVIEW_TOOLS": "false",
+  "PLAY_STORE_URL": "",
+  "APP_STORE_URL": "",
   "SUPABASE_URL": "",
   "SUPABASE_PUBLISHABLE_KEY": ""
 }

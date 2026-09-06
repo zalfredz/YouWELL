@@ -13,14 +13,14 @@ class WellnessCompanion extends StatelessWidget {
   final bool frozen;
   @override
   Widget build(BuildContext context) => Semantics(
-        label:
-            'Companion $kind level $level${frozen ? ' sedang beristirahat' : ''}',
-        child: SizedBox(
-          width: 200,
-          height: 185,
-          child: CustomPaint(painter: _CompanionPainter(kind, level, frozen)),
-        ),
-      );
+    label:
+        'Companion $kind level $level${frozen ? ' sedang beristirahat' : ''}',
+    child: SizedBox(
+      width: 200,
+      height: 185,
+      child: CustomPaint(painter: _CompanionPainter(kind, level, frozen)),
+    ),
+  );
 }
 
 class _CompanionPainter extends CustomPainter {

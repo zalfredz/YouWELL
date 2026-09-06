@@ -11,7 +11,7 @@ import 'package:youwell/features/home/domain/progress_calculator.dart';
 /// Widgets may read state, but all changes are saved in order through this class.
 class WellnessController extends ChangeNotifier {
   WellnessController({String? saved, this.persist, DateTime Function()? clock})
-      : clock = clock ?? DateTime.now {
+    : clock = clock ?? DateTime.now {
     if (saved != null) {
       try {
         _data = restoreWellnessState(saved);
@@ -49,12 +49,12 @@ class WellnessController extends ChangeNotifier {
       .map((e) => Map<String, dynamic>.from(e))
       .toList();
   ProgressCalculator get _progress => ProgressCalculator(
-        days: days,
-        frozenDays: frozenDays,
-        now: now,
-        fitness: (profile?['fitness'] ?? 1) as int,
-        lowImpact: profile?['lowImpact'] == true,
-      );
+    days: days,
+    frozenDays: frozenDays,
+    now: now,
+    fitness: (profile?['fitness'] ?? 1) as int,
+    lowImpact: profile?['lowImpact'] == true,
+  );
   List<String> get completedDays => _progress.completedDays;
   int get xp => _progress.xp;
   int get level => _progress.level;
@@ -80,16 +80,17 @@ class WellnessController extends ChangeNotifier {
         (r) =>
             r['success'] == true &&
             r['day'].toString().compareTo(
-                      dayKey(now.subtract(Duration(days: period - 1))),
-                    ) >=
+                  dayKey(now.subtract(Duration(days: period - 1))),
+                ) >=
                 0 &&
             r['day'].toString().compareTo(today) <= 0 &&
             r['avoided'] == true,
       )
       .fold(
-          0.0,
-          (sum, r) =>
-              sum + ((r['cost'] ?? profile?['cost'] ?? 0) as num).toDouble());
+        0.0,
+        (sum, r) =>
+            sum + ((r['cost'] ?? profile?['cost'] ?? 0) as num).toDouble(),
+      );
   Future<void> _save() {
     notifyListeners();
     final value = jsonEncode(_data);

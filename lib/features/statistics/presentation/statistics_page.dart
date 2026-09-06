@@ -181,7 +181,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
             caption(
               'Belum ada makanan tercatat. Foto bersifat privat di perangkat ini.',
             ),
-          ...s.meals.reversed.take(12).map(
+          ...s.meals.reversed
+              .take(12)
+              .map(
                 (r) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: r['photo'] != null
@@ -220,7 +222,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
           if (s.activities.isEmpty)
             caption('Jalan, lari, atau gerak ringan. Semua usaha berarti.'),
-          ...s.activities.reversed.take(10).map(
+          ...s.activities.reversed
+              .take(10)
+              .map(
                 (r) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.directions_walk, color: green),
@@ -271,16 +275,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   .where(
                     (r) =>
                         r['day'].toString().compareTo(
-                              dayKey(
-                                  s.now.subtract(Duration(days: period - 1))),
-                            ) >=
+                          dayKey(s.now.subtract(Duration(days: period - 1))),
+                        ) >=
                         0,
                   )
                   .toList();
               final n = all.where((r) => r['trigger'] == t).length;
               return meter(all.isEmpty ? 0 : n / all.length, t, '$n kali');
             }),
-            ...s.cravings.reversed.take(8).map(
+            ...s.cravings.reversed
+                .take(8)
+                .map(
                   (r) => ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
@@ -297,17 +302,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
           gap(),
           if (s.moods.isEmpty)
             caption('Check-in pertamamu bisa dimulai dari Home.'),
-          ...s.moods.reversed.take(7).map(
+          ...s.moods.reversed
+              .take(7)
+              .map(
                 (r) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    '${[
-                      '😔',
-                      '😕',
-                      '😐',
-                      '🙂',
-                      '😊'
-                    ][(r['mood'] as int) - 1]}  ${r['day']}',
+                    '${['😔', '😕', '😐', '🙂', '😊'][(r['mood'] as int) - 1]}  ${r['day']}',
                   ),
                   subtitle: Text(
                     '${(r['tags'] as List).join(' · ')}${r['note'].toString().isEmpty ? '' : '\n${r['note']}'}',
@@ -346,12 +347,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget stat(String name, String value, IconData icon) => SizedBox(
-        width: 190,
-        child: panel([
-          Icon(icon, color: green),
-          gap(12),
-          title(value, size: 28),
-          caption(name),
-        ]),
-      );
+    width: 190,
+    child: panel([
+      Icon(icon, color: green),
+      gap(12),
+      title(value, size: 28),
+      caption(name),
+    ]),
+  );
 }

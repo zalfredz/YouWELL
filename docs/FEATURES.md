@@ -38,7 +38,8 @@ versi ini disimpan melalui SharedPreferences di browser, dengan namespace baru
 - Nutrisi menggunakan estimasi katalog/manual, bukan pengenalan foto AI. Nilai katalog contoh
   bukan basis data nutrisi terverifikasi; cocok untuk mencoba alur input.
 - Moderasi serta deteksi krisis memakai kata kunci, bukan AI atau deteksi risiko yang andal.
-  Layanan bantuan: [informasi resmi Kemenkes tentang Healing119](https://kesprimkom.kemkes.go.id/konten/127/151/0/cegah-bunuh-diri-dukung-kesehatan-jiwa-kenali-layanan-healing119-id).
+  UI hanya memberi arahan umum untuk mencari bantuan langsung dari orang tepercaya
+  atau tenaga profesional.
 - Audio adalah sintesis Web Audio, bukan rekaman hujan, lagu lo-fi, atau narasi manusia.
 - Upload foto, audio, unduh JSON/PNG, dan link bantuan saat ini ditargetkan ke **web**.
   Adapter platform mobile masih perlu dibuat sebelum menjanjikan paritas Android/iOS.

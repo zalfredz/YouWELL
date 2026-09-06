@@ -3,40 +3,38 @@ import 'package:youwell/core/utils/date_key.dart';
 
 /// Pure progression rules: daily streak, freeze tokens, XP and weekly difficulty.
 class ProgressCalculator {
-  const ProgressCalculator(
-      {required this.days,
-      required this.frozenDays,
-      required this.now,
-      required this.fitness,
-      required this.lowImpact});
+  const ProgressCalculator({
+    required this.days,
+    required this.frozenDays,
+    required this.now,
+    required this.fitness,
+    required this.lowImpact,
+  });
   final Map<String, dynamic> days;
   final List<String> frozenDays;
   final DateTime now;
   final int fitness;
   final bool lowImpact;
   String get today => dayKey(now);
-  List<String> get completedDays => days.entries
-      .where(
-        (e) =>
-            (e.value['quests'] as List).isNotEmpty &&
-            (e.value['quests'] as List).every((q) => q['done'] == true),
-      )
-      .map((e) => e.key)
-      .toList()
-    ..sort();
+  List<String> get completedDays =>
+      days.entries
+          .where(
+            (e) =>
+                (e.value['quests'] as List).isNotEmpty &&
+                (e.value['quests'] as List).every((q) => q['done'] == true),
+          )
+          .map((e) => e.key)
+          .toList()
+        ..sort();
   int get xp => days.values.fold(
-        0,
-        (sum, d) =>
-            sum +
-            (d['quests'] as List).where((q) => q['done'] == true).length * 20,
-      );
+    0,
+    (sum, d) =>
+        sum + (d['quests'] as List).where((q) => q['done'] == true).length * 20,
+  );
   int get level => 1 + xp ~/ 100;
   int get tokens => max(0, 1 + completedDays.length ~/ 7 - frozenDays.length);
   int get streak {
-    final valid = {
-      ...completedDays,
-      ...frozenDays,
-    };
+    final valid = {...completedDays, ...frozenDays};
     var date = now;
     if (!valid.contains(today)) date = date.subtract(const Duration(days: 1));
     var count = 0;
@@ -80,8 +78,8 @@ class ProgressCalculator {
             (rate > .8
                 ? 1
                 : rate < .4
-                    ? -1
-                    : 0))
+                ? -1
+                : 0))
         .clamp(1, 3);
   }
 }
