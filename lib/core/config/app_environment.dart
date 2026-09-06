@@ -19,9 +19,16 @@ abstract final class AppEnvironment {
   );
   static const playStoreUrl = String.fromEnvironment('PLAY_STORE_URL');
   static const appStoreUrl = String.fromEnvironment('APP_STORE_URL');
-  // Reserved for the later authentication integration; not connected yet.
+  // Public client credentials for Supabase auth and account-scoped sync.
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabasePublishableKey = String.fromEnvironment(
     'SUPABASE_PUBLISHABLE_KEY',
   );
+  static const mobileAuthRedirectUrl = String.fromEnvironment(
+    'MOBILE_AUTH_REDIRECT_URL',
+    defaultValue: 'com.youwell.app://login-callback/',
+  );
+
+  static bool get hasSupabaseConfig =>
+      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
 }

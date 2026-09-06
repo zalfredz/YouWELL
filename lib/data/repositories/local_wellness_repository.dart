@@ -15,4 +15,7 @@ class LocalWellnessRepository implements WellnessRepository {
     final saved = await _preferences.setString(storageKey, serializedState);
     if (!saved) throw StateError('Penyimpanan perangkat penuh.');
   }
+
+  /// Removes the unauthenticated cache after it has been moved into an account.
+  Future<void> clear() async => _preferences.remove(storageKey);
 }

@@ -42,14 +42,15 @@ Web app menerapkan 8 Golden Rules pada keputusan yang terlihat pengguna:
 7. audio, timer, reaksi, dan navigasi selalu dimulai oleh pengguna;
 8. kategori, tempat menyelesaikan kartu, dan status tampil pada konteks yang sama.
 
-## Akses akun saat development
+## Akses akun dan sinkronisasi
 
-Tombol **Join Us!** sementara membuat profil `web_guest` di browser. Ini adalah
-mode development sampai Google Login/Supabase dihubungkan. Route `/admin`
-menampilkan web app yang sama dengan satu menu tambahan: **Community Admin**.
-Ia hanya meninjau post yang tersimpan di browser yang sama saat ini.
+Tombol **Join Us!** membuka Google OAuth melalui Supabase. Setelah login,
+aplikasi memuat snapshot milik akun tersebut dan memindahkan data lokal yang
+ada pada perangkat ke snapshot pertama. Route `/admin` hanya menampilkan menu
+**Community Admin** jika profile akun memiliki role `admin`.
 
-Ketika Supabase ditambahkan, implementasikan:
+Migration awal menyediakan profile role dan snapshot sinkronisasi. Tahap
+berikutnya menambahkan tabel komunitas yang dinormalisasi untuk:
 
 1. autentikasi dan role `user`, `moderator`, `admin`; role menentukan apakah
    menu Community Admin tampil;
@@ -58,9 +59,8 @@ Ketika Supabase ditambahkan, implementasikan:
 4. token recap acak yang dapat kedaluwarsa atau dicabut;
 5. audit log keputusan moderator melalui server/Edge Function.
 
-Dengan repository Supabase tersebut, aplikasi mobile dan YouWell Web App akan
-membaca serta menyimpan data pengguna yang sama. Penyimpanan browser saat ini
-hanya dipakai untuk mode development, sehingga belum dapat sinkron lintas
-perangkat.
+Dengan repository Supabase tersebut, aplikasi mobile dan YouWell Web App
+membaca serta menyimpan Gacha Cards, profil, dan progres pengguna yang sama.
+Penyimpanan browser hanya menjadi sumber data awal sebelum akun pertama masuk.
 
 Jangan pernah meletakkan service-role key di build Flutter web.

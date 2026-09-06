@@ -33,9 +33,9 @@ File tersebut diabaikan Git. Template yang aman untuk Git tersedia di
 `config/env/development.example.json` dan `production.example.json`.
 
 Salin template ketika membuat environment baru. `SUPABASE_URL` dan
-`SUPABASE_PUBLISHABLE_KEY` sudah disediakan sebagai placeholder untuk integrasi
-berikutnya, tetapi belum dipakai aplikasi. Jangan menaruh service-role key atau
-client secret di file Flutter karena nilai build web dapat dilihat pengguna.
+`SUPABASE_PUBLISHABLE_KEY` dipakai aplikasi untuk Google Login dan sinkronisasi
+akun. Jangan menaruh `sb_secret`, `service_role`, database password, atau Google
+Client Secret di file Flutter karena nilai build web dapat dilihat pengguna.
 Isi `PLAY_STORE_URL` dan `APP_STORE_URL` setelah aplikasi mobile diterbitkan.
 Landing page dan halaman recap tetap responsif di layar HP. Area workspace dan
 moderasi khusus desktop; browser HP yang membuka area tersebut akan menerima
@@ -50,8 +50,17 @@ ajakan untuk menggunakan aplikasi mobile.
 | Wrapped publik | `/#/recap` | Contoh recap aman untuk dibagikan |
 | Community Admin | `/#/admin` | Menu tambahan untuk admin: terima/tolak post dan laporan |
 
-Pilih **Join Us!** dari landing untuk masuk ke web app. Google Login/Supabase
-belum dihubungkan; mode development sementara membuat akun lokal di browser.
+Pilih **Join Us!** dari landing untuk masuk dengan Google. Setelah menjalankan
+migration Supabase, profil, Gacha Cards, dan progres disimpan pada akun yang
+sama untuk web dan mobile.
+
+## Menyiapkan database Supabase
+
+Jalankan SQL di
+`supabase/migrations/20260906060000_create_youwell_auth_and_sync.sql` melalui
+Supabase SQL Editor atau `supabase db push`. Migration membuat profile role,
+snapshot sinkronisasi, RLS, dan menetapkan `alfredonataniel2@gmail.com` sebagai
+admin pertama.
 
 ## File yang biasa diubah
 

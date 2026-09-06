@@ -14,9 +14,13 @@ class WebWorkspacePage extends StatefulWidget {
     super.key,
     required this.controller,
     this.isAdmin = false,
+    this.accountEmail,
+    this.onSignOut,
   });
   final WellnessController controller;
   final bool isAdmin;
+  final String? accountEmail;
+  final Future<void> Function()? onSignOut;
 
   @override
   State<WebWorkspacePage> createState() => _WebWorkspacePageState();
@@ -31,85 +35,19 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
     widget.controller.draw();
   }
 
-  Future<void> _joinWebApp() async {
-    await widget.controller.setup({
-      'alias': 'web_guest',
-      'path': 'wellness',
-      'fitness': 1,
-      'lowImpact': false,
-      'companion': 'plant',
-      'cost': 0,
-      'waterGoal': 2000,
-      'kcalGoal': 2000,
-      'proteinGoal': 60,
-    });
-    widget.controller.draw();
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: widget.controller,
         builder: (context, _) => WebWorkspaceGate(
           onReturnToLanding: () =>
               Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
-          child: widget.controller.profile == null
-              ? _JoinAccess(onJoin: _joinWebApp, isAdmin: widget.isAdmin)
-              : _WorkspaceShell(
-                  controller: widget.controller,
-                  isAdmin: widget.isAdmin,
-                  tab: tab,
-                  onSelect: (value) => setState(() => tab = value),
-                ),
-        ),
-      );
-}
-
-class _JoinAccess extends StatelessWidget {
-  const _JoinAccess({required this.onJoin, required this.isAdmin});
-  final Future<void> Function() onJoin;
-  final bool isAdmin;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: cream,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Padding(
-              padding: const EdgeInsets.all(42),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  tag(isAdmin ? 'YOUWELL WEB • ADMIN' : 'YOUWELL WEB APP'),
-                  gap(22),
-                  const Icon(Icons.desk_rounded, size: 46, color: green),
-                  gap(20),
-                  title(
-                    isAdmin
-                        ? 'Masuk ke\nCommunity Admin.'
-                        : 'Join YouWell\ndi browser.',
-                    size: 42,
-                  ),
-                  gap(14),
-                  const Text(
-                    'YouWell Web menyatukan ruang fokus, insight, dan komunitas untuk layar besar. Login Google akan menyambungkan akun yang sama dengan aplikasi mobile.',
-                    style: TextStyle(color: muted, fontSize: 16, height: 1.6),
-                  ),
-                  gap(28),
-                  FilledButton.icon(
-                    onPressed: () async => onJoin(),
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: Text(isAdmin ? 'Masuk sebagai admin' : 'Join Us!'),
-                  ),
-                  gap(12),
-                  caption(
-                    'Mode pengembangan saat ini membuat akun lokal sementara. Supabase akan menggantikannya saat autentikasi diaktifkan.',
-                  ),
-                ],
-              ),
-            ),
+          child: _WorkspaceShell(
+            controller: widget.controller,
+            isAdmin: widget.isAdmin,
+            accountEmail: widget.accountEmail,
+            onSignOut: widget.onSignOut,
+            tab: tab,
+            onSelect: (value) => setState(() => tab = value),
           ),
         ),
       );
@@ -119,12 +57,16 @@ class _WorkspaceShell extends StatelessWidget {
   const _WorkspaceShell({
     required this.controller,
     required this.isAdmin,
+    required this.accountEmail,
+    required this.onSignOut,
     required this.tab,
     required this.onSelect,
   });
 
   final WellnessController controller;
   final bool isAdmin;
+  final String? accountEmail;
+  final Future<void> Function()? onSignOut;
   final int tab;
   final ValueChanged<int> onSelect;
 
@@ -154,7 +96,12 @@ class _WorkspaceShell extends StatelessWidget {
     final profileIndex = primaryPages.length;
     final pages = <Widget>[
       ...primaryPages,
-      _ProfileView(controller: controller, onBack: () => onSelect(0)),
+      _ProfileView(
+        controller: controller,
+        accountEmail: accountEmail,
+        onSignOut: onSignOut,
+        onBack: () => onSelect(0),
+      ),
     ];
     final labels = [...navigationLabels, 'Profil'];
 
@@ -583,8 +530,15 @@ class _GachaTaskCard extends StatelessWidget {
 }
 
 class _ProfileView extends StatelessWidget {
-  const _ProfileView({required this.controller, required this.onBack});
+  const _ProfileView({
+    required this.controller,
+    required this.accountEmail,
+    required this.onSignOut,
+    required this.onBack,
+  });
   final WellnessController controller;
+  final String? accountEmail;
+  final Future<void> Function()? onSignOut;
   final VoidCallback onBack;
 
   @override
@@ -649,6 +603,13 @@ class _ProfileView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(path, style: const TextStyle(color: muted)),
+                    if (accountEmail != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        accountEmail!,
+                        style: const TextStyle(color: muted, fontSize: 12),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -711,6 +672,19 @@ class _ProfileView extends StatelessWidget {
             ],
           ),
         ),
+        if (onSignOut != null) ...[
+          gap(18),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await onSignOut!();
+              if (context.mounted) {
+                toast(context, 'Kamu sudah keluar dari akun YouWell.');
+              }
+            },
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('Keluar dari akun'),
+          ),
+        ],
       ],
     );
   }

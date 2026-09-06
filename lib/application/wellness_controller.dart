@@ -11,7 +11,7 @@ import 'package:youwell/features/home/domain/progress_calculator.dart';
 /// Widgets may read state, but all changes are saved in order through this class.
 class WellnessController extends ChangeNotifier {
   WellnessController({String? saved, this.persist, DateTime Function()? clock})
-    : clock = clock ?? DateTime.now {
+      : clock = clock ?? DateTime.now {
     if (saved != null) {
       try {
         _data = restoreWellnessState(saved);
@@ -21,7 +21,7 @@ class WellnessController extends ChangeNotifier {
       }
     }
   }
-  final Future<void> Function(String)? persist;
+  Future<void> Function(String)? persist;
   final DateTime Function() clock;
   JsonMap _data = createEmptyWellnessState();
 
@@ -49,12 +49,12 @@ class WellnessController extends ChangeNotifier {
       .map((e) => Map<String, dynamic>.from(e))
       .toList();
   ProgressCalculator get _progress => ProgressCalculator(
-    days: days,
-    frozenDays: frozenDays,
-    now: now,
-    fitness: (profile?['fitness'] ?? 1) as int,
-    lowImpact: profile?['lowImpact'] == true,
-  );
+        days: days,
+        frozenDays: frozenDays,
+        now: now,
+        fitness: (profile?['fitness'] ?? 1) as int,
+        lowImpact: profile?['lowImpact'] == true,
+      );
   List<String> get completedDays => _progress.completedDays;
   int get xp => _progress.xp;
   int get level => _progress.level;
@@ -80,8 +80,8 @@ class WellnessController extends ChangeNotifier {
         (r) =>
             r['success'] == true &&
             r['day'].toString().compareTo(
-                  dayKey(now.subtract(Duration(days: period - 1))),
-                ) >=
+                      dayKey(now.subtract(Duration(days: period - 1))),
+                    ) >=
                 0 &&
             r['day'].toString().compareTo(today) <= 0 &&
             r['avoided'] == true,
@@ -105,6 +105,24 @@ class WellnessController extends ChangeNotifier {
       notifyListeners();
     });
     return _pending;
+  }
+
+  /// Switches persistence when a visitor signs in or out of an account.
+  void setPersistence(Future<void> Function(String)? value) => persist = value;
+
+  /// Replaces in-memory data after loading a different account's snapshot.
+  void restoreFrom(String? saved) {
+    _data = createEmptyWellnessState();
+    storageError = null;
+    if (saved != null) {
+      try {
+        _data = restoreWellnessState(saved);
+      } catch (_) {
+        storageError =
+            'Data akun tidak terbaca. Hubungi tim YouWell sebelum melanjutkan.';
+      }
+    }
+    notifyListeners();
   }
 
   Future<void> setup(JsonMap value) async {
