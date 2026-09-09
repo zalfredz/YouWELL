@@ -63,6 +63,17 @@ class WellnessController extends ChangeNotifier {
   bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
   String? get selectedDailyCardId =>
       dailyCardDraw?['selectedCardId']?.toString();
+  List<String> get passedDailyCardIds =>
+      ((dailyCardDraw?['passedCardIds'] ?? []) as List)
+          .map((id) => id.toString())
+          .toList();
+  bool isDailyCardPassed(String id) => passedDailyCardIds.contains(id);
+  int get dailyDeckStartIndex {
+    if (dailyCards.isEmpty) return 0;
+    return ((dailyCardDraw?['deckStartIndex'] ?? 0) as num).toInt() %
+        dailyCards.length;
+  }
+
   JsonMap? get selectedDailyCard {
     final id = selectedDailyCardId;
     if (id == null) return null;
@@ -74,6 +85,11 @@ class WellnessController extends ChangeNotifier {
 
   bool get hasCommittedDailyCard =>
       committedCards.isNotEmpty || completedCards.isNotEmpty;
+  bool get canChooseAnotherDailyCard =>
+      !hasCommittedDailyCard &&
+      selectedDailyCardId != null &&
+      passedDailyCardIds.isEmpty &&
+      dailyCards.length > 1;
   List<JsonMap> get availableCards =>
       dailyCards.where((card) => _cardStatus(card) == 'available').toList();
   List<JsonMap> get committedCards =>
@@ -180,7 +196,12 @@ class WellnessController extends ChangeNotifier {
       ...?days[today] as Map?,
       'quests': list,
       'difficulty': difficulty,
-      'cardDraw': {'startedAt': now.toIso8601String(), 'selectedCardId': null},
+      'cardDraw': {
+        'startedAt': now.toIso8601String(),
+        'selectedCardId': null,
+        'passedCardIds': <String>[],
+        'deckStartIndex': Random().nextInt(list.length),
+      },
     };
     _save();
   }
@@ -189,6 +210,7 @@ class WellnessController extends ChangeNotifier {
   /// before committing, which makes an accidental choice easy to reverse.
   bool selectDailyCard(String id) {
     if (hasCommittedDailyCard ||
+        isDailyCardPassed(id) ||
         !availableCards.any((card) => card['id'] == id)) {
       return false;
     }
@@ -205,13 +227,26 @@ class WellnessController extends ChangeNotifier {
     return true;
   }
 
-  /// Available only before commit. A committed challenge cannot be replaced.
-  bool clearDailyCardSelection() {
-    if (hasCommittedDailyCard || selectedDailyCardId == null) return false;
+  /// Gives one safe change-of-mind without turning the draw into a way to
+  /// inspect every card. The revealed card stays face-down and unavailable.
+  bool chooseAnotherDailyCard() {
+    if (!canChooseAnotherDailyCard || selectedDailyCardId == null) return false;
     final existing = dailyCardDraw ?? const <String, dynamic>{};
+    final passed = [...passedDailyCardIds, selectedDailyCardId!];
+    final nextIndex = dailyCards.indexWhere(
+      (card) =>
+          card['id'] != selectedDailyCardId &&
+          !passed.contains(card['id'].toString()),
+    );
     _data['days'][today] = {
       ...?days[today] as Map?,
-      'cardDraw': {...existing, 'selectedCardId': null},
+      'cardDraw': {
+        ...existing,
+        'selectedCardId': null,
+        'passedCardIds': passed,
+        'deckStartIndex': nextIndex < 0 ? 0 : nextIndex,
+        'changedAt': now.toIso8601String(),
+      },
     };
     _save();
     return true;

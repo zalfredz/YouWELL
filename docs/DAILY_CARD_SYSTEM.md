@@ -12,8 +12,11 @@ Daily Card Draw → swipe deck berisi 5 kartu tertutup → pilih 1 → reveal �
 - `committed`: pengguna memilih kartu; pilihan terkunci untuk hari ini.
 - `completed`: challenge selesai dan XP kartu dihitung pada progress.
 
-Sebelum commit, pengguna boleh kembali ke deck dan memilih kartu lain. Tidak
-ada uncommit atau reroll setelah kartu di-commit.
+Sebelum commit, pengguna boleh **sekali** kembali ke deck. Kartu yang telah
+dibuka akan menjadi `passed`: tetap tertutup, nonaktif, dan tidak dapat dipilih
+lagi. Pilihan kedua harus di-commit. Aturan ini memberi ruang untuk salah pilih
+tanpa memungkinkan pengguna membuka seluruh deck untuk mencari challenge paling
+mudah. Tidak ada uncommit atau reroll setelah kartu di-commit.
 
 ## Filter draw
 
@@ -22,6 +25,10 @@ Pool disaring oleh path pengguna, low-impact preference, difficulty, compliance
 7 hari, dan lama penggunaan aplikasi. Pengguna baru atau yang ritmenya sedang
 rendah menerima kartu difficulty 1 terlebih dahulu. Path reduction selalu
 mendapat peluang `Reduction Challenge`.
+
+Setiap kartu mendapat warna collectible yang disimpan pada data deck. Warna itu
+dibawa ke animasi reveal dan tombol commit, sehingga pilihan pengguna tetap
+konsisten secara visual.
 
 ## Progression
 

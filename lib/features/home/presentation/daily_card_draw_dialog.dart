@@ -11,7 +11,6 @@ const _primaryText = Color(0xfff2f5f7);
 const _secondaryText = Color(0xffa0a7b2);
 const _mint = Color(0xff78e3b1);
 const _aqua = Color(0xff77d7e5);
-const _gold = Color(0xffffc875);
 
 /// Daily entry ritual for the desktop workspace. It intentionally reveals
 /// details only after a user selects a card from the curated deck.
@@ -75,7 +74,7 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
                         controller: widget.controller,
                         onSelect: _select,
                         onBackToDeck: () {
-                          widget.controller.clearDailyCardSelection();
+                          widget.controller.chooseAnotherDailyCard();
                           setState(() {});
                         },
                         onCommit: _commit,
@@ -226,9 +225,14 @@ class _DeckStep extends StatelessWidget {
           Expanded(
             child: selected == null
                 ? _FaceDownDeck(
-                    cards: controller.dailyCards, onSelect: onSelect)
+                    cards: controller.dailyCards,
+                    passedCardIds: controller.passedDailyCardIds,
+                    initialCardIndex: controller.dailyDeckStartIndex,
+                    onSelect: onSelect,
+                  )
                 : _FlipRevealCard(
                     card: selected,
+                    canChooseAnother: controller.canChooseAnotherDailyCard,
                     onBackToDeck: onBackToDeck,
                     onCommit: () => onCommit(selected),
                   ),
@@ -242,9 +246,16 @@ class _DeckStep extends StatelessWidget {
 /// An endlessly rotating deck. It completes one automatic cycle on entry,
 /// then the user swipes or drags until the preferred card reaches the middle.
 class _FaceDownDeck extends StatefulWidget {
-  const _FaceDownDeck({required this.cards, required this.onSelect});
+  const _FaceDownDeck({
+    required this.cards,
+    required this.passedCardIds,
+    required this.initialCardIndex,
+    required this.onSelect,
+  });
 
   final List<JsonMap> cards;
+  final List<String> passedCardIds;
+  final int initialCardIndex;
   final ValueChanged<String> onSelect;
 
   @override
@@ -252,16 +263,19 @@ class _FaceDownDeck extends StatefulWidget {
 }
 
 class _FaceDownDeckState extends State<_FaceDownDeck> {
-  static const _startPage = 300;
+  static const _startPage = 500;
   late final PageController _pageController;
-  int _page = _startPage;
+  late final int _initialPage;
+  late int _page;
   bool _isAutoSpinning = true;
 
   @override
   void initState() {
     super.initState();
+    _initialPage = _startPage + widget.initialCardIndex;
+    _page = _initialPage;
     _pageController = PageController(
-      initialPage: _startPage,
+      initialPage: _initialPage,
       viewportFraction: .47,
     );
     _spinDeckOnce();
@@ -271,7 +285,7 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
     await Future<void>.delayed(const Duration(milliseconds: 260));
     if (!mounted || !_pageController.hasClients) return;
     await _pageController.animateToPage(
-      _startPage + widget.cards.length,
+      _initialPage + widget.cards.length,
       duration: const Duration(milliseconds: 1150),
       curve: Curves.easeInOutCubic,
     );
@@ -324,6 +338,8 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
                 return _CarouselCard(
                   index: cardIndex,
                   selected: physicalIndex == _page,
+                  passed: widget.passedCardIds
+                      .contains(widget.cards[cardIndex]['id'].toString()),
                   onTap: () => _choose(physicalIndex),
                 );
               },
@@ -355,19 +371,25 @@ class _CarouselCard extends StatelessWidget {
   const _CarouselCard({
     required this.index,
     required this.selected,
+    required this.passed,
     required this.onTap,
   });
 
   final int index;
   final bool selected;
+  final bool passed;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = _cardPalettes[index % _cardPalettes.length];
     return Semantics(
-      button: selected,
-      label: selected ? 'Buka kartu tengah' : 'Swipe untuk mengganti kartu',
+      button: selected && !passed,
+      label: passed
+          ? 'Kartu sudah dilewati'
+          : selected
+              ? 'Buka kartu tengah'
+              : 'Swipe untuk mengganti kartu',
       child: Center(
         child: AnimatedScale(
           duration: const Duration(milliseconds: 210),
@@ -375,9 +397,13 @@ class _CarouselCard extends StatelessWidget {
           scale: selected ? 1 : .76,
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 180),
-            opacity: selected ? 1 : .48,
+            opacity: passed
+                ? .22
+                : selected
+                    ? 1
+                    : .48,
             child: GestureDetector(
-              onTap: selected ? onTap : null,
+              onTap: selected && !passed ? onTap : null,
               child: Container(
                 width: 198,
                 height: 282,
@@ -497,7 +523,11 @@ class _CarouselCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          selected ? 'TAP TO REVEAL' : 'SWIPE DECK',
+                          passed
+                              ? 'PASSED'
+                              : selected
+                                  ? 'TAP TO REVEAL'
+                                  : 'SWIPE DECK',
                           style: TextStyle(
                             color: palette.ink.withValues(alpha: .72),
                             fontSize: 8,
@@ -554,16 +584,24 @@ const _cardPalettes = [
       Color(0xff28204d)),
 ];
 
+_CardPalette _paletteFor(JsonMap card) {
+  final rawStyle = card['cardStyle'];
+  final style = rawStyle is num ? rawStyle.toInt() : 0;
+  return _cardPalettes[style % _cardPalettes.length];
+}
+
 /// A physical-looking 3D turn replaces the previous cross-fade when a card
 /// is revealed. The front is only painted after the card reaches its edge.
 class _FlipRevealCard extends StatelessWidget {
   const _FlipRevealCard({
     required this.card,
+    required this.canChooseAnother,
     required this.onBackToDeck,
     required this.onCommit,
   });
 
   final JsonMap card;
+  final bool canChooseAnother;
   final VoidCallback onBackToDeck;
   final VoidCallback onCommit;
 
@@ -584,17 +622,20 @@ class _FlipRevealCard extends StatelessWidget {
             child: showFront
                 ? _RevealedCard(
                     card: card,
+                    canChooseAnother: canChooseAnother,
                     onBackToDeck: onBackToDeck,
                     onCommit: onCommit,
                   )
-                : const _RevealCardBack(),
+                : _RevealCardBack(palette: _paletteFor(card)),
           );
         },
       );
 }
 
 class _RevealCardBack extends StatelessWidget {
-  const _RevealCardBack();
+  const _RevealCardBack({required this.palette});
+
+  final _CardPalette palette;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -602,15 +643,17 @@ class _RevealCardBack extends StatelessWidget {
           width: 360,
           height: 300,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xff29313a), Color(0xff16191e)],
+              colors: [palette.light, palette.dark],
             ),
-            border: Border.all(color: _mint.withValues(alpha: .55)),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: .85), width: 3),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(color: Color(0x335ee2ad), blurRadius: 30)
+            boxShadow: [
+              BoxShadow(
+                  color: palette.dark.withValues(alpha: .45), blurRadius: 30)
             ],
           ),
           child: Stack(
@@ -621,17 +664,17 @@ class _RevealCardBack extends StatelessWidget {
                 child: Icon(
                   Icons.auto_awesome_rounded,
                   size: 130,
-                  color: _mint.withValues(alpha: .12),
+                  color: Colors.white.withValues(alpha: .20),
                 ),
               ),
-              const Center(
+              Center(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.style_rounded, size: 54, color: _mint),
-                  SizedBox(height: 15),
+                  Icon(Icons.style_rounded, size: 54, color: palette.ink),
+                  const SizedBox(height: 15),
                   Text(
                     'REVEALING…',
                     style: TextStyle(
-                      color: _primaryText,
+                      color: palette.ink,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.8,
@@ -648,35 +691,43 @@ class _RevealCardBack extends StatelessWidget {
 class _RevealedCard extends StatelessWidget {
   const _RevealedCard({
     required this.card,
+    required this.canChooseAnother,
     required this.onBackToDeck,
     required this.onCommit,
   });
 
   final JsonMap card;
+  final bool canChooseAnother;
   final VoidCallback onBackToDeck;
   final VoidCallback onCommit;
 
   @override
   Widget build(BuildContext context) {
     final difficulty = (card['difficulty'] as num).toInt();
+    final palette = _paletteFor(card);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 470),
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: _surface,
-            border: Border.all(color: _mint.withValues(alpha: .55)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [palette.dark.withValues(alpha: .54), _surface],
+            ),
+            border: Border.all(color: palette.light.withValues(alpha: .78)),
             borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(color: Color(0x225ee2ad), blurRadius: 28),
+            boxShadow: [
+              BoxShadow(
+                  color: palette.dark.withValues(alpha: .32), blurRadius: 28),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _DrawPill(label: 'YOUR DAILY CARD', color: _mint),
+              _DrawPill(label: 'YOUR DAILY CARD', color: palette.light),
               const SizedBox(height: 22),
               Text(
                 card['title'].toString(),
@@ -694,17 +745,19 @@ class _RevealedCard extends StatelessWidget {
               const SizedBox(height: 22),
               Row(
                 children: [
-                  _DrawPill(label: card['category'].toString(), color: _aqua),
+                  _DrawPill(
+                      label: card['category'].toString(),
+                      color: palette.character),
                   const Spacer(),
                   Text(
                     'Difficulty: ${'★' * difficulty}${'☆' * (3 - difficulty)}',
-                    style: const TextStyle(color: _gold, fontSize: 12),
+                    style: TextStyle(color: palette.light, fontSize: 12),
                   ),
                   const SizedBox(width: 13),
                   Text(
                     '+${card['xp']} XP',
-                    style: const TextStyle(
-                      color: _mint,
+                    style: TextStyle(
+                      color: palette.light,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -719,19 +772,28 @@ class _RevealedCard extends StatelessWidget {
                   icon: const Icon(Icons.lock_rounded),
                   label: const Text('Commit this challenge'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _mint,
-                    foregroundColor: const Color(0xff0b1a14),
+                    backgroundColor: palette.light,
+                    foregroundColor: palette.ink,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              Center(
-                child: TextButton(
-                  onPressed: onBackToDeck,
-                  child: const Text('Pilih kartu lain dulu'),
+              if (canChooseAnother)
+                Center(
+                  child: TextButton(
+                    onPressed: onBackToDeck,
+                    child: const Text('Pilih kartu lain (sekali saja)'),
+                  ),
+                )
+              else
+                const Center(
+                  child: Text(
+                    'Pilihan kedua harus di-commit agar deck tetap fair.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _secondaryText, fontSize: 11),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

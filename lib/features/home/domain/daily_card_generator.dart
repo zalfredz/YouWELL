@@ -78,6 +78,7 @@ class DailyCardGenerator {
             'category': entry.$2.category,
             'difficulty': entry.$2.difficulty,
             'xp': entry.$2.xp,
+            'cardStyle': entry.$1,
             'status': 'available',
             'done': false,
           },
