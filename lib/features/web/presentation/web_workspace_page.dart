@@ -23,13 +23,9 @@ class WebWorkspacePage extends StatefulWidget {
     super.key,
     required this.controller,
     this.isAdmin = false,
-    this.accountEmail,
-    this.onSignOut,
   });
   final WellnessController controller;
   final bool isAdmin;
-  final String? accountEmail;
-  final Future<void> Function()? onSignOut;
 
   @override
   State<WebWorkspacePage> createState() => _WebWorkspacePageState();
@@ -55,8 +51,6 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
           child: _Dashboard(
             controller: widget.controller,
             isAdmin: widget.isAdmin,
-            email: widget.accountEmail,
-            onSignOut: widget.onSignOut,
             tab: _tab,
             onTab: (value) => setState(() => _tab = value),
             showCompanion: _showCompanion,
@@ -74,8 +68,6 @@ class _Dashboard extends StatelessWidget {
   const _Dashboard({
     required this.controller,
     required this.isAdmin,
-    required this.email,
-    required this.onSignOut,
     required this.tab,
     required this.onTab,
     required this.showCompanion,
@@ -84,8 +76,6 @@ class _Dashboard extends StatelessWidget {
   });
   final WellnessController controller;
   final bool isAdmin;
-  final String? email;
-  final Future<void> Function()? onSignOut;
   final int tab;
   final ValueChanged<int> onTab;
   final bool showCompanion;
@@ -110,7 +100,7 @@ class _Dashboard extends StatelessWidget {
       _AnalyticsPage(controller: controller, openCompanion: openCompanion),
       _SquadPage(openCompanion: openCompanion),
       _WallPage(controller: controller),
-      _SettingsPage(controller: controller, email: email, onSignOut: onSignOut),
+      _SettingsPage(controller: controller),
       if (isAdmin) _AdminPage(controller: controller),
     ];
     final safeTab = tab.clamp(0, nav.length - 1);
@@ -130,7 +120,6 @@ class _Dashboard extends StatelessWidget {
                 _Header(
                   section: nav[safeTab].label,
                   alias: alias,
-                  email: email,
                   onSettings: () => onTab(4),
                 ),
                 Expanded(
@@ -265,13 +254,9 @@ class _Sidebar extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header(
-      {required this.section,
-      required this.alias,
-      required this.email,
-      required this.onSettings});
+      {required this.section, required this.alias, required this.onSettings});
   final String section;
   final String alias;
-  final String? email;
   final VoidCallback onSettings;
 
   @override
@@ -294,11 +279,11 @@ class _Header extends StatelessWidget {
           const Spacer(),
           const _Dot(),
           const SizedBox(width: 7),
-          const Text('Sync active',
+          const Text('Local preview',
               style: TextStyle(color: _muted, fontSize: 12)),
           const SizedBox(width: 18),
           Tooltip(
-            message: email ?? 'Buka settings',
+            message: 'Buka settings',
             child: InkWell(
               onTap: onSettings,
               borderRadius: BorderRadius.circular(20),
@@ -882,11 +867,8 @@ class _WallCard extends StatelessWidget {
 }
 
 class _SettingsPage extends StatelessWidget {
-  const _SettingsPage(
-      {required this.controller, required this.email, required this.onSignOut});
+  const _SettingsPage({required this.controller});
   final WellnessController controller;
-  final String? email;
-  final Future<void> Function()? onSignOut;
   @override
   Widget build(BuildContext context) {
     final profile = controller.profile!;
@@ -897,7 +879,7 @@ class _SettingsPage extends StatelessWidget {
           style: TextStyle(
               color: _text, fontSize: 30, fontWeight: FontWeight.w800)),
       const SizedBox(height: 7),
-      const Text('Akun dan preferensi YouWell kamu.',
+      const Text('Profil dan preferensi preview lokal.',
           style: TextStyle(color: _muted)),
       const SizedBox(height: 24),
       _Card(
@@ -917,10 +899,10 @@ class _SettingsPage extends StatelessWidget {
               style: const TextStyle(
                   color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 3),
-          Text(email ?? 'YouWell account',
-              style: const TextStyle(color: _muted, fontSize: 12))
+          const Text('Tersimpan pada browser ini',
+              style: TextStyle(color: _muted, fontSize: 12))
         ])),
-        const _Pill('Synced', _green)
+        const _Pill('Local', _green)
       ])),
       const SizedBox(height: 14),
       _Card(
@@ -945,21 +927,6 @@ class _SettingsPage extends StatelessWidget {
                 }[profile['companion']] ??
                 'YouWell companion')
       ])),
-      if (onSignOut != null) ...[
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-            onPressed: () async {
-              await onSignOut!();
-              if (context.mounted) {
-                toast(context, 'Kamu sudah keluar dari akun YouWell.');
-              }
-            },
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Keluar dari akun'),
-            style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xffffa6a6),
-                side: const BorderSide(color: Color(0xff5a3437))))
-      ],
     ]));
   }
 }

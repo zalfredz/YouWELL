@@ -21,7 +21,7 @@ class WellnessController extends ChangeNotifier {
       }
     }
   }
-  Future<void> Function(String)? persist;
+  final Future<void> Function(String)? persist;
   final DateTime Function() clock;
   JsonMap _data = createEmptyWellnessState();
 
@@ -105,24 +105,6 @@ class WellnessController extends ChangeNotifier {
       notifyListeners();
     });
     return _pending;
-  }
-
-  /// Switches persistence when a visitor signs in or out of an account.
-  void setPersistence(Future<void> Function(String)? value) => persist = value;
-
-  /// Replaces in-memory data after loading a different account's snapshot.
-  void restoreFrom(String? saved) {
-    _data = createEmptyWellnessState();
-    storageError = null;
-    if (saved != null) {
-      try {
-        _data = restoreWellnessState(saved);
-      } catch (_) {
-        storageError =
-            'Data akun tidak terbaca. Hubungi tim YouWell sebelum melanjutkan.';
-      }
-    }
-    notifyListeners();
   }
 
   Future<void> setup(JsonMap value) async {

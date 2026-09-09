@@ -205,7 +205,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ),
                         gap(),
                         caption(
-                          'Profil dan progres disimpan ke akun YouWell agar dapat dilanjutkan dari web maupun aplikasi mobile.',
+                          'Profil dan progres disimpan pada browser ini selama fase preview web.',
                         ),
                       ],
                       if (error != null)

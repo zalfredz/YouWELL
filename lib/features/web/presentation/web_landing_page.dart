@@ -32,7 +32,7 @@ class _WebLandingPageState extends State<WebLandingPage> {
       await widget.onJoin();
     } on Object {
       if (mounted) {
-        toast(context, 'Google Login belum dapat dibuka. Coba lagi.');
+        toast(context, 'Web App belum dapat dibuka. Coba lagi.');
       }
     }
   }

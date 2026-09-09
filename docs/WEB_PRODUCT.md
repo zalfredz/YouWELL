@@ -25,8 +25,8 @@ atau memakai aplikasi mobile.
 - **Insights:** compliance, streak, companion, dan pintu ke Wrapped.
 - **Komunitas:** membaca encouragement wall dan memberi reaksi cepat; tidak ada
   composer atau upload dari web.
-- **Profil:** dibuka dari avatar kanan atas untuk melihat jalur, teman tumbuh,
-  dan status sinkronisasi akun.
+- **Settings:** dibuka dari avatar kanan atas untuk melihat jalur, teman tumbuh,
+  dan data preview lokal.
 
 ## Prinsip interface
 
@@ -42,15 +42,13 @@ Web app menerapkan 8 Golden Rules pada keputusan yang terlihat pengguna:
 7. audio, timer, reaksi, dan navigasi selalu dimulai oleh pengguna;
 8. kategori, tempat menyelesaikan kartu, dan status tampil pada konteks yang sama.
 
-## Akses akun dan sinkronisasi
+## Mode preview lokal
 
-Tombol **Join Us!** membuka Google OAuth melalui Supabase. Setelah login,
-aplikasi memuat snapshot milik akun tersebut dan memindahkan data lokal yang
-ada pada perangkat ke snapshot pertama. Route `/admin` hanya menampilkan menu
-**Community Admin** jika profile akun memiliki role `admin`.
+Tombol **Join Us!** langsung membuka web app tanpa login. Data demo disimpan
+lokal pada browser agar fitur dapat diuji cepat. Route `/admin` membuka preview
+**Community Admin** lokal untuk mengevaluasi alur moderasi.
 
-Migration awal menyediakan profile role dan snapshot sinkronisasi. Tahap
-berikutnya menambahkan tabel komunitas yang dinormalisasi untuk:
+Saat tahap backend dimulai, fitur yang perlu ditambahkan adalah:
 
 1. autentikasi dan role `user`, `moderator`, `admin`; role menentukan apakah
    menu Community Admin tampil;
@@ -59,8 +57,5 @@ berikutnya menambahkan tabel komunitas yang dinormalisasi untuk:
 4. token recap acak yang dapat kedaluwarsa atau dicabut;
 5. audit log keputusan moderator melalui server/Edge Function.
 
-Dengan repository Supabase tersebut, aplikasi mobile dan YouWell Web App
-membaca serta menyimpan Gacha Cards, profil, dan progres pengguna yang sama.
-Penyimpanan browser hanya menjadi sumber data awal sebelum akun pertama masuk.
-
-Jangan pernah meletakkan service-role key di build Flutter web.
+Integrasi backend nanti harus menjaga data web dan mobile tetap konsisten tanpa
+menaruh credential rahasia pada build Flutter web.

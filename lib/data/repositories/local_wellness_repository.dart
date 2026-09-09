@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youwell/core/storage/wellness_repository.dart';
 
-/// Local browser/device persistence. Keeps the existing key to preserve progress.
+/// Local browser/device persistence for the web preview.
 class LocalWellnessRepository implements WellnessRepository {
   LocalWellnessRepository(this._preferences, {required this.storageKey});
   final SharedPreferences _preferences;
@@ -16,6 +16,6 @@ class LocalWellnessRepository implements WellnessRepository {
     if (!saved) throw StateError('Penyimpanan perangkat penuh.');
   }
 
-  /// Removes the unauthenticated cache after it has been moved into an account.
+  /// Removes all preview data stored by YouWell on this device.
   Future<void> clear() async => _preferences.remove(storageKey);
 }

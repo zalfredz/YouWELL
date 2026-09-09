@@ -1,8 +1,8 @@
 # YouWell
 
 YouWell Web App untuk landing publik, companion workspace desktop, recap, dan
-Community Admin. Selama Supabase belum dihubungkan, data development masih
-tersimpan secara lokal di browser.
+Community Admin. Fase saat ini sepenuhnya local-first: data preview tersimpan
+di browser dan tidak membutuhkan Supabase atau Google Login.
 
 ## Menjalankan aplikasi
 
@@ -32,10 +32,6 @@ config/env/development.json
 File tersebut diabaikan Git. Template yang aman untuk Git tersedia di
 `config/env/development.example.json` dan `production.example.json`.
 
-Salin template ketika membuat environment baru. `SUPABASE_URL` dan
-`SUPABASE_PUBLISHABLE_KEY` dipakai aplikasi untuk Google Login dan sinkronisasi
-akun. Jangan menaruh `sb_secret`, `service_role`, database password, atau Google
-Client Secret di file Flutter karena nilai build web dapat dilihat pengguna.
 Isi `PLAY_STORE_URL` dan `APP_STORE_URL` setelah aplikasi mobile diterbitkan.
 Landing page dan halaman recap tetap responsif di layar HP. Area workspace dan
 moderasi khusus desktop; browser HP yang membuka area tersebut akan menerima
@@ -50,21 +46,9 @@ ajakan untuk menggunakan aplikasi mobile.
 | Wrapped publik | `/#/recap` | Contoh recap aman untuk dibagikan |
 | Community Admin | `/#/admin` | Menu tambahan untuk admin: terima/tolak post dan laporan |
 
-Pilih **Join Us!** dari landing untuk masuk dengan Google. Setelah menjalankan
-migration Supabase, profil, Gacha Cards, dan progres disimpan pada akun yang
-sama untuk web dan mobile.
-
-## Menyiapkan database Supabase
-
-Untuk project Supabase yang sudah memiliki tabel lain, jalankan migration repair
-berikut secara berurutan melalui Supabase SQL Editor:
-
-1. `supabase/migrations/20260909080000_repair_youwell_profiles.sql`
-2. `supabase/migrations/20260909090000_create_youwell_account_snapshots.sql`
-
-Keduanya membuat profile role, snapshot sinkronisasi, dan RLS tanpa mengubah
-tabel `wellness_snapshots` lama. `alfredonataniel2@gmail.com` ditetapkan sebagai
-admin pertama.
+Pilih **Join Us!** dari landing untuk mencoba web app secara lokal. Profil,
+Gacha Cards, dan progres hanya tersimpan pada browser ini. Untuk mulai dari
+awal, buka `http://localhost:8080/?reset=1` sekali lalu kembali ke URL normal.
 
 ## File yang biasa diubah
 
