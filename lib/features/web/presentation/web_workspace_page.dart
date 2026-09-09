@@ -1168,10 +1168,12 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, box) {
           final narrow = box.maxWidth < 540;
-          final avatarSize = narrow ? 310.0 : 370.0;
-          final characterSize = narrow ? 280.0 : 330.0;
+          final avatarSize =
+              (box.maxWidth * .92).clamp(300.0, 500.0).toDouble();
+          final stageHeight = (avatarSize + 60).clamp(430.0, 560.0).toDouble();
+          final characterScale = avatarSize / 180;
           return SizedBox(
-            height: narrow ? 430 : 445,
+            height: stageHeight,
             child: Stack(children: [
               AnimatedBuilder(
                 animation: Listenable.merge([
@@ -1221,14 +1223,11 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
                           ]),
                         ),
                         child: Center(
-                          child: SizedBox(
-                            width: characterSize,
-                            height: characterSize,
-                            child: FittedBox(
-                              child: WellnessCompanion(
-                                kind: kind,
-                                level: controller.level,
-                              ),
+                          child: Transform.scale(
+                            scale: characterScale,
+                            child: WellnessCompanion(
+                              kind: kind,
+                              level: controller.level,
                             ),
                           ),
                         ),
