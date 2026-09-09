@@ -193,24 +193,25 @@ class _Dashboard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Positioned(
-                    right: 20,
-                    bottom: 20,
-                    child: showCompanion
-                        ? _Companion(
-                            controller: controller,
-                            minimized: minimized,
-                            onMinimize: () => setCompanion(minimized: true),
-                            onExpand: () => setCompanion(minimized: false),
-                            onClose: () => setCompanion(open: false),
-                          )
-                        : FilledButton.icon(
-                            onPressed: openCompanion,
-                            icon: const _Dot(),
-                            label: const Text('Open Companion'),
-                            style: _greenButton,
-                          ),
-                  ),
+                  if (safeTab != 0)
+                    Positioned(
+                      right: 20,
+                      bottom: 20,
+                      child: showCompanion
+                          ? _Companion(
+                              controller: controller,
+                              minimized: minimized,
+                              onMinimize: () => setCompanion(minimized: true),
+                              onExpand: () => setCompanion(minimized: false),
+                              onClose: () => setCompanion(open: false),
+                            )
+                          : FilledButton.icon(
+                              onPressed: openCompanion,
+                              icon: const _Dot(),
+                              label: const Text('Open Companion'),
+                              style: _greenButton,
+                            ),
+                    ),
                 ],
               ),
             ),
@@ -489,18 +490,22 @@ class _TodayPage extends StatelessWidget {
                 ]);
               }
               return Column(children: [
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(flex: 4, child: companion),
-                  const SizedBox(width: 22),
-                  Expanded(flex: 8, child: tasks),
-                ]),
+                IntrinsicHeight(
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(flex: 4, child: companion),
+                        const SizedBox(width: 22),
+                        Expanded(flex: 8, child: tasks),
+                      ]),
+                ),
                 const SizedBox(height: 22),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(flex: 5, child: compliance),
+                  Expanded(flex: 6, child: compliance),
                   const SizedBox(width: 22),
                   Expanded(flex: 3, child: rewards),
                   const SizedBox(width: 22),
-                  Expanded(flex: 4, child: desk),
+                  Expanded(flex: 3, child: desk),
                 ]),
               ]);
             },
@@ -853,31 +858,45 @@ class _QuickDeskHabits extends StatelessWidget {
   final VoidCallback onFocus;
 
   @override
-  Widget build(BuildContext context) => _Card(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Quick desk reset',
-              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text('${controller.water.round()} ml water logged today',
-              style: const TextStyle(color: _muted, fontSize: 11)),
-          const SizedBox(height: 13),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            FilledButton.tonalIcon(
-              onPressed: () {
-                controller.addWater();
-                toast(context, 'Water reset logged: +250 ml.');
-              },
-              icon: const Icon(Icons.water_drop_outlined, size: 16),
-              label: const Text('+250 ml'),
-            ),
-            OutlinedButton.icon(
-              onPressed: onFocus,
-              icon: const Icon(Icons.self_improvement_rounded, size: 16),
-              label: const Text('60 sec reset'),
-            ),
-          ]),
+  Widget build(BuildContext context) {
+    const target = 2000;
+    final water = controller.water.round().clamp(0, target);
+    return _Card(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Quick desk reset',
+            style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        Text('$water / $target ml reached today',
+            style: const TextStyle(color: _muted, fontSize: 11)),
+        const SizedBox(height: 13),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          FilledButton.tonalIcon(
+            onPressed: () {
+              controller.addWater();
+              toast(context, 'Water reset logged: +250 ml.');
+            },
+            icon: const Icon(Icons.water_drop_outlined, size: 16),
+            label: const Text('+250 ml'),
+          ),
+          OutlinedButton.icon(
+            onPressed: onFocus,
+            icon: const Icon(Icons.self_improvement_rounded, size: 16),
+            label: const Text('60 sec reset'),
+          ),
         ]),
-      );
+        const SizedBox(height: 15),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: water / target,
+            minHeight: 7,
+            color: _cyan,
+            backgroundColor: _raised,
+          ),
+        ),
+      ]),
+    );
+  }
 }
 
 class _CompanionShowcase extends StatelessWidget {
