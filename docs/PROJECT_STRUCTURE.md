@@ -57,7 +57,7 @@ diganti tanpa memindahkan UI ke file baru.
 membaca data lama, membuat controller, lalu menjalankan aplikasi.
 
 `app/web_experience_gate.dart` memberi workspace dan dashboard moderasi frame
-desktop 16:9. Landing serta recap publik tidak melewati gate agar tetap nyaman
+desktop edge-to-edge. Landing serta recap publik tidak melewati gate agar tetap nyaman
 di HP. Browser sempit yang membuka workspace menerima prompt aplikasi mobile;
 build Android/iOS tetap memakai layout native layar penuh.
 

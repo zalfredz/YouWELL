@@ -143,7 +143,7 @@ class _Dashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nav = <_NavItem>[
-      const _NavItem('Today’s Tasks', Icons.check_circle_outline_rounded),
+      const _NavItem('Home', Icons.home_outlined),
       const _NavItem('Focus & Craving', Icons.timer_outlined),
       const _NavItem('Squad & Community', Icons.groups_2_outlined),
       if (isAdmin)
@@ -421,11 +421,8 @@ class _Scroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scrollbar(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(30, 28, 30, 100),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1380),
-            child: child,
-          ),
+          padding: const EdgeInsets.fromLTRB(32, 30, 32, 110),
+          child: child,
         ),
       );
 }
@@ -468,20 +465,44 @@ class _TodayPage extends StatelessWidget {
                 controller: controller,
                 onOpenDailyDraw: onOpenDailyDraw,
               );
-              final stats = _TodayStats(
+              final companion = _CompanionShowcase(controller: controller);
+              final compliance = _WeeklyComplianceCard(
                 controller: controller,
                 onAnalytics: () => onTab(1),
               );
-              return box.maxWidth < 940
-                  ? Column(children: [tasks, const SizedBox(height: 16), stats])
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 13, child: tasks),
-                        const SizedBox(width: 16),
-                        Expanded(flex: 8, child: stats),
-                      ],
-                    );
+              final rewards = _RewardsCard(controller: controller);
+              final desk = _QuickDeskHabits(
+                controller: controller,
+                onFocus: () => onTab(1),
+              );
+              if (box.maxWidth < 1040) {
+                return Column(children: [
+                  companion,
+                  const SizedBox(height: 18),
+                  tasks,
+                  const SizedBox(height: 18),
+                  compliance,
+                  const SizedBox(height: 18),
+                  rewards,
+                  const SizedBox(height: 18),
+                  desk,
+                ]);
+              }
+              return Column(children: [
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 4, child: companion),
+                  const SizedBox(width: 22),
+                  Expanded(flex: 8, child: tasks),
+                ]),
+                const SizedBox(height: 22),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 5, child: compliance),
+                  const SizedBox(width: 22),
+                  Expanded(flex: 3, child: rewards),
+                  const SizedBox(width: 22),
+                  Expanded(flex: 4, child: desk),
+                ]),
+              ]);
             },
           ),
         ],
@@ -764,91 +785,64 @@ class _CommittedCard extends StatelessWidget {
   }
 }
 
-class _TodayStats extends StatelessWidget {
-  const _TodayStats({required this.controller, required this.onAnalytics});
+class _WeeklyComplianceCard extends StatelessWidget {
+  const _WeeklyComplianceCard({
+    required this.controller,
+    required this.onAnalytics,
+  });
   final WellnessController controller;
   final VoidCallback onAnalytics;
   @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Weekly Compliance',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${(controller.compliance(7) * 100).round()}%',
-                      style: const TextStyle(
-                        color: _green,
-                        fontSize: 42,
-                        height: .9,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, bottom: 3),
-                      child: Text(
-                        '7 hari terakhir',
-                        style: TextStyle(color: _muted, fontSize: 11),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                SizedBox(height: 120, child: _Bars(controller: controller)),
-                const SizedBox(height: 10),
-                TextButton.icon(
-                  onPressed: onAnalytics,
-                  icon: const Icon(Icons.timer_outlined, size: 16),
-                  label: const Text('Buka Focus & Craving'),
-                ),
-              ],
+  Widget build(BuildContext context) => _Card(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Weekly Compliance',
+              style: TextStyle(
+                  color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 20),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('${(controller.compliance(7) * 100).round()}%',
+                style: const TextStyle(
+                    color: _green,
+                    fontSize: 42,
+                    height: .9,
+                    fontWeight: FontWeight.w800)),
+            const Padding(
+              padding: EdgeInsets.only(left: 8, bottom: 3),
+              child: Text('7 hari terakhir',
+                  style: TextStyle(color: _muted, fontSize: 11)),
             ),
+          ]),
+          const SizedBox(height: 18),
+          SizedBox(height: 120, child: _Bars(controller: controller)),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onAnalytics,
+            icon: const Icon(Icons.timer_outlined, size: 16),
+            label: const Text('Buka Focus & Craving'),
           ),
+        ]),
+      );
+}
+
+class _RewardsCard extends StatelessWidget {
+  const _RewardsCard({required this.controller});
+
+  final WellnessController controller;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+        tint: const Color(0xff162927),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
+          const SizedBox(height: 15),
+          const Text('Today’s rewards',
+              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text('${controller.dailyXp} XP earned',
+              style: const TextStyle(color: _muted, fontSize: 12)),
           const SizedBox(height: 16),
-          _Card(
-            tint: const Color(0xff162927),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Today’s rewards',
-                        style: TextStyle(
-                            color: _text, fontWeight: FontWeight.w800),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        '${controller.dailyXp} XP earned • ${controller.streak} day streak',
-                        style: const TextStyle(color: _muted, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                const _Pill('Daily cards', _green),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _QuickDeskHabits(controller: controller, onFocus: onAnalytics),
-          const SizedBox(height: 16),
-          _CompanionProgress(controller: controller),
-        ],
+          _Pill('${controller.streak} day streak', _green),
+        ]),
       );
 }
 
@@ -886,8 +880,8 @@ class _QuickDeskHabits extends StatelessWidget {
       );
 }
 
-class _CompanionProgress extends StatelessWidget {
-  const _CompanionProgress({required this.controller});
+class _CompanionShowcase extends StatelessWidget {
+  const _CompanionShowcase({required this.controller});
 
   final WellnessController controller;
 
@@ -896,35 +890,62 @@ class _CompanionProgress extends StatelessWidget {
     final kind = controller.profile?['companion']?.toString() ?? 'plant';
     final name =
         {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Companion';
+    final dialogue = controller.streak == 0
+        ? 'Senang kamu kembali. Kita mulai dari satu langkah kecil, ya.'
+        : controller.dailyProgress >= 1
+            ? 'Hari ini kita hebat. Aku ikut tumbuh karena kamu.'
+            : 'Satu task lagi juga berarti. Aku temani dari sini.';
     return _Card(
-      tint: const Color(0xff1b2125),
-      child: Row(children: [
-        SizedBox(
-          width: 100,
-          height: 95,
-          child: FittedBox(
-            child: WellnessCompanion(kind: kind, level: controller.level),
+      tint: const Color(0xff172421),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(
+              child: Text('$name, your companion',
+                  style: const TextStyle(
+                      color: _text,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800))),
+          _Pill('LV ${controller.level}', _green),
+        ]),
+        const SizedBox(height: 3),
+        Text('${controller.streak} day streak',
+            style: const TextStyle(color: _muted, fontSize: 12)),
+        const SizedBox(height: 7),
+        Center(
+          child: SizedBox(
+            width: 210,
+            height: 175,
+            child: FittedBox(
+              child: WellnessCompanion(kind: kind, level: controller.level),
+            ),
           ),
         ),
-        const SizedBox(width: 5),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$name is growing',
-                style:
-                    const TextStyle(color: _text, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text('${controller.streak} day streak • Level ${controller.level}',
-                style: const TextStyle(color: _muted, fontSize: 11)),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: (controller.xp % 100) / 100,
-              minHeight: 6,
-              color: _green,
-              backgroundColor: _raised,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ]),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xff202e2a),
+            border: Border.all(color: const Color(0xff315043)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(dialogue,
+              style: const TextStyle(color: _text, fontSize: 12, height: 1.45)),
+        ),
+        const SizedBox(height: 15),
+        Row(children: [
+          const Text('Level progress',
+              style: TextStyle(color: _muted, fontSize: 11)),
+          const Spacer(),
+          Text('${controller.xp % 100} / 100 XP',
+              style: const TextStyle(color: _green, fontSize: 11)),
+        ]),
+        const SizedBox(height: 7),
+        LinearProgressIndicator(
+          value: (controller.xp % 100) / 100,
+          minHeight: 7,
+          color: _green,
+          backgroundColor: _raised,
+          borderRadius: BorderRadius.circular(8),
         ),
       ]),
     );

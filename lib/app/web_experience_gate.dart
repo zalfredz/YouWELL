@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:youwell/core/config/app_environment.dart';
@@ -33,53 +31,16 @@ class WebWorkspaceGate extends StatelessWidget {
   }
 }
 
-/// A focused 16:9 canvas for signed-in web workspaces and admin tools.
+/// Edge-to-edge desktop canvas for signed-in web workspaces and admin tools.
 class WebDesktopFrame extends StatelessWidget {
   const WebDesktopFrame({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          const margin = 24.0;
-          final availableWidth =
-              math.max(0.0, constraints.maxWidth - margin * 2);
-          final availableHeight =
-              math.max(0.0, constraints.maxHeight - margin * 2);
-          final width = math.min(
-            1600.0,
-            math.min(availableWidth, availableHeight * 16 / 9),
-          );
-          final height = width * 9 / 16;
-
-          return ColoredBox(
-            color: const Color(0xff08090b),
-            child: Center(
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: const Color(0xff0d0e11),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: .55),
-                        blurRadius: 40,
-                        offset: const Offset(0, 16),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: child,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+  Widget build(BuildContext context) => ColoredBox(
+        color: const Color(0xff0d0e11),
+        child: SizedBox.expand(child: child),
       );
 }
 

@@ -12,8 +12,8 @@ halaman publik, companion workspace untuk layar besar, dan alat moderasi.
 /#/admin     Dashboard moderator (desktop)
 ```
 
-Landing dan recap bersifat responsif. Workspace dan admin menggunakan frame
-16:9 di desktop; layar di bawah 860 px diberi prompt untuk kembali ke landing
+Landing dan recap bersifat responsif. Workspace dan admin memakai kanvas desktop
+edge-to-edge penuh; layar di bawah 860 px diberi prompt untuk kembali ke landing
 atau memakai aplikasi mobile.
 
 ## Cakupan workspace
