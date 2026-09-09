@@ -7,6 +7,7 @@ import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
+import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 const _bg = Color(0xff0d0e11);
 const _panel = Color(0xff16181d);
@@ -65,6 +66,34 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
     );
   }
 
+  Future<void> _openProfile() => showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: _bg,
+          insetPadding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 620),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: _SettingsPage(controller: widget.controller),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: IconButton(
+                    tooltip: 'Tutup profile',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded, color: _muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: widget.controller,
@@ -77,6 +106,7 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
             tab: _tab,
             onTab: (value) => setState(() => _tab = value),
             onOpenDailyDraw: _presentDailyDraw,
+            onOpenProfile: _openProfile,
             showCompanion: _showCompanion,
             minimized: _minimizeCompanion,
             setCompanion: ({bool? open, bool? minimized}) => setState(() {
@@ -95,6 +125,7 @@ class _Dashboard extends StatelessWidget {
     required this.tab,
     required this.onTab,
     required this.onOpenDailyDraw,
+    required this.onOpenProfile,
     required this.showCompanion,
     required this.minimized,
     required this.setCompanion,
@@ -104,6 +135,7 @@ class _Dashboard extends StatelessWidget {
   final int tab;
   final ValueChanged<int> onTab;
   final Future<void> Function() onOpenDailyDraw;
+  final Future<void> Function() onOpenProfile;
   final bool showCompanion;
   final bool minimized;
   final void Function({bool? open, bool? minimized}) setCompanion;
@@ -112,10 +144,8 @@ class _Dashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final nav = <_NavItem>[
       const _NavItem('Today’s Tasks', Icons.check_circle_outline_rounded),
-      const _NavItem('Craving Analytics', Icons.insights_rounded),
-      const _NavItem('Squad Quests', Icons.groups_2_outlined),
-      const _NavItem('Encouragement Wall', Icons.forum_outlined),
-      const _NavItem('Settings', Icons.settings_outlined),
+      const _NavItem('Focus & Craving', Icons.timer_outlined),
+      const _NavItem('Squad & Community', Icons.groups_2_outlined),
       if (isAdmin)
         const _NavItem('Community Admin', Icons.admin_panel_settings_outlined),
     ];
@@ -127,9 +157,7 @@ class _Dashboard extends StatelessWidget {
         onOpenDailyDraw: onOpenDailyDraw,
       ),
       _AnalyticsPage(controller: controller, openCompanion: openCompanion),
-      _SquadPage(openCompanion: openCompanion),
-      _WallPage(controller: controller),
-      _SettingsPage(controller: controller),
+      _CommunityHubPage(controller: controller),
       if (isAdmin) _AdminPage(controller: controller),
     ];
     final safeTab = tab.clamp(0, nav.length - 1);
@@ -152,7 +180,7 @@ class _Dashboard extends StatelessWidget {
                       _Header(
                         section: nav[safeTab].label,
                         alias: alias,
-                        onSettings: () => onTab(4),
+                        onSettings: onOpenProfile,
                       ),
                       Expanded(
                         child: AnimatedSwitcher(
@@ -782,8 +810,8 @@ class _TodayStats extends StatelessWidget {
                 const SizedBox(height: 10),
                 TextButton.icon(
                   onPressed: onAnalytics,
-                  icon: const Icon(Icons.insights_rounded, size: 16),
-                  label: const Text('Lihat analytics'),
+                  icon: const Icon(Icons.timer_outlined, size: 16),
+                  label: const Text('Buka Focus & Craving'),
                 ),
               ],
             ),
@@ -816,8 +844,91 @@ class _TodayStats extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          _QuickDeskHabits(controller: controller, onFocus: onAnalytics),
+          const SizedBox(height: 16),
+          _CompanionProgress(controller: controller),
         ],
       );
+}
+
+class _QuickDeskHabits extends StatelessWidget {
+  const _QuickDeskHabits({required this.controller, required this.onFocus});
+
+  final WellnessController controller;
+  final VoidCallback onFocus;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Quick desk reset',
+              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text('${controller.water.round()} ml water logged today',
+              style: const TextStyle(color: _muted, fontSize: 11)),
+          const SizedBox(height: 13),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.tonalIcon(
+              onPressed: () {
+                controller.addWater();
+                toast(context, 'Water reset logged: +250 ml.');
+              },
+              icon: const Icon(Icons.water_drop_outlined, size: 16),
+              label: const Text('+250 ml'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onFocus,
+              icon: const Icon(Icons.self_improvement_rounded, size: 16),
+              label: const Text('60 sec reset'),
+            ),
+          ]),
+        ]),
+      );
+}
+
+class _CompanionProgress extends StatelessWidget {
+  const _CompanionProgress({required this.controller});
+
+  final WellnessController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final kind = controller.profile?['companion']?.toString() ?? 'plant';
+    final name =
+        {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Companion';
+    return _Card(
+      tint: const Color(0xff1b2125),
+      child: Row(children: [
+        SizedBox(
+          width: 100,
+          height: 95,
+          child: FittedBox(
+            child: WellnessCompanion(kind: kind, level: controller.level),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$name is growing',
+                style:
+                    const TextStyle(color: _text, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('${controller.streak} day streak • Level ${controller.level}',
+                style: const TextStyle(color: _muted, fontSize: 11)),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: (controller.xp % 100) / 100,
+              minHeight: 6,
+              color: _green,
+              backgroundColor: _raised,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
 }
 
 class _AnalyticsPage extends StatelessWidget {
@@ -830,7 +941,7 @@ class _AnalyticsPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Craving Analytics',
+              'Focus & Craving',
               style: TextStyle(
                 color: _text,
                 fontSize: 30,
@@ -840,7 +951,7 @@ class _AnalyticsPage extends StatelessWidget {
             ),
             const SizedBox(height: 7),
             const Text(
-              'Pola adalah informasi untuk membantumu, bukan nilai untuk dihakimi.',
+              'Ruang kecil untuk fokus, mengatur napas, dan memberi craving waktu untuk lewat.',
               style: TextStyle(color: _muted),
             ),
             const SizedBox(height: 24),
@@ -897,7 +1008,7 @@ class _AnalyticsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Weekly rhythm',
+                    'Your weekly rhythm',
                     style: TextStyle(
                       color: _text,
                       fontSize: 18,
@@ -906,7 +1017,7 @@ class _AnalyticsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   const Text(
-                    'Penyelesaian Gacha Cards selama tujuh hari terakhir.',
+                    'Ringkasan ringan agar kamu bisa fokus pada langkah berikutnya.',
                     style: TextStyle(color: _muted, fontSize: 12),
                   ),
                   const SizedBox(height: 26),
@@ -926,7 +1037,7 @@ class _AnalyticsPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Jangan lawan craving sendirian.',
+                          'Butuh jeda dari layar atau craving?',
                           style: TextStyle(
                             color: _text,
                             fontWeight: FontWeight.w800,
@@ -934,7 +1045,7 @@ class _AnalyticsPage extends StatelessWidget {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Mulai delay timer 5 atau 10 menit dengan napas dan soundscape.',
+                          'Buka reset tools untuk delay timer, napas, soundscape, atau micro-vent.',
                           style: TextStyle(color: _muted, fontSize: 12),
                         ),
                       ],
@@ -943,7 +1054,7 @@ class _AnalyticsPage extends StatelessWidget {
                   FilledButton(
                     onPressed: openCompanion,
                     style: _greenButton,
-                    child: const Text('Open Companion'),
+                    child: const Text('Open reset tools'),
                   ),
                 ],
               ),
@@ -1030,134 +1141,18 @@ class _Bars extends StatelessWidget {
   }
 }
 
-class _SquadPage extends StatelessWidget {
-  const _SquadPage({required this.openCompanion});
-  final VoidCallback openCompanion;
-  @override
-  Widget build(BuildContext context) => _Scroll(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Squad Quests',
-              style: TextStyle(
-                color: _text,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 7),
-            const Text(
-              'Dampak langkah kecil tanpa membandingkan perjalananmu.',
-              style: TextStyle(color: _muted),
-            ),
-            const SizedBox(height: 24),
-            _Card(
-              tint: const Color(0xff152420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      _Mark(size: 39),
-                      SizedBox(width: 13),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'September reset',
-                              style: TextStyle(
-                                color: _text,
-                                fontSize: 19,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              'Squad momentum minggu ini',
-                              style: TextStyle(color: _muted, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _Pill('Active', _green),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    '183 / 250 acts of care',
-                    style: TextStyle(
-                      color: _text,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: const LinearProgressIndicator(
-                      value: .732,
-                      minHeight: 11,
-                      color: _green,
-                      backgroundColor: Color(0xff2a4039),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Setiap Gacha Card yang selesai menambah satu langkah untuk squad. Tidak ada leaderboard personal.',
-                    style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _Card(
-              child: Row(
-                children: [
-                  const Icon(Icons.emoji_emotions_outlined,
-                      color: _cyan, size: 29),
-                  const SizedBox(width: 13),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kirim dorongan singkat',
-                          style: TextStyle(
-                            color: _text,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Satu reaksi akan terlihat sebagai semangat bersama.',
-                          style: TextStyle(color: _muted, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: () =>
-                        toast(context, 'Semangatmu sudah dikirim ke squad.'),
-                    child: const Text('Send 🌿'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-}
+/// A compact desktop hub: shared progress on the left, lightweight reactions
+/// on the right. Posting remains intentionally mobile-first.
+class _CommunityHubPage extends StatelessWidget {
+  const _CommunityHubPage({required this.controller});
 
-class _WallPage extends StatelessWidget {
-  const _WallPage({required this.controller});
   final WellnessController controller;
+
   @override
   Widget build(BuildContext context) {
     final stored = controller.posts
         .where((post) => post['status'] == 'approved')
-        .take(4)
+        .take(2)
         .toList();
     final posts = stored.isEmpty
         ? const [
@@ -1176,31 +1171,80 @@ class _WallPage extends StatelessWidget {
           ]
         : stored;
     return _Scroll(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Encouragement Wall',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Squad & Community',
             style: TextStyle(
-              color: _text,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
+                color: _text,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -.9)),
+        const SizedBox(height: 7),
+        const Text(
+            'Pantau langkah bersama, beri reaksi singkat, lalu kembali fokus.',
+            style: TextStyle(color: _muted)),
+        const SizedBox(height: 24),
+        LayoutBuilder(builder: (context, box) {
+          final squad = _Card(
+            tint: const Color(0xff152420),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [
+                _Mark(size: 35),
+                SizedBox(width: 12),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text('September reset',
+                          style: TextStyle(
+                              color: _text,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800)),
+                      SizedBox(height: 3),
+                      Text('Squad momentum minggu ini',
+                          style: TextStyle(color: _muted, fontSize: 12)),
+                    ])),
+                _Pill('Active', _green),
+              ]),
+              const SizedBox(height: 26),
+              const Text('183 / 250 acts of care',
+                  style: TextStyle(
+                      color: _text, fontSize: 25, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 11),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: const LinearProgressIndicator(
+                    value: .732,
+                    minHeight: 11,
+                    color: _green,
+                    backgroundColor: Color(0xff2a4039)),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                  'Task yang kamu selesaikan dan focus time squad sama-sama menambah progres.',
+                  style: TextStyle(color: _muted, fontSize: 12, height: 1.45)),
+            ]),
+          );
+          final wall =
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: Text('Encouragement Wall',
+                  style: TextStyle(
+                      color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
             ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Baca, beri reaksi, lalu kembali ke ritmemu. Menulis post tetap khusus mobile.',
-            style: TextStyle(color: _muted),
-          ),
-          const SizedBox(height: 24),
-          ...posts.map(
-            (raw) => _WallCard(
-              controller: controller,
-              post: Map<String, dynamic>.from(raw),
-            ),
-          ),
-        ],
-      ),
+            ...posts.map((raw) => _WallCard(
+                controller: controller, post: Map<String, dynamic>.from(raw))),
+          ]);
+          return box.maxWidth < 920
+              ? Column(children: [squad, const SizedBox(height: 20), wall])
+              : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 8, child: squad),
+                  const SizedBox(width: 18),
+                  Expanded(flex: 9, child: wall),
+                ]);
+        }),
+      ]),
     );
   }
 }

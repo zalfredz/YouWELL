@@ -21,12 +21,14 @@ atau memakai aplikasi mobile.
 - **Daily Card Draw:** swipe deck berisi 5 kartu paket yang difilter berdasarkan
   jalur, difficulty, compliance, dan kondisi pengguna. Satu kartu berisi 3–5
   task; paket harus di-commit sebelum task dapat diselesaikan.
-- **Relief Room:** breathing circle, timer 5/10 menit, serta soundscape lokal.
-- **Insights:** compliance, streak, companion, dan pintu ke Wrapped.
-- **Komunitas:** membaca encouragement wall dan memberi reaksi cepat; tidak ada
-  composer atau upload dari web.
-- **Settings:** dibuka dari avatar kanan atas untuk melihat jalur, teman tumbuh,
-  dan data preview lokal.
+- **Today’s Tasks:** paket Daily Card, checklist, water reset, companion, serta
+  reward/streak untuk aktivitas kecil saat berada di depan layar.
+- **Focus & Craving:** reset tools berupa breathing circle, delay timer 5/10
+  menit, soundscape, dan Micro-Vent; ringkasan ritme mingguan tetap tersedia.
+- **Squad & Community:** progress squad serta encouragement wall read/react
+  only; composer dan upload tetap khusus mobile.
+- **Profile:** dibuka dari avatar kanan atas untuk melihat jalur, companion,
+  dan data preview lokal. Ia tidak lagi menjadi menu sidebar.
 
 ## Prinsip interface
 
