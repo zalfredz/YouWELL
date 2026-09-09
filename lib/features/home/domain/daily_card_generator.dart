@@ -21,22 +21,26 @@ class DailyCardGenerator {
         return false;
       }
       if (card.difficulty > difficulty) return false;
+      // The first days and a rough recent rhythm should start gently. The
+      // adaptive difficulty also accounts for longer-term completion history.
+      if ((daysUsingApp <= 2 || compliance < .35) && card.difficulty > 1) {
+        return false;
+      }
       if (lowImpact && card.category == 'Physical' && !card.lowImpact) {
         return false;
       }
       return true;
     }).toList()
-      ..sort((a, b) =>
-          _dailyScore(a.id, today).compareTo(_dailyScore(b.id, today)));
+      ..sort(
+        (a, b) => _dailyScore(a.id, today).compareTo(_dailyScore(b.id, today)),
+      );
 
-    final target = daysUsingApp <= 2
-        ? 3
-        : compliance >= .75
-            ? 5
-            : 4;
+    // Three choices preserve a playful "pick a card" moment without making
+    // the daily decision feel like a long checklist.
+    const target = 3;
     final selected = <_CardDefinition>[];
     final categories = reduction
-        ? const ['Mental', 'Nutrition', 'Physical', 'Reduction Challenge']
+        ? const ['Reduction Challenge', 'Mental', 'Physical']
         : const ['Mental', 'Nutrition', 'Physical', 'Social/Wellbeing'];
 
     for (final category in categories) {
@@ -50,6 +54,14 @@ class DailyCardGenerator {
       if (selected.length == target) break;
       if (!selected.contains(card)) selected.add(card);
     }
+
+    // The pool is filtered first; only the placement in the deck is shuffled.
+    selected.sort(
+      (a, b) => _dailyScore(
+        a.id,
+        '$today:deck',
+      ).compareTo(_dailyScore(b.id, '$today:deck')),
+    );
 
     return selected.indexed
         .map(

@@ -49,6 +49,31 @@ class WellnessController extends ChangeNotifier {
       .map((e) => Map<String, dynamic>.from(e))
       .toList();
   List<JsonMap> get dailyCards => quests;
+  JsonMap? get dailyCardDraw {
+    final value = days[today]?['cardDraw'];
+    return value is Map ? Map<String, dynamic>.from(value) : null;
+  }
+
+  /// A draw is considered complete once its card pool exists. This also keeps
+  /// previews created before the reveal experience compatible with the new UI.
+  bool get hasDrawnDailyCards => dailyCards.isNotEmpty;
+
+  /// Keep presenting an unfinished deck on later visits, but never interrupt a
+  /// user who has already committed today's challenge.
+  bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
+  String? get selectedDailyCardId =>
+      dailyCardDraw?['selectedCardId']?.toString();
+  JsonMap? get selectedDailyCard {
+    final id = selectedDailyCardId;
+    if (id == null) return null;
+    for (final card in dailyCards) {
+      if (card['id'] == id) return card;
+    }
+    return null;
+  }
+
+  bool get hasCommittedDailyCard =>
+      committedCards.isNotEmpty || completedCards.isNotEmpty;
   List<JsonMap> get availableCards =>
       dailyCards.where((card) => _cardStatus(card) == 'available').toList();
   List<JsonMap> get committedCards =>
@@ -135,10 +160,12 @@ class WellnessController extends ChangeNotifier {
     await _save();
   }
 
+  /// Starts one curated, non-rerollable deck for this local calendar day.
+  /// The UI reveals a choice from this deck; generation never happens again
+  /// once a deck has been stored.
   void drawDailyCards() {
     if (profile == null) return;
-    if (dailyCards.isNotEmpty &&
-        dailyCards.every((card) => card.containsKey('status'))) {
+    if (hasDrawnDailyCards) {
       return;
     }
     final list = const DailyCardGenerator().generate(
@@ -153,14 +180,52 @@ class WellnessController extends ChangeNotifier {
       ...?days[today] as Map?,
       'quests': list,
       'difficulty': difficulty,
+      'cardDraw': {'startedAt': now.toIso8601String(), 'selectedCardId': null},
     };
     _save();
+  }
+
+  /// Reveals a card but does not lock it yet. The user may return to the deck
+  /// before committing, which makes an accidental choice easy to reverse.
+  bool selectDailyCard(String id) {
+    if (hasCommittedDailyCard ||
+        !availableCards.any((card) => card['id'] == id)) {
+      return false;
+    }
+    final existing = dailyCardDraw ?? const <String, dynamic>{};
+    _data['days'][today] = {
+      ...?days[today] as Map?,
+      'cardDraw': {
+        ...existing,
+        'selectedCardId': id,
+        'revealedAt': now.toIso8601String(),
+      },
+    };
+    _save();
+    return true;
+  }
+
+  /// Available only before commit. A committed challenge cannot be replaced.
+  bool clearDailyCardSelection() {
+    if (hasCommittedDailyCard || selectedDailyCardId == null) return false;
+    final existing = dailyCardDraw ?? const <String, dynamic>{};
+    _data['days'][today] = {
+      ...?days[today] as Map?,
+      'cardDraw': {...existing, 'selectedCardId': null},
+    };
+    _save();
+    return true;
   }
 
   bool commitCard(String id) {
     final list = dailyCards;
     final i = list.indexWhere((q) => q['id'] == id);
-    if (i < 0 || _cardStatus(list[i]) != 'available') return false;
+    final draw = dailyCardDraw;
+    if (i < 0 ||
+        _cardStatus(list[i]) != 'available' ||
+        (draw != null && selectedDailyCardId != id)) {
+      return false;
+    }
     list[i]['status'] = 'committed';
     list[i]['committedAt'] = now.toIso8601String();
     _data['days'][today]['quests'] = list;
