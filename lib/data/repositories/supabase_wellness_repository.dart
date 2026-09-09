@@ -6,6 +6,7 @@ import 'package:youwell/core/storage/wellness_repository.dart';
 class SupabaseWellnessRepository implements WellnessRepository {
   SupabaseWellnessRepository(this._client);
 
+  static const _table = 'youwell_account_snapshots';
   final SupabaseClient _client;
 
   User get _user {
@@ -17,7 +18,7 @@ class SupabaseWellnessRepository implements WellnessRepository {
   @override
   Future<String?> read() async {
     final row = await _client
-        .from('wellness_snapshots')
+        .from(_table)
         .select('state')
         .eq('user_id', _user.id)
         .maybeSingle();
@@ -26,7 +27,7 @@ class SupabaseWellnessRepository implements WellnessRepository {
 
   @override
   Future<void> write(String serializedState) async {
-    await _client.from('wellness_snapshots').upsert({
+    await _client.from(_table).upsert({
       'user_id': _user.id,
       'state': serializedState,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
