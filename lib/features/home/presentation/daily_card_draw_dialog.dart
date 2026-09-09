@@ -239,52 +239,160 @@ class _DeckStep extends StatelessWidget {
   }
 }
 
-class _FaceDownDeck extends StatelessWidget {
+/// An endlessly rotating deck. It completes one automatic cycle on entry,
+/// then the user can swipe, use arrows, or tap a side card to choose which
+/// card sits in the middle before revealing it.
+class _FaceDownDeck extends StatefulWidget {
   const _FaceDownDeck({required this.cards, required this.onSelect});
 
   final List<JsonMap> cards;
   final ValueChanged<String> onSelect;
 
   @override
+  State<_FaceDownDeck> createState() => _FaceDownDeckState();
+}
+
+class _FaceDownDeckState extends State<_FaceDownDeck> {
+  static const _startPage = 300;
+  late final PageController _pageController;
+  int _page = _startPage;
+  bool _isAutoSpinning = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      initialPage: _startPage,
+      viewportFraction: .47,
+    );
+    _spinDeckOnce();
+  }
+
+  Future<void> _spinDeckOnce() async {
+    await Future<void>.delayed(const Duration(milliseconds: 260));
+    if (!mounted || !_pageController.hasClients) return;
+    await _pageController.animateToPage(
+      _startPage + widget.cards.length,
+      duration: const Duration(milliseconds: 1150),
+      curve: Curves.easeInOutCubic,
+    );
+    if (mounted) setState(() => _isAutoSpinning = false);
+  }
+
+  void _move(int amount) {
+    if (_isAutoSpinning || !_pageController.hasClients) return;
+    _pageController.animateToPage(
+      _page + amount,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _choose(int physicalIndex) {
+    if (_isAutoSpinning) return;
+    if (physicalIndex != _page) {
+      _pageController.animateToPage(
+        physicalIndex,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    widget.onSelect(
+        widget.cards[physicalIndex % widget.cards.length]['id'].toString());
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => Column(
         children: [
           const Spacer(),
-          const Text(
-            'Tap one card to reveal your challenge',
-            style: TextStyle(
+          Text(
+            _isAutoSpinning
+                ? 'Shuffling your daily cards…'
+                : 'Putar deck, lalu pilih kartu di tengah',
+            style: const TextStyle(
               color: _primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Kamu dapat kembali sebelum menekan Commit.',
-            style: TextStyle(color: _secondaryText, fontSize: 12),
+          Text(
+            _isAutoSpinning
+                ? 'Menyiapkan tiga challenge kecil untukmu.'
+                : 'Geser kartu, gunakan panah, atau tap kartu samping untuk memutarnya.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _secondaryText, fontSize: 12),
           ),
-          const SizedBox(height: 32),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 18,
-            runSpacing: 18,
-            children: cards.indexed
-                .map(
-                  (entry) => _FaceDownCard(
-                    index: entry.$1,
-                    onTap: () => onSelect(entry.$2['id'].toString()),
-                  ),
-                )
-                .toList(),
+          const SizedBox(height: 25),
+          SizedBox(
+            height: 286,
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (value) => setState(() => _page = value),
+              itemCount: 1000,
+              itemBuilder: (context, physicalIndex) {
+                final cardIndex = physicalIndex % widget.cards.length;
+                return _CarouselCard(
+                  index: cardIndex,
+                  selected: physicalIndex == _page,
+                  onTap: () => _choose(physicalIndex),
+                );
+              },
+            ),
           ),
-          const Spacer(flex: 2),
+          const SizedBox(height: 6),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            IconButton.outlined(
+              tooltip: 'Kartu sebelumnya',
+              onPressed: _isAutoSpinning ? null : () => _move(-1),
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+            const SizedBox(width: 17),
+            Text(
+              _isAutoSpinning
+                  ? 'Mixing deck'
+                  : 'Card ${_page % widget.cards.length + 1} of ${widget.cards.length}',
+              style: const TextStyle(color: _secondaryText, fontSize: 12),
+            ),
+            const SizedBox(width: 17),
+            IconButton.outlined(
+              tooltip: 'Kartu berikutnya',
+              onPressed: _isAutoSpinning ? null : () => _move(1),
+              icon: const Icon(Icons.chevron_right_rounded),
+            ),
+          ]),
+          const SizedBox(height: 13),
+          Text(
+            _isAutoSpinning
+                ? 'Sebentar ya…'
+                : 'Tap kartu tengah untuk membuka challenge-mu.',
+            style: TextStyle(
+              color: _isAutoSpinning ? _secondaryText : _mint,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
         ],
       );
 }
 
-class _FaceDownCard extends StatelessWidget {
-  const _FaceDownCard({required this.index, required this.onTap});
+class _CarouselCard extends StatelessWidget {
+  const _CarouselCard({
+    required this.index,
+    required this.selected,
+    required this.onTap,
+  });
 
   final int index;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -293,60 +401,77 @@ class _FaceDownCard extends StatelessWidget {
     final accent = accents[index % accents.length];
     return Semantics(
       button: true,
-      label: 'Pilih kartu ${index + 1}',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          width: 174,
-          height: 242,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [const Color(0xff252b34), const Color(0xff171a20)],
-            ),
-            border: Border.all(color: accent.withValues(alpha: .45)),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(color: accent.withValues(alpha: .10), blurRadius: 20),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -26,
-                right: -22,
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 100,
-                  color: accent.withValues(alpha: .13),
+      label: selected ? 'Pilih kartu tengah' : 'Putar ke kartu ${index + 1}',
+      child: Center(
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 210),
+          curve: Curves.easeOut,
+          scale: selected ? 1 : .76,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            opacity: selected ? 1 : .48,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(18),
+              child: Ink(
+                width: 182,
+                height: 252,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [const Color(0xff252b34), const Color(0xff171a20)],
+                  ),
+                  border: Border.all(
+                    color: accent.withValues(alpha: selected ? .75 : .3),
+                    width: selected ? 1.5 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: selected ? .2 : .05),
+                      blurRadius: selected ? 25 : 8,
+                    ),
+                  ],
                 ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
                   children: [
-                    Icon(Icons.style_rounded, size: 39, color: accent),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'DAILY CARD',
-                      style: TextStyle(
-                        color: _primaryText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
+                    Positioned(
+                      top: -26,
+                      right: -22,
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 100,
+                        color: accent.withValues(alpha: .13),
                       ),
                     ),
-                    const SizedBox(height: 7),
-                    Text(
-                      'Tap to reveal',
-                      style: TextStyle(color: accent, fontSize: 12),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.style_rounded, size: 39, color: accent),
+                          const SizedBox(height: 15),
+                          const Text(
+                            'DAILY CARD',
+                            style: TextStyle(
+                              color: _primaryText,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            selected ? 'Tap to reveal' : 'Tap to rotate',
+                            style: TextStyle(color: accent, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
