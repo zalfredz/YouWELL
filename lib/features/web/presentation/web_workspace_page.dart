@@ -495,9 +495,16 @@ class _TodayPage extends StatelessWidget {
                           const SizedBox(height: 14),
                           desk,
                           const SizedBox(height: 14),
-                          complianceAndRewards,
-                          const SizedBox(height: 14),
-                          squad,
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(child: complianceAndRewards),
+                                const SizedBox(width: 14),
+                                Expanded(child: squad),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -535,6 +542,7 @@ class _DailyCardSystem extends StatelessWidget {
     final completed = controller.completedCards;
     final selected = controller.selectedDailyCard;
     return _Card(
+      padding: compact ? 14 : 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -953,6 +961,7 @@ class _SquadHubWidget extends StatelessWidget {
     if (!controller.hasSquad) {
       return _Card(
         tint: const Color(0xff151f1d),
+        padding: compact ? 14 : 20,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Icon(Icons.groups_rounded, color: _cyan, size: 27),
           SizedBox(height: compact ? 9 : 15),
@@ -970,7 +979,7 @@ class _SquadHubWidget extends StatelessWidget {
           FilledButton.icon(
             onPressed: onOpenSquad,
             icon: const Icon(Icons.add_rounded, size: 17),
-            label: const Text('Cari / Buat Squad'),
+            label: Text(compact ? 'Cari Squad' : 'Cari / Buat Squad'),
             style: _greenButton,
           ),
         ]),
@@ -979,6 +988,7 @@ class _SquadHubWidget extends StatelessWidget {
 
     return _Card(
       tint: const Color(0xff152420),
+      padding: compact ? 14 : 20,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Expanded(
@@ -1093,10 +1103,10 @@ class _QuickDeskHabits extends StatelessWidget {
         borderRadius: BorderRadius.circular(compact ? 0 : 12),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Quick desk reset',
+        const Text('Desk Energy Hub',
             style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
         SizedBox(height: compact ? 2 : 4),
-        Text('$water / $target ml reached today',
+        Text('Water intake • $water / $target ml',
             style: const TextStyle(color: _muted, fontSize: 11)),
         SizedBox(height: compact ? 9 : 13),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -1106,12 +1116,12 @@ class _QuickDeskHabits extends StatelessWidget {
               toast(context, 'Water reset logged: +250 ml.');
             },
             icon: const Icon(Icons.water_drop_outlined, size: 16),
-            label: const Text('+250 ml'),
+            label: const Text('+250 ml Water'),
           ),
           OutlinedButton.icon(
-            onPressed: () => toast(context, '60-second desk reset dimulai.'),
+            onPressed: () => toast(context, '60-second stretch dimulai.'),
             icon: const Icon(Icons.self_improvement_rounded, size: 16),
-            label: const Text('60s reset'),
+            label: const Text('60s Stretch'),
           ),
         ]),
         SizedBox(height: compact ? 10 : 15),
@@ -1129,21 +1139,72 @@ class _QuickDeskHabits extends StatelessWidget {
   }
 }
 
-class _CompanionShowcase extends StatelessWidget {
+class _CompanionShowcase extends StatefulWidget {
   const _CompanionShowcase({required this.controller});
 
   final WellnessController controller;
 
   @override
+  State<_CompanionShowcase> createState() => _CompanionShowcaseState();
+}
+
+class _CompanionShowcaseState extends State<_CompanionShowcase>
+    with TickerProviderStateMixin {
+  late final AnimationController _idleController;
+  late final AnimationController _interactionController;
+  var _dialogueIndex = 0;
+  var _showSparkles = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _idleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+    _interactionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => _showSparkles = false);
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _idleController.dispose();
+    _interactionController.dispose();
+    super.dispose();
+  }
+
+  void _interact() {
+    setState(() {
+      _dialogueIndex += 1;
+      _showSparkles = true;
+    });
+    _interactionController.forward(from: 0);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     final kind = controller.profile?['companion']?.toString() ?? 'plant';
     final name =
         {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Companion';
-    final dialogue = controller.streak == 0
+    final defaultDialogue = controller.streak == 0
         ? 'Senang kamu kembali. Kita mulai dari satu langkah kecil, ya.'
         : controller.dailyProgress >= 1
             ? 'Hari ini kita hebat. Aku ikut tumbuh karena kamu.'
             : 'Satu task lagi juga berarti. Aku temani dari sini.';
+    final dialogues = [
+      defaultDialogue,
+      'Aku senang kamu menyapaku. Yuk lanjut satu langkah kecil lagi!',
+      'Kamu tidak harus sempurna. Cukup hadir untuk dirimu hari ini.',
+      'Energi kecil yang kamu kumpulkan hari ini tetap berarti.',
+    ];
+    final dialogue = dialogues[_dialogueIndex % dialogues.length];
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1181,32 +1242,83 @@ class _CompanionShowcase extends StatelessWidget {
           return SizedBox(
             height: narrow ? 370 : 340,
             child: Stack(children: [
-              Center(
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [
-                      Color(0x5534d399),
-                      Color(0x1622c55e),
-                      Colors.transparent,
-                    ]),
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 270,
-                      height: 270,
-                      child: FittedBox(
-                        child: WellnessCompanion(
-                          kind: kind,
-                          level: controller.level,
+              AnimatedBuilder(
+                animation: Listenable.merge([
+                  _idleController,
+                  _interactionController,
+                ]),
+                builder: (context, child) {
+                  final idleOffset = -9 *
+                      Curves.easeInOut.transform(
+                        _idleController.value,
+                      );
+                  final pulse = TweenSequence<double>([
+                    TweenSequenceItem(
+                      tween: Tween(begin: 1.0, end: 1.07)
+                          .chain(CurveTween(curve: Curves.easeOut)),
+                      weight: 45,
+                    ),
+                    TweenSequenceItem(
+                      tween: Tween(begin: 1.07, end: 1.0)
+                          .chain(CurveTween(curve: Curves.easeIn)),
+                      weight: 55,
+                    ),
+                  ]).transform(_interactionController.value);
+                  return Center(
+                    child: Transform.translate(
+                      offset: Offset(0, idleOffset),
+                      child: Transform.scale(scale: pulse, child: child),
+                    ),
+                  );
+                },
+                child: Semantics(
+                  button: true,
+                  label: 'Sapa $name',
+                  child: GestureDetector(
+                    onTap: _interact,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Container(
+                        width: 315,
+                        height: 315,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(colors: [
+                            Color(0x6634d399),
+                            Color(0x1e22c55e),
+                            Colors.transparent,
+                          ]),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 285,
+                            height: 285,
+                            child: FittedBox(
+                              child: WellnessCompanion(
+                                kind: kind,
+                                level: controller.level,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
+              if (_showSparkles)
+                AnimatedBuilder(
+                  animation: _interactionController,
+                  builder: (context, _) => IgnorePointer(
+                    child: Transform.translate(
+                      offset: Offset(0, -26 * _interactionController.value),
+                      child: Opacity(
+                        opacity: 1 - _interactionController.value,
+                        child: const _CompanionSparkles(),
+                      ),
+                    ),
+                  ),
+                ),
               Positioned(
                 top: narrow ? 8 : 30,
                 right: narrow ? 0 : 10,
@@ -1257,6 +1369,34 @@ class _CompanionShowcase extends StatelessWidget {
       ]),
     );
   }
+}
+
+class _CompanionSparkles extends StatelessWidget {
+  const _CompanionSparkles();
+
+  @override
+  Widget build(BuildContext context) => const Stack(children: [
+        Positioned(
+          top: 74,
+          left: 76,
+          child: Icon(Icons.auto_awesome_rounded, color: _amber, size: 25),
+        ),
+        Positioned(
+          top: 118,
+          right: 70,
+          child: Icon(Icons.star_rounded, color: _cyan, size: 19),
+        ),
+        Positioned(
+          bottom: 65,
+          left: 112,
+          child: Icon(Icons.star_rounded, color: _green, size: 16),
+        ),
+        Positioned(
+          bottom: 92,
+          right: 108,
+          child: Icon(Icons.auto_awesome_rounded, color: _amber, size: 17),
+        ),
+      ]);
 }
 
 class _AnalyticsPage extends StatelessWidget {
