@@ -18,7 +18,7 @@ atau memakai aplikasi mobile.
 
 ## Cakupan workspace
 
-- **Daily Card Draw:** melihat 3–5 kartu yang difilter berdasarkan jalur,
+- **Daily Card Draw:** swipe deck berisi 5 kartu yang difilter berdasarkan jalur,
   difficulty, compliance, dan kondisi pengguna. Kartu harus di-commit sebelum
   dapat diselesaikan; commitment tidak dapat diganti pada hari yang sama.
 - **Relief Room:** breathing circle, timer 5/10 menit, serta soundscape lokal.

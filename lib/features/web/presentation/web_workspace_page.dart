@@ -578,7 +578,7 @@ class _EmptyDailyDraw extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Buka tiga kartu tertutup dan pilih satu challenge.',
+            'Swipe lima kartu tertutup dan pilih satu challenge.',
             textAlign: TextAlign.center,
             style: TextStyle(color: _muted, fontSize: 12),
           ),

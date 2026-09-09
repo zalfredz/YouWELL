@@ -139,7 +139,7 @@ class _WelcomeStep extends StatelessWidget {
             const SizedBox(
               width: 460,
               child: Text(
-                'Pilih satu dari tiga kartu kecil yang sudah disesuaikan dengan ritmemu. Tidak ada hadiah acak—hanya satu langkah yang realistis untuk hari ini.',
+                'Swipe lima kartu yang sudah disesuaikan dengan ritmemu, lalu pilih satu. Tidak ada hadiah acak—hanya satu langkah yang realistis untuk hari ini.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _secondaryText, height: 1.5),
               ),
@@ -240,8 +240,7 @@ class _DeckStep extends StatelessWidget {
 }
 
 /// An endlessly rotating deck. It completes one automatic cycle on entry,
-/// then the user can swipe, use arrows, or tap a side card to choose which
-/// card sits in the middle before revealing it.
+/// then the user swipes or drags until the preferred card reaches the middle.
 class _FaceDownDeck extends StatefulWidget {
   const _FaceDownDeck({required this.cards, required this.onSelect});
 
@@ -279,25 +278,8 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
     if (mounted) setState(() => _isAutoSpinning = false);
   }
 
-  void _move(int amount) {
-    if (_isAutoSpinning || !_pageController.hasClients) return;
-    _pageController.animateToPage(
-      _page + amount,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
   void _choose(int physicalIndex) {
-    if (_isAutoSpinning) return;
-    if (physicalIndex != _page) {
-      _pageController.animateToPage(
-        physicalIndex,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-      return;
-    }
+    if (_isAutoSpinning || physicalIndex != _page) return;
     widget.onSelect(
         widget.cards[physicalIndex % widget.cards.length]['id'].toString());
   }
@@ -325,14 +307,14 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
           const SizedBox(height: 8),
           Text(
             _isAutoSpinning
-                ? 'Menyiapkan tiga challenge kecil untukmu.'
-                : 'Geser kartu, gunakan panah, atau tap kartu samping untuk memutarnya.',
+                ? 'Menyiapkan lima challenge kecil untukmu.'
+                : 'Swipe atau drag kartu ke kiri dan kanan sampai pilihanmu berada di tengah.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: _secondaryText, fontSize: 12),
           ),
           const SizedBox(height: 25),
           SizedBox(
-            height: 286,
+            height: 306,
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (value) => setState(() => _page = value),
@@ -347,27 +329,12 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
               },
             ),
           ),
-          const SizedBox(height: 6),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            IconButton.outlined(
-              tooltip: 'Kartu sebelumnya',
-              onPressed: _isAutoSpinning ? null : () => _move(-1),
-              icon: const Icon(Icons.chevron_left_rounded),
-            ),
-            const SizedBox(width: 17),
-            Text(
-              _isAutoSpinning
-                  ? 'Mixing deck'
-                  : 'Card ${_page % widget.cards.length + 1} of ${widget.cards.length}',
-              style: const TextStyle(color: _secondaryText, fontSize: 12),
-            ),
-            const SizedBox(width: 17),
-            IconButton.outlined(
-              tooltip: 'Kartu berikutnya',
-              onPressed: _isAutoSpinning ? null : () => _move(1),
-              icon: const Icon(Icons.chevron_right_rounded),
-            ),
-          ]),
+          Text(
+            _isAutoSpinning
+                ? 'Mixing deck'
+                : 'Card ${_page % widget.cards.length + 1} of ${widget.cards.length}',
+            style: const TextStyle(color: _secondaryText, fontSize: 12),
+          ),
           const SizedBox(height: 13),
           Text(
             _isAutoSpinning
@@ -397,11 +364,10 @@ class _CarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accents = [_mint, _aqua, _gold];
-    final accent = accents[index % accents.length];
+    final palette = _cardPalettes[index % _cardPalettes.length];
     return Semantics(
-      button: true,
-      label: selected ? 'Pilih kartu tengah' : 'Putar ke kartu ${index + 1}',
+      button: selected,
+      label: selected ? 'Buka kartu tengah' : 'Swipe untuk mengganti kartu',
       child: Center(
         child: AnimatedScale(
           duration: const Duration(milliseconds: 210),
@@ -410,63 +376,136 @@ class _CarouselCard extends StatelessWidget {
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 180),
             opacity: selected ? 1 : .48,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(18),
-              child: Ink(
-                width: 182,
-                height: 252,
+            child: GestureDetector(
+              onTap: selected ? onTap : null,
+              child: Container(
+                width: 198,
+                height: 282,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [const Color(0xff252b34), const Color(0xff171a20)],
+                    colors: [palette.light, palette.dark],
                   ),
                   border: Border.all(
-                    color: accent.withValues(alpha: selected ? .75 : .3),
-                    width: selected ? 1.5 : 1,
+                    color: Colors.white.withValues(alpha: .88),
+                    width: 4,
                   ),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: accent.withValues(alpha: selected ? .2 : .05),
-                      blurRadius: selected ? 25 : 8,
+                      color:
+                          palette.dark.withValues(alpha: selected ? .48 : .15),
+                      blurRadius: selected ? 27 : 9,
+                      offset: const Offset(0, 9),
                     ),
                   ],
                 ),
                 child: Stack(
                   children: [
                     Positioned(
-                      top: -26,
-                      right: -22,
-                      child: Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 100,
-                        color: accent.withValues(alpha: .13),
+                      left: -32,
+                      top: 47,
+                      child: Container(
+                        width: 115,
+                        height: 115,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .22),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 13,
+                      top: 13,
+                      child: Text(
+                        '0${index + 1}',
+                        style: TextStyle(
+                          color: palette.ink.withValues(alpha: .55),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 15,
+                      left: 15,
+                      child: Text(
+                        'YOUWELL.MD',
+                        style: TextStyle(
+                          color: palette.ink,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .8,
+                        ),
                       ),
                     ),
                     Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.style_rounded, size: 39, color: accent),
-                          const SizedBox(height: 15),
-                          const Text(
-                            'DAILY CARD',
-                            style: TextStyle(
-                              color: _primaryText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.5,
+                      child: Container(
+                        width: 104,
+                        height: 112,
+                        decoration: BoxDecoration(
+                          color: palette.character,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: .8),
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.circular(42),
+                          boxShadow: [
+                            BoxShadow(
+                              color: palette.ink.withValues(alpha: .2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Stack(children: [
+                          Positioned(
+                            top: 23,
+                            left: 24,
+                            child: _MascotEye(color: palette.ink),
+                          ),
+                          Positioned(
+                            top: 23,
+                            right: 24,
+                            child: _MascotEye(color: palette.ink),
+                          ),
+                          Center(
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Colors.white.withValues(alpha: .85),
+                              size: 41,
                             ),
                           ),
-                          const SizedBox(height: 7),
-                          Text(
-                            selected ? 'Tap to reveal' : 'Tap to rotate',
-                            style: TextStyle(color: accent, fontSize: 12),
-                          ),
-                        ],
+                        ]),
                       ),
+                    ),
+                    Positioned(
+                      left: 14,
+                      right: 14,
+                      bottom: 15,
+                      child: Column(children: [
+                        Text(
+                          'MYSTERY',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          selected ? 'TAP TO REVEAL' : 'SWIPE DECK',
+                          style: TextStyle(
+                            color: palette.ink.withValues(alpha: .72),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: .8,
+                          ),
+                        ),
+                      ]),
                     ),
                   ],
                 ),
@@ -478,6 +517,42 @@ class _CarouselCard extends StatelessWidget {
     );
   }
 }
+
+class _MascotEye extends StatelessWidget {
+  const _MascotEye({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 12,
+        height: 18,
+        decoration:
+            BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+      );
+}
+
+class _CardPalette {
+  const _CardPalette(this.light, this.dark, this.character, this.ink);
+
+  final Color light;
+  final Color dark;
+  final Color character;
+  final Color ink;
+}
+
+const _cardPalettes = [
+  _CardPalette(Color(0xffd9ff6f), Color(0xff9ee53b), Color(0xff9167ed),
+      Color(0xff27351c)),
+  _CardPalette(Color(0xff98f3ff), Color(0xff4bcbe0), Color(0xffff8cab),
+      Color(0xff12373e)),
+  _CardPalette(Color(0xffffd782), Color(0xffffa94b), Color(0xff60bf96),
+      Color(0xff553315)),
+  _CardPalette(Color(0xffffb6d5), Color(0xffff79ad), Color(0xff6d77e9),
+      Color(0xff4a1831)),
+  _CardPalette(Color(0xffc9bdff), Color(0xff9681ef), Color(0xffffd76b),
+      Color(0xff28204d)),
+];
 
 /// A physical-looking 3D turn replaces the previous cross-fade when a card
 /// is revealed. The front is only painted after the card reaches its edge.

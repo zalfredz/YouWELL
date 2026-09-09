@@ -35,12 +35,18 @@ class DailyCardGenerator {
         (a, b) => _dailyScore(a.id, today).compareTo(_dailyScore(b.id, today)),
       );
 
-    // Three choices preserve a playful "pick a card" moment without making
-    // the daily decision feel like a long checklist.
-    const target = 3;
+    // Five choices make the draw feel like a proper collectible-card deck,
+    // while the user still commits to only one challenge.
+    const target = 5;
     final selected = <_CardDefinition>[];
     final categories = reduction
-        ? const ['Reduction Challenge', 'Mental', 'Physical']
+        ? const [
+            'Reduction Challenge',
+            'Mental',
+            'Nutrition',
+            'Physical',
+            'Social/Wellbeing',
+          ]
         : const ['Mental', 'Nutrition', 'Physical', 'Social/Wellbeing'];
 
     for (final category in categories) {
@@ -127,6 +133,14 @@ const _catalog = [
     category: 'Physical',
     difficulty: 1,
     xp: 20,
+  ),
+  _CardDefinition(
+    id: 'posture-reset',
+    title: 'Posture Reset',
+    description: 'Relax your shoulders and reset your posture for one minute.',
+    category: 'Physical',
+    difficulty: 1,
+    xp: 15,
   ),
   _CardDefinition(
     id: 'breathing',

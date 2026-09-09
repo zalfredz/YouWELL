@@ -3,7 +3,7 @@
 Daily Card System adalah loop utama preview YouWell Web.
 
 ```text
-Daily Card Draw → pilih 1 dari 3 kartu tertutup → reveal → Commit (locked) → Complete → XP + progress → streak
+Daily Card Draw → swipe deck berisi 5 kartu tertutup → pilih 1 → reveal → Commit (locked) → Complete → XP + progress → streak
 ```
 
 ## Status kartu
@@ -17,7 +17,7 @@ ada uncommit atau reroll setelah kartu di-commit.
 
 ## Filter draw
 
-`DailyCardGenerator` memilih tepat 3 kartu secara deterministik untuk satu hari.
+`DailyCardGenerator` memilih tepat 5 kartu secara deterministik untuk satu hari.
 Pool disaring oleh path pengguna, low-impact preference, difficulty, compliance
 7 hari, dan lama penggunaan aplikasi. Pengguna baru atau yang ritmenya sedang
 rendah menerima kartu difficulty 1 terlebih dahulu. Path reduction selalu

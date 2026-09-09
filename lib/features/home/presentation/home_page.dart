@@ -99,7 +99,7 @@ class HomePage extends StatelessWidget {
                 if (controller.quests.isEmpty)
                   panel([
                     caption(
-                      'Buka kartu untuk mendapatkan 3–5 misi yang sesuai jalur dan kondisimu.',
+                      'Buka deck untuk mendapatkan 5 kartu yang sesuai jalur dan kondisimu.',
                     ),
                   ])
                 else ...[
