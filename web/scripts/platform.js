@@ -39,6 +39,7 @@ window.wellSound = name => {
     [174, 220, 261.63].forEach(f => { const s = audio.createOscillator(); s.frequency.value = f; s.type='sine'; s.connect(gain); s.start(); sources.push(s); });
   }
   if (name === 'release') stops = setTimeout(() => window.wellSound('stop'), 650);
+  if (name === 'ding') stops = setTimeout(() => window.wellSound('stop'), 900);
 };
 window.wellSoundVolume = value => { if (soundGain) soundGain.gain.value = Math.max(0, Math.min(1, value)) * .12; if (customTrack) customTrack.volume = value; };
 window.wellAudioPick = () => new Promise(resolve => {

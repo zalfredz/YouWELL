@@ -8,7 +8,9 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
-import 'package:youwell/shared/widgets/ui_helpers.dart';
+import 'package:youwell/features/web/presentation/community_hub_page.dart';
+import 'package:youwell/features/web/presentation/developer_page.dart';
+import 'package:youwell/features/web/presentation/pomodoro_page.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 const _bg = Color(0xff0d0e11);
@@ -38,6 +40,7 @@ class WebWorkspacePage extends StatefulWidget {
 class _WebWorkspacePageState extends State<WebWorkspacePage> {
   int _tab = 0;
   bool _isPresentingDailyDraw = false;
+  bool _sidebarExpanded = true;
 
   @override
   void initState() {
@@ -52,18 +55,12 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
       return;
     }
     _isPresentingDailyDraw = true;
-    final committed = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => DailyCardDrawDialog(controller: widget.controller),
     );
     _isPresentingDailyDraw = false;
-    if (!mounted || committed != true) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Card committed. Challenge ini terkunci untuk hari ini.'),
-      ),
-    );
   }
 
   Future<void> _openProfile() => showDialog<void>(
@@ -107,6 +104,9 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
             onTab: (value) => setState(() => _tab = value),
             onOpenDailyDraw: _presentDailyDraw,
             onOpenProfile: _openProfile,
+            sidebarExpanded: _sidebarExpanded,
+            onToggleSidebar: () =>
+                setState(() => _sidebarExpanded = !_sidebarExpanded),
           ),
         ),
       );
@@ -120,6 +120,8 @@ class _Dashboard extends StatelessWidget {
     required this.onTab,
     required this.onOpenDailyDraw,
     required this.onOpenProfile,
+    required this.sidebarExpanded,
+    required this.onToggleSidebar,
   });
   final WellnessController controller;
   final bool isAdmin;
@@ -127,6 +129,8 @@ class _Dashboard extends StatelessWidget {
   final ValueChanged<int> onTab;
   final Future<void> Function() onOpenDailyDraw;
   final Future<void> Function() onOpenProfile;
+  final bool sidebarExpanded;
+  final VoidCallback onToggleSidebar;
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +138,7 @@ class _Dashboard extends StatelessWidget {
       const _NavItem('Home', Icons.home_outlined),
       const _NavItem('Focus & Craving', Icons.timer_outlined),
       const _NavItem('Squad & Community', Icons.groups_2_outlined),
+      const _NavItem('Developer', Icons.developer_mode_rounded),
       if (isAdmin)
         const _NavItem('Community Admin', Icons.admin_panel_settings_outlined),
     ];
@@ -143,8 +148,9 @@ class _Dashboard extends StatelessWidget {
         onTab: onTab,
         onOpenDailyDraw: onOpenDailyDraw,
       ),
-      _AnalyticsPage(controller: controller),
-      _CommunityHubPage(controller: controller),
+      WebPomodoroPage(controller: controller),
+      WebCommunityHubPage(controller: controller),
+      DeveloperPage(controller: controller, onOpenHome: () => onTab(0)),
       if (isAdmin) _AdminPage(controller: controller),
     ];
     final safeTab = tab.clamp(0, nav.length - 1);
@@ -158,7 +164,14 @@ class _Dashboard extends StatelessWidget {
       child: Scaffold(
         body: Row(
           children: [
-            _Sidebar(nav: nav, current: safeTab, onTab: onTab, admin: isAdmin),
+            _Sidebar(
+              nav: nav,
+              current: safeTab,
+              onTab: onTab,
+              admin: isAdmin,
+              expanded: sidebarExpanded,
+              onToggle: onToggleSidebar,
+            ),
             Expanded(
               child: Column(
                 children: [
@@ -198,99 +211,120 @@ class _Sidebar extends StatelessWidget {
     required this.current,
     required this.onTab,
     required this.admin,
+    required this.expanded,
+    required this.onToggle,
   });
   final List<_NavItem> nav;
   final int current;
   final ValueChanged<int> onTab;
   final bool admin;
+  final bool expanded;
+  final VoidCallback onToggle;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 244,
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: expanded ? 244 : 70,
         decoration: const BoxDecoration(
           color: Color(0xff101216),
           border: Border(right: BorderSide(color: _line)),
         ),
-        padding: const EdgeInsets.fromLTRB(14, 21, 14, 16),
+        padding:
+            EdgeInsets.fromLTRB(expanded ? 14 : 12, 18, expanded ? 14 : 12, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                children: [
-                  _Mark(),
-                  SizedBox(width: 9),
-                  Text(
-                    'YouWell.MD',
-                    style: TextStyle(
-                      color: _text,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(11, 8, 11, 28),
-              child: Text(
-                admin ? 'ADMIN WORKSPACE' : 'PERSONAL WORKSPACE',
-                style: const TextStyle(
-                  color: _muted,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+            InkWell(
+              onTap: onToggle,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: expanded ? 8 : 5, vertical: 3),
+                child: Row(
+                  children: [
+                    const _Mark(),
+                    if (expanded) ...[
+                      const SizedBox(width: 9),
+                      const Expanded(
+                          child: Text(
+                        'YouWell.MD',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _text,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )),
+                      const Icon(Icons.chevron_left_rounded,
+                          color: _muted, size: 19),
+                    ],
+                  ],
                 ),
               ),
             ),
-            ...List.generate(nav.length, (index) {
-              final selected = index == current;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => onTab(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xff20242a)
-                          : Colors.transparent,
-                      border: selected
-                          ? Border.all(color: const Color(0xff323741))
-                          : null,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          nav[index].icon,
-                          size: 18,
-                          color: selected ? _green : _muted,
-                        ),
-                        const SizedBox(width: 11),
-                        Expanded(
-                          child: Text(
-                            nav[index].label,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: selected ? _text : _muted,
-                              fontSize: 13,
-                              fontWeight:
-                                  selected ? FontWeight.w700 : FontWeight.w500,
+            if (expanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(11, 8, 11, 28),
+                child: Text(
+                  admin ? 'ADMIN WORKSPACE' : 'PERSONAL WORKSPACE',
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+            if (expanded)
+              ...List.generate(nav.length, (index) {
+                final selected = index == current;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => onTab(index),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xff20242a)
+                            : Colors.transparent,
+                        border: selected
+                            ? Border.all(color: const Color(0xff323741))
+                            : null,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            nav[index].icon,
+                            size: 18,
+                            color: selected ? _green : _muted,
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Text(
+                              nav[index].label,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: selected ? _text : _muted,
+                                fontSize: 13,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
             const Spacer(),
           ],
         ),
@@ -317,12 +351,6 @@ class _Header extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Text('Workspace',
-                style: TextStyle(color: _muted, fontSize: 13)),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Icon(Icons.chevron_right_rounded, color: _muted, size: 17),
-            ),
             Text(
               section,
               style: const TextStyle(
@@ -332,29 +360,38 @@ class _Header extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            const _Dot(),
-            const SizedBox(width: 7),
-            const Text(
-              'Local preview',
-              style: TextStyle(color: _muted, fontSize: 12),
-            ),
-            const SizedBox(width: 18),
             Tooltip(
-              message: 'Buka settings',
+              message: 'Buka profile dan settings',
               child: InkWell(
                 onTap: onSettings,
-                borderRadius: BorderRadius.circular(20),
-                child: CircleAvatar(
-                  radius: 15,
-                  backgroundColor: const Color(0xff233a35),
-                  foregroundColor: _green,
-                  child: Text(
-                    alias.isEmpty ? 'Y' : alias.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(5, 5, 14, 5),
+                  decoration: BoxDecoration(
+                    color: _raised,
+                    border: Border.all(color: _line),
+                    borderRadius: BorderRadius.circular(24),
                   ),
+                  child: Row(children: [
+                    CircleAvatar(
+                      radius: 15,
+                      backgroundColor: const Color(0xff233a35),
+                      foregroundColor: _green,
+                      child: Text(
+                        alias.isEmpty
+                            ? 'Y'
+                            : alias.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    const Text('Your Profile',
+                        style: TextStyle(
+                            color: _text,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700)),
+                  ]),
                 ),
               ),
             ),
@@ -369,7 +406,7 @@ class _Scroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scrollbar(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 30, 32, 110),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 56),
           child: child,
         ),
       );
@@ -438,36 +475,32 @@ class _TodayPage extends StatelessWidget {
                   squad,
                 ]);
               }
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 7, child: companion),
-                    const SizedBox(width: 22),
-                    Expanded(
-                      flex: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          tasks,
-                          const SizedBox(height: 14),
-                          desk,
-                          const SizedBox(height: 14),
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(child: complianceAndRewards),
-                                const SizedBox(width: 14),
-                                Expanded(child: squad),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 7, child: companion),
+                  const SizedBox(width: 22),
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        tasks,
+                        const SizedBox(height: 14),
+                        desk,
+                        const SizedBox(height: 14),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: complianceAndRewards),
+                            const SizedBox(width: 14),
+                            Expanded(child: squad),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           ),
@@ -669,7 +702,7 @@ class _DailyCard extends StatelessWidget {
                     style: TextStyle(color: _muted, fontSize: 12)),
                 const Spacer(),
                 FilledButton(
-                  onPressed: () => _commit(context),
+                  onPressed: _commit,
                   style: _greenButton,
                   child: const Text('Commit pack'),
                 ),
@@ -679,14 +712,7 @@ class _DailyCard extends StatelessWidget {
         ),
       );
 
-  void _commit(BuildContext context) {
-    if (!controller.commitDailyCardPack()) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Card committed. Challenge ini terkunci untuk hari ini.'),
-      ),
-    );
-  }
+  void _commit() => controller.commitDailyCardPack();
 }
 
 class _CommittedCard extends StatelessWidget {
@@ -739,7 +765,7 @@ class _CommittedCard extends StatelessWidget {
             const _Pill('Completed', _green)
           else
             FilledButton(
-              onPressed: () => _complete(context),
+              onPressed: _complete,
               style: _greenButton,
               child: const Text('Complete'),
             ),
@@ -748,14 +774,7 @@ class _CommittedCard extends StatelessWidget {
     );
   }
 
-  void _complete(BuildContext context) {
-    if (!controller.completeCard(card['id'].toString())) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Completed! +${card['xp']} XP added to your progress.'),
-      ),
-    );
-  }
+  void _complete() => controller.completeCard(card['id'].toString());
 }
 
 class _ComplianceRewardsCard extends StatelessWidget {
@@ -837,12 +856,9 @@ class _ComplianceRewardsCard extends StatelessWidget {
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
-            child: _Pill(
-              controller.tokens > 0
-                  ? '${controller.tokens} Streak Freeze ready'
-                  : 'No Streak Freeze available',
-              controller.tokens > 0 ? _cyan : _muted,
-            ),
+            child: Text(
+                '${controller.completedCards.length} task selesai hari ini',
+                style: const TextStyle(color: _muted, fontSize: 11)),
           ),
         ]),
       );
@@ -987,6 +1003,9 @@ class _QuickDeskHabits extends StatelessWidget {
   Widget build(BuildContext context) {
     const target = 2000;
     final water = controller.water.round().clamp(0, target);
+    final mealsToday = controller.meals
+        .where((meal) => meal['day'] == controller.today)
+        .length;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -996,10 +1015,10 @@ class _QuickDeskHabits extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Desk Energy Hub',
+        const Text('Food & Hydration',
             style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('Water intake • $water / $target ml',
+        Text('$mealsToday meal check-in • $water / $target ml water',
             style: const TextStyle(color: _muted, fontSize: 11)),
         const SizedBox(height: 13),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -1011,9 +1030,12 @@ class _QuickDeskHabits extends StatelessWidget {
             label: const Text('+250 ml Water'),
           ),
           OutlinedButton.icon(
-            onPressed: () => toast(context, '60-second stretch dimulai.'),
-            icon: const Icon(Icons.self_improvement_rounded, size: 16),
-            label: const Text('60s Stretch'),
+            onPressed: () => controller.addMeal({
+              'meal': 'Meal check-in',
+              'note': 'Logged from web dashboard',
+            }),
+            icon: const Icon(Icons.restaurant_outlined, size: 16),
+            label: const Text('Meal done'),
           ),
         ]),
         const SizedBox(height: 15),
@@ -1044,7 +1066,6 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
     with TickerProviderStateMixin {
   late final AnimationController _idleController;
   late final AnimationController _interactionController;
-  var _dialogueIndex = 0;
   var _showSparkles = false;
 
   @override
@@ -1073,7 +1094,6 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
 
   void _interact() {
     setState(() {
-      _dialogueIndex += 1;
       _showSparkles = true;
     });
     _interactionController.forward(from: 0);
@@ -1085,18 +1105,6 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
     final kind = controller.profile?['companion']?.toString() ?? 'plant';
     final name =
         {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Companion';
-    final defaultDialogue = controller.streak == 0
-        ? 'Senang kamu kembali. Kita mulai dari satu langkah kecil, ya.'
-        : controller.dailyProgress >= 1
-            ? 'Hari ini kita hebat. Aku ikut tumbuh karena kamu.'
-            : 'Satu task lagi juga berarti. Aku temani dari sini.';
-    final dialogues = [
-      defaultDialogue,
-      'Aku senang kamu menyapaku. Yuk lanjut satu langkah kecil lagi!',
-      'Kamu tidak harus sempurna. Cukup hadir untuk dirimu hari ini.',
-      'Energi kecil yang kamu kumpulkan hari ini tetap berarti.',
-    ];
-    final dialogue = dialogues[_dialogueIndex % dialogues.length];
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -1130,7 +1138,6 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
             style: TextStyle(color: _muted, fontSize: 12)),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, box) {
-          final narrow = box.maxWidth < 540;
           final avatarSize =
               (box.maxWidth * .92).clamp(300.0, 500.0).toDouble();
           final stageHeight = (avatarSize + 60).clamp(430.0, 560.0).toDouble();
@@ -1212,36 +1219,22 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
                     ),
                   ),
                 ),
-              Positioned(
-                top: narrow ? 8 : 30,
-                right: narrow ? 0 : 10,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: narrow ? 210 : 225),
-                  child: Container(
-                    padding: const EdgeInsets.all(13),
-                    decoration: BoxDecoration(
-                      color: const Color(0xee202e2a),
-                      border: Border.all(color: const Color(0xff497565)),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(dialogue,
-                        style: const TextStyle(
-                            color: _text, fontSize: 12, height: 1.45)),
-                  ),
-                ),
-              ),
             ]),
           );
         }),
         const SizedBox(height: 6),
         Wrap(spacing: 8, runSpacing: 8, children: [
           _Pill('${controller.streak} day streak', _green),
-          _Pill(
-            controller.tokens > 0
-                ? '${controller.tokens} Streak Freeze ready'
-                : 'No Streak Freeze',
-            controller.tokens > 0 ? _cyan : _muted,
-          ),
+          if (controller.canRestreak)
+            ActionChip(
+              avatar:
+                  const Icon(Icons.restore_rounded, size: 15, color: _amber),
+              label: const Text('Restreak'),
+              onPressed: controller.restreak,
+              backgroundColor: const Color(0xff2c2419),
+              side: const BorderSide(color: Color(0xff5a4828)),
+              labelStyle: const TextStyle(color: _amber, fontSize: 11),
+            ),
         ]),
         const SizedBox(height: 18),
         Row(children: [
@@ -1359,7 +1352,6 @@ class _AnalyticsPageState extends State<_AnalyticsPage> {
           _focusMinutes += _duration ~/ 60;
           _remaining = _duration;
         });
-        toast(context, 'Sesi fokus selesai. Kerja bagus!');
       } else {
         setState(() => _remaining--);
       }
@@ -1393,7 +1385,6 @@ class _AnalyticsPageState extends State<_AnalyticsPage> {
           _delayTimer = null;
           _delayRemaining = 0;
         });
-        toast(context, 'Lima menit terlewati. Kamu berhasil memberi jeda.');
       } else {
         setState(() => _delayRemaining--);
       }
@@ -1452,8 +1443,6 @@ class _AnalyticsPageState extends State<_AnalyticsPage> {
         _trackName = 'Opened in YouTube / Spotify';
         _soundPlaying = false;
       });
-      toast(context,
-          'Provider dibuka di tab baru. Link audio langsung bisa diputar di sini.');
       return;
     }
     platform.playCustomAudio(link);
@@ -2084,6 +2073,8 @@ class _Bars extends StatelessWidget {
 
 /// A compact desktop hub: shared progress on the left, lightweight reactions
 /// on the right. Posting remains intentionally mobile-first.
+// Kept temporarily for local-state migration previews.
+// ignore: unused_element
 class _CommunityHubPage extends StatelessWidget {
   const _CommunityHubPage({required this.controller});
 
@@ -2194,7 +2185,6 @@ class _CommunityHubPage extends StatelessWidget {
                       FilledButton.icon(
                         onPressed: () {
                           controller.joinSquad();
-                          toast(context, 'Kamu masuk ke preview squad.');
                         },
                         icon: const Icon(Icons.add_rounded, size: 17),
                         label: const Text('Gabung preview squad'),
@@ -2501,6 +2491,20 @@ class _AdminPage extends StatelessWidget {
                       post['body'].toString(),
                       style: const TextStyle(color: _text, height: 1.5),
                     ),
+                    if (post['photo']?.toString().isNotEmpty == true) ...[
+                      const SizedBox(height: 13),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          base64Decode(
+                            post['photo'].toString().split(',').last,
+                          ),
+                          width: double.infinity,
+                          height: 280,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 15),
                     Row(
                       children: [
@@ -2770,8 +2774,7 @@ class _CompanionState extends State<_Companion> {
               children: [
                 IconButton(
                   tooltip: 'Attachment segera hadir',
-                  onPressed: () =>
-                      toast(context, 'Attachment tersedia di aplikasi mobile.'),
+                  onPressed: null,
                   icon: const Icon(
                     Icons.add_circle_outline_rounded,
                     color: _muted,

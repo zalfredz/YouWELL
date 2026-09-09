@@ -411,6 +411,8 @@ class WellnessController extends ChangeNotifier {
   List<JsonMap> get cravings => _rows('cravings');
   void recordCraving(JsonMap value) => _add('cravings', value);
   void deleteCraving(String id) => _remove('cravings', id);
+  List<JsonMap> get focusSessions => _rows('focusSessions');
+  void recordFocusSession(JsonMap value) => _add('focusSessions', value);
   List<JsonMap> get posts => _rows('posts');
   void submitPost(JsonMap value) => _add('posts', value);
   void deletePost(String id) => _remove('posts', id);
@@ -454,6 +456,22 @@ class WellnessController extends ChangeNotifier {
   void leaveSquad() {
     _data['squad'] = false;
     _save();
+  }
+
+  bool get canRestreak {
+    final yesterday = dayKey(now.subtract(const Duration(days: 1)));
+    final before = dayKey(now.subtract(const Duration(days: 2)));
+    return !completedDays.contains(yesterday) &&
+        !frozenDays.contains(yesterday) &&
+        completedDays.contains(before);
+  }
+
+  bool restreak() {
+    if (!canRestreak) return false;
+    final yesterday = dayKey(now.subtract(const Duration(days: 1)));
+    (_data['frozen'] as List).add(yesterday);
+    _save();
+    return true;
   }
 
   void matchBuddy() {

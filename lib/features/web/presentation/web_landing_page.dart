@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:youwell/core/config/app_environment.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/shared/widgets/ui_helpers.dart';
 
 /// Public product page. It intentionally works on phones, tablets and desktop.
 class WebLandingPage extends StatefulWidget {
@@ -24,16 +23,13 @@ class _WebLandingPageState extends State<WebLandingPage> {
       platform.openLink(store);
       return;
     }
-    toast(context, 'Link aplikasi akan tersedia saat YouWell diterbitkan.');
   }
 
   Future<void> _join() async {
     try {
       await widget.onJoin();
     } on Object {
-      if (mounted) {
-        toast(context, 'Web App belum dapat dibuka. Coba lagi.');
-      }
+      // Authentication errors stay silent on the public preview.
     }
   }
 
