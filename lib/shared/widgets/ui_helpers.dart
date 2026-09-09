@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 
-void toast(BuildContext context, String text) =>
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+/// Intentionally silent.
+///
+/// YouWell uses feedback inside its cards and dialogs instead of global
+/// SnackBars, which become full-width white banners on the web canvas.
+void toast(BuildContext context, String text) {}
 Future<T?> sheet<T>(BuildContext context, Widget child) =>
     showModalBottomSheet<T>(
       context: context,

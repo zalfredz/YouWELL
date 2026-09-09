@@ -155,16 +155,6 @@ class _AppShellState extends State<AppShell> {
                       ],
                     ),
                   ),
-                  if (widget.controller.storageError != null)
-                    MaterialBanner(
-                      content: Text(widget.controller.storageError!),
-                      actions: [
-                        TextButton(
-                          onPressed: () => setState(() => tab = 3),
-                          child: const Text('Kontrol data'),
-                        ),
-                      ],
-                    ),
                   Expanded(
                     child: Align(
                       alignment: Alignment.topCenter,
