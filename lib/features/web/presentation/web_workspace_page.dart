@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:youwell/app/web_experience_gate.dart';
@@ -35,8 +37,6 @@ class WebWorkspacePage extends StatefulWidget {
 
 class _WebWorkspacePageState extends State<WebWorkspacePage> {
   int _tab = 0;
-  bool _showCompanion = true;
-  bool _minimizeCompanion = false;
   bool _isPresentingDailyDraw = false;
 
   @override
@@ -107,12 +107,6 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
             onTab: (value) => setState(() => _tab = value),
             onOpenDailyDraw: _presentDailyDraw,
             onOpenProfile: _openProfile,
-            showCompanion: _showCompanion,
-            minimized: _minimizeCompanion,
-            setCompanion: ({bool? open, bool? minimized}) => setState(() {
-              _showCompanion = open ?? _showCompanion;
-              _minimizeCompanion = minimized ?? _minimizeCompanion;
-            }),
           ),
         ),
       );
@@ -126,9 +120,6 @@ class _Dashboard extends StatelessWidget {
     required this.onTab,
     required this.onOpenDailyDraw,
     required this.onOpenProfile,
-    required this.showCompanion,
-    required this.minimized,
-    required this.setCompanion,
   });
   final WellnessController controller;
   final bool isAdmin;
@@ -136,9 +127,6 @@ class _Dashboard extends StatelessWidget {
   final ValueChanged<int> onTab;
   final Future<void> Function() onOpenDailyDraw;
   final Future<void> Function() onOpenProfile;
-  final bool showCompanion;
-  final bool minimized;
-  final void Function({bool? open, bool? minimized}) setCompanion;
 
   @override
   Widget build(BuildContext context) {
@@ -149,14 +137,13 @@ class _Dashboard extends StatelessWidget {
       if (isAdmin)
         const _NavItem('Community Admin', Icons.admin_panel_settings_outlined),
     ];
-    void openCompanion() => setCompanion(open: true, minimized: false);
     final pages = <Widget>[
       _TodayPage(
         controller: controller,
         onTab: onTab,
         onOpenDailyDraw: onOpenDailyDraw,
       ),
-      _AnalyticsPage(controller: controller, openCompanion: openCompanion),
+      _AnalyticsPage(controller: controller),
       _CommunityHubPage(controller: controller),
       if (isAdmin) _AdminPage(controller: controller),
     ];
@@ -173,45 +160,22 @@ class _Dashboard extends StatelessWidget {
           children: [
             _Sidebar(nav: nav, current: safeTab, onTab: onTab, admin: isAdmin),
             Expanded(
-              child: Stack(
+              child: Column(
                 children: [
-                  Column(
-                    children: [
-                      _Header(
-                        section: nav[safeTab].label,
-                        alias: alias,
-                        onSettings: onOpenProfile,
-                      ),
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          child: KeyedSubtree(
-                            key: ValueKey(safeTab),
-                            child: pages[safeTab],
-                          ),
-                        ),
-                      ),
-                    ],
+                  _Header(
+                    section: nav[safeTab].label,
+                    alias: alias,
+                    onSettings: onOpenProfile,
                   ),
-                  if (safeTab != 0)
-                    Positioned(
-                      right: 20,
-                      bottom: 20,
-                      child: showCompanion
-                          ? _Companion(
-                              controller: controller,
-                              minimized: minimized,
-                              onMinimize: () => setCompanion(minimized: true),
-                              onExpand: () => setCompanion(minimized: false),
-                              onClose: () => setCompanion(open: false),
-                            )
-                          : FilledButton.icon(
-                              onPressed: openCompanion,
-                              icon: const _Dot(),
-                              label: const Text('Open Companion'),
-                              style: _greenButton,
-                            ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: KeyedSubtree(
+                        key: ValueKey(safeTab),
+                        child: pages[safeTab],
+                      ),
                     ),
+                  ),
                 ],
               ),
             ),
@@ -1329,163 +1293,743 @@ class _CompanionSparkles extends StatelessWidget {
       ]);
 }
 
-class _AnalyticsPage extends StatelessWidget {
-  const _AnalyticsPage({required this.controller, required this.openCompanion});
+class _AnalyticsPage extends StatefulWidget {
+  const _AnalyticsPage({required this.controller});
   final WellnessController controller;
-  final VoidCallback openCompanion;
+
+  @override
+  State<_AnalyticsPage> createState() => _AnalyticsPageState();
+}
+
+enum _FocusMode { sun, star, moon }
+
+class _AnalyticsPageState extends State<_AnalyticsPage> {
+  final _goal = TextEditingController();
+  final _vent = TextEditingController();
+  final _trackLink = TextEditingController();
+  Timer? _focusTimer;
+  Timer? _delayTimer;
+  _FocusMode _mode = _FocusMode.sun;
+  var _remaining = 25 * 60;
+  var _delayRemaining = 0;
+  var _focusMinutes = 0;
+  var _ventReleased = false;
+  var _sound = 'Rain';
+  var _trackName = 'Rain ambience';
+  var _soundPlaying = false;
+  var _volume = .35;
+  String? _customSource;
+
+  int get _duration => switch (_mode) {
+        _FocusMode.sun => 25 * 60,
+        _FocusMode.star => 5 * 60,
+        _FocusMode.moon => 15 * 60,
+      };
+  bool get _focusRunning => _focusTimer != null;
+
+  @override
+  void dispose() {
+    _focusTimer?.cancel();
+    _delayTimer?.cancel();
+    _goal.dispose();
+    _vent.dispose();
+    _trackLink.dispose();
+    platform.sound('stop');
+    super.dispose();
+  }
+
+  void _selectMode(_FocusMode mode) => setState(() {
+        _focusTimer?.cancel();
+        _focusTimer = null;
+        _mode = mode;
+        _remaining = _duration;
+      });
+
+  void _toggleFocus() {
+    if (_focusRunning) {
+      _focusTimer?.cancel();
+      setState(() => _focusTimer = null);
+      return;
+    }
+    _focusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_remaining <= 1) {
+        _focusTimer?.cancel();
+        setState(() {
+          _focusTimer = null;
+          _focusMinutes += _duration ~/ 60;
+          _remaining = _duration;
+        });
+        toast(context, 'Sesi fokus selesai. Kerja bagus!');
+      } else {
+        setState(() => _remaining--);
+      }
+    });
+    setState(() {});
+  }
+
+  void _resetFocus() {
+    _focusTimer?.cancel();
+    setState(() {
+      _focusTimer = null;
+      _remaining = _duration;
+    });
+  }
+
+  void _startDelay() {
+    _delayTimer?.cancel();
+    setState(() => _delayRemaining = 5 * 60);
+    _delayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_delayRemaining <= 1) {
+        _delayTimer?.cancel();
+        widget.controller.recordCraving({
+          'trigger': 'Focus station delay',
+          'seconds': 300,
+          'success': true,
+          'avoided': false,
+          'cost': 0,
+        });
+        setState(() {
+          _delayTimer = null;
+          _delayRemaining = 0;
+        });
+        toast(context, 'Lima menit terlewati. Kamu berhasil memberi jeda.');
+      } else {
+        setState(() => _delayRemaining--);
+      }
+    });
+  }
+
+  void _toggleSound(String name) {
+    final key = switch (name) {
+      'Rain' => 'rain',
+      'Forest' => 'forest',
+      'Fireplace' => 'fireplace',
+      _ => 'ambient',
+    };
+    if (_soundPlaying && _sound == name) {
+      platform.sound('stop');
+      setState(() => _soundPlaying = false);
+      return;
+    }
+    platform.sound(key);
+    setState(() {
+      _customSource = null;
+      _sound = name;
+      _trackName = '$name ambience';
+      _soundPlaying = true;
+    });
+  }
+
+  void _toggleTrack() {
+    if (_soundPlaying) {
+      if (_customSource != null) {
+        platform.pauseCustomAudio();
+      } else {
+        platform.sound('stop');
+      }
+      setState(() => _soundPlaying = false);
+      return;
+    }
+    if (_customSource != null) {
+      platform.playCustomAudio(_customSource!);
+      platform.setSoundVolume(_volume);
+      setState(() => _soundPlaying = true);
+      return;
+    }
+    _toggleSound(_sound);
+  }
+
+  void _applyTrackLink() {
+    final link = _trackLink.text.trim();
+    if (link.isEmpty) return;
+    final directAudio =
+        RegExp(r'\.(mp3|m4a|wav|ogg)(\?.*)?$', caseSensitive: false)
+            .hasMatch(link);
+    if (!directAudio) {
+      platform.openLink(link);
+      setState(() {
+        _trackName = 'Opened in YouTube / Spotify';
+        _soundPlaying = false;
+      });
+      toast(context,
+          'Provider dibuka di tab baru. Link audio langsung bisa diputar di sini.');
+      return;
+    }
+    platform.playCustomAudio(link);
+    platform.setSoundVolume(_volume);
+    setState(() {
+      _customSource = link;
+      _trackName = 'Custom audio link';
+      _soundPlaying = true;
+    });
+  }
+
+  Future<void> _uploadTrack() async {
+    final raw = await platform.pickAudio();
+    if (!mounted || raw == null) return;
+    final file = jsonDecode(raw) as Map<String, dynamic>;
+    final source = file['url']?.toString();
+    if (source == null || source.isEmpty) return;
+    platform.playCustomAudio(source);
+    platform.setSoundVolume(_volume);
+    setState(() {
+      _customSource = source;
+      _trackName = file['name']?.toString() ?? 'Local MP3';
+      _soundPlaying = true;
+    });
+  }
+
+  void _releaseVent() {
+    if (_vent.text.trim().isEmpty) return;
+    platform.sound('release');
+    setState(() {
+      _vent.clear();
+      _ventReleased = true;
+    });
+    Future<void>.delayed(const Duration(milliseconds: 650), () {
+      if (mounted) setState(() => _ventReleased = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) => _Scroll(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Focus & Craving',
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Focus & Craving',
               style: TextStyle(
-                color: _text,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -.9,
-              ),
-            ),
-            const SizedBox(height: 7),
-            const Text(
-              'Ruang kecil untuk fokus, mengatur napas, dan memberi craving waktu untuk lewat.',
-              style: TextStyle(color: _muted),
-            ),
-            const SizedBox(height: 24),
-            LayoutBuilder(
-              builder: (context, box) {
-                final cards = [
-                  _Metric(
-                    'Compliance',
-                    '${(controller.compliance(7) * 100).round()}%',
-                    '7 hari terakhir',
-                    _green,
-                  ),
-                  _Metric(
-                    'Current streak',
-                    '${controller.streak}',
-                    'hari kecil yang terjaga',
-                    _cyan,
-                  ),
-                  _Metric(
-                    'Delay attempts',
-                    '${controller.cravings.length}',
-                    'tercatat di akunmu',
-                    _amber,
-                  ),
-                ];
-                return box.maxWidth < 700
-                    ? Column(
-                        children: cards
-                            .map(
-                              (card) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: card,
-                              ),
-                            )
-                            .toList(),
-                      )
-                    : Row(
-                        children: cards
-                            .map(
-                              (card) => Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: card,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      );
+                  color: _text,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -.9)),
+          const SizedBox(height: 7),
+          const Text(
+              'Stasiun aktif untuk fokus, melepas stres, dan memberi craving waktu untuk lewat.',
+              style: TextStyle(color: _muted)),
+          const SizedBox(height: 24),
+          LayoutBuilder(builder: (context, box) {
+            final focusHub = _FocusHub(
+              mode: _mode,
+              remaining: _remaining,
+              duration: _duration,
+              running: _focusRunning,
+              goal: _goal,
+              sound: _sound,
+              soundPlaying: _soundPlaying,
+              volume: _volume,
+              trackName: _trackName,
+              trackLink: _trackLink,
+              onMode: _selectMode,
+              onToggle: _toggleFocus,
+              onReset: _resetFocus,
+              onSound: _toggleSound,
+              onVolume: (value) {
+                platform.setSoundVolume(value);
+                setState(() => _volume = value);
               },
-            ),
-            const SizedBox(height: 16),
-            _Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Your weekly rhythm',
-                    style: TextStyle(
-                      color: _text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'Ringkasan ringan agar kamu bisa fokus pada langkah berikutnya.',
-                    style: TextStyle(color: _muted, fontSize: 12),
-                  ),
-                  const SizedBox(height: 26),
-                  SizedBox(height: 190, child: _Bars(controller: controller)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _Card(
-              tint: const Color(0xff252018),
-              child: Row(
-                children: [
-                  const Icon(Icons.timer_outlined, color: _amber, size: 31),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Butuh jeda dari layar atau craving?',
-                          style: TextStyle(
-                            color: _text,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Buka reset tools untuk delay timer, napas, soundscape, atau micro-vent.',
-                          style: TextStyle(color: _muted, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton(
-                    onPressed: openCompanion,
-                    style: _greenButton,
-                    child: const Text('Open reset tools'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+              onApplyLink: _applyTrackLink,
+              onUpload: _uploadTrack,
+              onToggleTrack: _toggleTrack,
+            );
+            final relief = _ReliefHub(
+              delayRemaining: _delayRemaining,
+              vent: _vent,
+              ventReleased: _ventReleased,
+              focusMinutes: _focusMinutes,
+              cravingAttempts: widget.controller.cravings.length,
+              onDelay: _startDelay,
+              onVent: _releaseVent,
+            );
+            return box.maxWidth < 930
+                ? Column(
+                    children: [focusHub, const SizedBox(height: 20), relief])
+                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(flex: 6, child: focusHub),
+                    const SizedBox(width: 20),
+                    Expanded(flex: 4, child: relief),
+                  ]);
+          }),
+        ]),
       );
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric(this.label, this.value, this.detail, this.color);
-  final String label, value, detail;
+class _FocusHub extends StatelessWidget {
+  const _FocusHub({
+    required this.mode,
+    required this.remaining,
+    required this.duration,
+    required this.running,
+    required this.goal,
+    required this.sound,
+    required this.soundPlaying,
+    required this.volume,
+    required this.trackName,
+    required this.trackLink,
+    required this.onMode,
+    required this.onToggle,
+    required this.onReset,
+    required this.onSound,
+    required this.onVolume,
+    required this.onApplyLink,
+    required this.onUpload,
+    required this.onToggleTrack,
+  });
+  final _FocusMode mode;
+  final int remaining, duration;
+  final bool running, soundPlaying;
+  final TextEditingController goal, trackLink;
+  final String sound, trackName;
+  final double volume;
+  final ValueChanged<_FocusMode> onMode;
+  final VoidCallback onToggle, onReset, onApplyLink, onUpload, onToggleTrack;
+  final ValueChanged<String> onSound;
+  final ValueChanged<double> onVolume;
+
+  String get time =>
+      '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _Card(
+          padding: 24,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Focus timer',
+                style: TextStyle(
+                    color: _text, fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            const Text('Pilih ritme yang paling cocok untuk sesi ini.',
+                style: TextStyle(color: _muted, fontSize: 13)),
+            const SizedBox(height: 18),
+            Wrap(spacing: 9, runSpacing: 9, children: [
+              _ModeButton(
+                  label: '☀️ Matahari · 25m Focus',
+                  selected: mode == _FocusMode.sun,
+                  onTap: () => onMode(_FocusMode.sun)),
+              _ModeButton(
+                  label: '⭐ Bintang · 5m Break',
+                  selected: mode == _FocusMode.star,
+                  onTap: () => onMode(_FocusMode.star)),
+              _ModeButton(
+                  label: '🌙 Bulan · 15m Break',
+                  selected: mode == _FocusMode.moon,
+                  onTap: () => onMode(_FocusMode.moon)),
+            ]),
+            const SizedBox(height: 24),
+            Center(
+                child: _FocusRing(
+                    mode: mode, progress: remaining / duration, time: time)),
+            const SizedBox(height: 22),
+            Center(
+                child: Wrap(spacing: 10, children: [
+              FilledButton.icon(
+                  onPressed: onToggle,
+                  style: _greenButton,
+                  icon: Icon(
+                      running ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                  label: Text(running ? 'Pause' : 'Start')),
+              OutlinedButton.icon(
+                  onPressed: onReset,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: const Text('Reset')),
+            ])),
+            const SizedBox(height: 20),
+            TextField(
+              controller: goal,
+              style: const TextStyle(color: _text),
+              decoration: const InputDecoration(
+                labelText: 'Apa target fokusmu sesi ini?',
+                labelStyle: TextStyle(color: _muted),
+                prefixIcon: Icon(Icons.flag_outlined, color: _cyan),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 20),
+        _Card(
+          padding: 24,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Audio Soundscape',
+                style: TextStyle(
+                    color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            const Text('Pilih ambience atau putar musikmu sendiri.',
+                style: TextStyle(color: _muted, fontSize: 12)),
+            const SizedBox(height: 15),
+            Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: ['Rain', 'Forest', 'Fireplace', 'Preset Lo-Fi Beats']
+                    .map((item) => FilterChip(
+                          selected: soundPlaying && sound == item,
+                          showCheckmark: false,
+                          label: Text(item == 'Rain'
+                              ? '🌧️ Rain'
+                              : item == 'Forest'
+                                  ? '🌲 Forest'
+                                  : item == 'Fireplace'
+                                      ? '🔥 Fireplace'
+                                      : '🎵 Preset Lo-Fi Beats'),
+                          onSelected: (_) => onSound(item),
+                          selectedColor: const Color(0xff25453a),
+                          backgroundColor: _raised,
+                          side: const BorderSide(color: _line),
+                          labelStyle: const TextStyle(color: _text),
+                        ))
+                    .toList()),
+            const SizedBox(height: 18),
+            const Text('Request / Putar Lagu Sendiri',
+                style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 9),
+            Row(children: [
+              Expanded(
+                  child: TextField(
+                      controller: trackLink,
+                      style: const TextStyle(color: _text),
+                      decoration: const InputDecoration(
+                          hintText: 'Paste link YouTube / Spotify / audio URL',
+                          isDense: true))),
+              const SizedBox(width: 9),
+              FilledButton(
+                  onPressed: onApplyLink,
+                  style: _greenButton,
+                  child: const Text('Apply')),
+            ]),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+                onPressed: onUpload,
+                icon: const Icon(Icons.upload_file_rounded),
+                label: const Text('Upload MP3')),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                  color: _raised,
+                  border: Border.all(color: _line),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                Icon(
+                    soundPlaying
+                        ? Icons.graphic_eq_rounded
+                        : Icons.music_note_rounded,
+                    color: _cyan),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(trackName,
+                          style: const TextStyle(
+                              color: _text, fontWeight: FontWeight.w700)),
+                      Text(soundPlaying ? 'Playing' : 'Paused',
+                          style: const TextStyle(color: _muted, fontSize: 11)),
+                    ])),
+                IconButton(
+                    onPressed: onToggleTrack,
+                    icon: Icon(
+                        soundPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: _green)),
+              ]),
+            ),
+            Row(children: [
+              const Icon(Icons.volume_down_rounded, color: _muted),
+              Expanded(
+                  child: Slider(
+                      value: volume, onChanged: onVolume, activeColor: _green)),
+              const Icon(Icons.volume_up_rounded, color: _muted),
+            ]),
+          ]),
+        ),
+      ]);
+}
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton(
+      {required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: const Color(0xff28443a),
+        backgroundColor: _raised,
+        side: const BorderSide(color: _line),
+        labelStyle: const TextStyle(color: _text),
+      );
+}
+
+class _FocusRing extends StatelessWidget {
+  const _FocusRing(
+      {required this.mode, required this.progress, required this.time});
+  final _FocusMode mode;
+  final double progress;
+  final String time;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 290,
+        height: 290,
+        child: Stack(alignment: Alignment.center, children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: progress),
+            duration: const Duration(seconds: 1),
+            curve: Curves.linear,
+            builder: (context, value, _) => CustomPaint(
+                size: const Size.square(290),
+                painter: _FocusRingPainter(mode, value)),
+          ),
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(time,
+                style: const TextStyle(
+                    color: _text,
+                    fontSize: 43,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.5)),
+            Text(
+                switch (mode) {
+                  _FocusMode.sun => 'FOCUS',
+                  _FocusMode.star => 'SHORT BREAK',
+                  _FocusMode.moon => 'LONG BREAK'
+                },
+                style: const TextStyle(
+                    color: _muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1)),
+          ]),
+        ]),
+      );
+}
+
+class _FocusRingPainter extends CustomPainter {
+  const _FocusRingPainter(this.mode, this.progress);
+  final _FocusMode mode;
+  final double progress;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final rect = Rect.fromCircle(center: center, radius: 105);
+    final color = switch (mode) {
+      _FocusMode.sun => const Color(0xfff59e0b),
+      _FocusMode.star => const Color(0xfffbbf24),
+      _FocusMode.moon => const Color(0xffe0f2fe)
+    };
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round
+      ..color = color.withValues(alpha: .18);
+    final active = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round
+      ..color = color
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    if (mode == _FocusMode.star) {
+      final path = Path();
+      for (var i = 0; i < 5; i++) {
+        final angle = -math.pi / 2 + i * math.pi * 4 / 5;
+        final point = Offset(center.dx + 112 * math.cos(angle),
+            center.dy + 112 * math.sin(angle));
+        i == 0
+            ? path.moveTo(point.dx, point.dy)
+            : path.lineTo(point.dx, point.dy);
+      }
+      path.close();
+      canvas.drawPath(path, base);
+      final metric = path.computeMetrics().first;
+      canvas.drawPath(metric.extractPath(0, metric.length * progress), active);
+    } else {
+      canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false, base);
+      canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * progress, false, active);
+      if (mode == _FocusMode.sun) {
+        final ray = Paint()
+          ..color = color
+          ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round;
+        for (var i = 0; i < 12; i++) {
+          final a = i * math.pi / 6;
+          canvas.drawLine(center + Offset(math.cos(a) * 122, math.sin(a) * 122),
+              center + Offset(math.cos(a) * 136, math.sin(a) * 136), ray);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FocusRingPainter old) =>
+      old.mode != mode || old.progress != progress;
+}
+
+class _ReliefHub extends StatelessWidget {
+  const _ReliefHub(
+      {required this.delayRemaining,
+      required this.vent,
+      required this.ventReleased,
+      required this.focusMinutes,
+      required this.cravingAttempts,
+      required this.onDelay,
+      required this.onVent});
+  final int delayRemaining, focusMinutes, cravingAttempts;
+  final TextEditingController vent;
+  final bool ventReleased;
+  final VoidCallback onDelay, onVent;
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _Card(
+            tint: const Color(0xff2a2018),
+            padding: 22,
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Craving & Stress Relief',
+                  style: TextStyle(
+                      color: _text, fontSize: 19, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                  onPressed: onDelay,
+                  style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xffe6814f),
+                      foregroundColor: const Color(0xff18120e),
+                      minimumSize: const Size.fromHeight(48)),
+                  icon: const Icon(Icons.emergency_rounded),
+                  label: const Text('Lagi Craving / Kebelet Vape?')),
+              const SizedBox(height: 16),
+              if (delayRemaining > 0)
+                _BreathingGuide(remaining: delayRemaining)
+              else
+                const Text(
+                    'Tekan tombol untuk mengaktifkan Delay Timer 5 menit dan panduan napas.',
+                    style:
+                        TextStyle(color: _muted, fontSize: 12, height: 1.45)),
+            ])),
+        const SizedBox(height: 18),
+        _Card(
+            padding: 22,
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Micro-Vent',
+                  style: TextStyle(
+                      color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              const Text('Tumpahkan sebentar. Tidak disimpan atau dibagikan.',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+              const SizedBox(height: 12),
+              AnimatedOpacity(
+                  opacity: ventReleased ? .18 : 1,
+                  duration: const Duration(milliseconds: 300),
+                  child: TextField(
+                      controller: vent,
+                      maxLines: 5,
+                      style: const TextStyle(color: _text),
+                      decoration: const InputDecoration(
+                          hintText: 'Tulis yang membuatmu sesak atau kesal…'))),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                  onPressed: onVent,
+                  style: _greenButton,
+                  icon: const Icon(Icons.delete_sweep_rounded),
+                  label: const Text('Hancurkan / Remas')),
+            ])),
+        const SizedBox(height: 18),
+        Row(children: [
+          Expanded(
+              child: _SummaryBadge(
+                  icon: Icons.timer_outlined,
+                  label: 'Focus Time Today',
+                  value: '$focusMinutes mins',
+                  color: _cyan)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: _SummaryBadge(
+                  icon: Icons.shield_outlined,
+                  label: 'Craving Delayed',
+                  value: '$cravingAttempts attempts',
+                  color: _amber))
+        ]),
+      ]);
+}
+
+class _BreathingGuide extends StatefulWidget {
+  const _BreathingGuide({required this.remaining});
+  final int remaining;
+  @override
+  State<_BreathingGuide> createState() => _BreathingGuideState();
+}
+
+class _BreathingGuideState extends State<_BreathingGuide>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final inhale = _controller.value < .5;
+        return Row(children: [
+          Transform.scale(
+            scale: .72 + _controller.value * .28,
+            child: Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _cyan.withValues(alpha: .22),
+                    border: Border.all(color: _cyan))),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(inhale ? 'Tarik napas perlahan' : 'Lepaskan pelan',
+                    style: const TextStyle(
+                        color: _text, fontWeight: FontWeight.w800)),
+                Text(
+                    '${widget.remaining ~/ 60}:${(widget.remaining % 60).toString().padLeft(2, '0')} tersisa',
+                    style: const TextStyle(color: _muted, fontSize: 11))
+              ]))
+        ]);
+      });
+}
+
+class _SummaryBadge extends StatelessWidget {
+  const _SummaryBadge(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color});
+  final IconData icon;
+  final String label, value;
   final Color color;
   @override
   Widget build(BuildContext context) => _Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(color: _muted, fontSize: 12)),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(detail, style: const TextStyle(color: _muted, fontSize: 11)),
-          ],
-        ),
-      );
+      padding: 14,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: color, size: 19),
+        const SizedBox(height: 10),
+        Text(label, style: const TextStyle(color: _muted, fontSize: 11)),
+        const SizedBox(height: 3),
+        Text(value,
+            style: const TextStyle(color: _text, fontWeight: FontWeight.w800))
+      ]));
 }
 
 class _Bars extends StatelessWidget {

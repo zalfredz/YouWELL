@@ -22,12 +22,13 @@ window.wellPhoto = () => new Promise(resolve => {
     }; reader.readAsDataURL(file);
   }; input.click();
 });
-let audio, sources = [], stops;
+let audio, sources = [], stops, soundGain, customTrack;
 window.wellSound = name => {
   clearTimeout(stops); sources.forEach(s => { try { s.stop(); } catch (_) {} }); sources = [];
+  if (customTrack) { customTrack.pause(); customTrack = null; }
   if (name === 'stop') return;
   audio ||= new (window.AudioContext || window.webkitAudioContext)(); audio.resume();
-  const gain = audio.createGain(); gain.gain.value = name === 'release' ? .06 : .035; gain.connect(audio.destination);
+  const gain = audio.createGain(); soundGain = gain; gain.gain.value = name === 'release' ? .06 : .035; gain.connect(audio.destination);
   if (name === 'rain' || name === 'release') {
     const buffer = audio.createBuffer(1, audio.sampleRate * 3, audio.sampleRate);
     const values = buffer.getChannelData(0); for (let i=0;i<values.length;i++) values[i]=Math.random()*2-1;
@@ -39,4 +40,20 @@ window.wellSound = name => {
   }
   if (name === 'release') stops = setTimeout(() => window.wellSound('stop'), 650);
 };
+window.wellSoundVolume = value => { if (soundGain) soundGain.gain.value = Math.max(0, Math.min(1, value)) * .12; if (customTrack) customTrack.volume = value; };
+window.wellAudioPick = () => new Promise(resolve => {
+  const input = document.createElement('input'); input.type = 'file'; input.accept = 'audio/*';
+  input.oncancel = () => resolve('');
+  input.onchange = () => {
+    const file = input.files && input.files[0]; if (!file) { resolve(''); return; }
+    const url = URL.createObjectURL(file); resolve(JSON.stringify({ name: file.name, url }));
+  }; input.click();
+});
+window.wellCustomAudio = source => {
+  window.wellSound('stop');
+  if (customTrack) customTrack.pause();
+  customTrack = new Audio(source); customTrack.loop = true; customTrack.volume = .35;
+  customTrack.play().catch(() => {});
+};
+window.wellCustomAudioPause = () => { if (customTrack) customTrack.pause(); };
 window.addEventListener('pagehide', () => window.wellSound('stop'));
