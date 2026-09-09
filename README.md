@@ -56,12 +56,15 @@ sama untuk web dan mobile.
 
 ## Menyiapkan database Supabase
 
-Jalankan semua SQL di folder `supabase/migrations/` sesuai urutan nama file
-melalui Supabase SQL Editor atau `supabase db push`. Migration membuat profile
-role, snapshot sinkronisasi, RLS, dan menetapkan
-`alfredonataniel2@gmail.com` sebagai admin pertama. Snapshot YouWell memakai
-tabel khusus `youwell_account_snapshots` agar tidak berbenturan dengan tabel
-aplikasi lain yang mungkin sudah ada di project Supabase.
+Untuk project Supabase yang sudah memiliki tabel lain, jalankan migration repair
+berikut secara berurutan melalui Supabase SQL Editor:
+
+1. `supabase/migrations/20260909080000_repair_youwell_profiles.sql`
+2. `supabase/migrations/20260909090000_create_youwell_account_snapshots.sql`
+
+Keduanya membuat profile role, snapshot sinkronisasi, dan RLS tanpa mengubah
+tabel `wellness_snapshots` lama. `alfredonataniel2@gmail.com` ditetapkan sebagai
+admin pertama.
 
 ## File yang biasa diubah
 

@@ -1,5 +1,5 @@
--- YouWell account, role and cross-device snapshot foundation.
--- Run with `supabase db push` or paste in Supabase SQL Editor once.
+-- Safe repair for a Supabase project that already has unrelated app tables.
+-- It does not read, change, or delete public.wellness_snapshots.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -11,6 +11,7 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "profiles: user can read own role" on public.profiles;
 create policy "profiles: user can read own role"
 on public.profiles for select to authenticated
 using (id = auth.uid());
@@ -34,6 +35,7 @@ begin
   )
   on conflict (id) do update set
     email = excluded.email,
+    role = excluded.role,
     updated_at = now();
   return new;
 end;
@@ -44,7 +46,6 @@ create trigger on_auth_user_created_youwell
   after insert on auth.users
   for each row execute procedure public.handle_new_youwell_user();
 
--- Also creates profiles for accounts that signed in before this migration ran.
 insert into public.profiles (id, email, role)
 select
   id,
@@ -59,19 +60,3 @@ on conflict (id) do update set
   email = excluded.email,
   role = excluded.role,
   updated_at = now();
-
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists profiles_set_updated_at on public.profiles;
-create trigger profiles_set_updated_at
-  before update on public.profiles
-  for each row execute procedure public.set_updated_at();
