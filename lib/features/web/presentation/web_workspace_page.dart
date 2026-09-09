@@ -448,24 +448,18 @@ class _TodayPage extends StatelessWidget {
               final tasks = _DailyCardSystem(
                 controller: controller,
                 onOpenDailyDraw: onOpenDailyDraw,
-                compact: box.maxWidth >= 1040,
               );
               final companion = _CompanionShowcase(controller: controller);
               final complianceAndRewards = _ComplianceRewardsCard(
                 controller: controller,
-                compact: box.maxWidth >= 1040,
               );
               final squad = _SquadHubWidget(
                 controller: controller,
                 onOpenSquad: () => onTab(2),
-                compact: box.maxWidth >= 1040,
               );
               final desk = _Card(
-                padding: 14,
-                child: _QuickDeskHabits(
-                  controller: controller,
-                  compact: box.maxWidth >= 1040,
-                ),
+                padding: 24,
+                child: _QuickDeskHabits(controller: controller),
               );
               if (box.maxWidth < 1040) {
                 return Column(children: [
@@ -484,10 +478,10 @@ class _TodayPage extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(flex: 8, child: companion),
+                    Expanded(flex: 7, child: companion),
                     const SizedBox(width: 22),
                     Expanded(
-                      flex: 4,
+                      flex: 5,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -529,11 +523,9 @@ class _DailyCardSystem extends StatelessWidget {
   const _DailyCardSystem({
     required this.controller,
     required this.onOpenDailyDraw,
-    this.compact = false,
   });
   final WellnessController controller;
   final Future<void> Function() onOpenDailyDraw;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -542,7 +534,7 @@ class _DailyCardSystem extends StatelessWidget {
     final completed = controller.completedCards;
     final selected = controller.selectedDailyCard;
     return _Card(
-      padding: compact ? 14 : 20,
+      padding: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -571,7 +563,7 @@ class _DailyCardSystem extends StatelessWidget {
               _Pill('${drawCards.length} cards', _cyan),
             ],
           ),
-          SizedBox(height: compact ? 12 : 18),
+          const SizedBox(height: 18),
           if (drawCards.isEmpty)
             _EmptyDailyDraw(onOpenDailyDraw: onOpenDailyDraw)
           else ...[
@@ -579,12 +571,11 @@ class _DailyCardSystem extends StatelessWidget {
               _DailyCard(
                 controller: controller,
                 card: selected,
-                compact: compact,
               )
             else if (!controller.hasCommittedDailyCard)
               _EmptyDailyDraw(onOpenDailyDraw: onOpenDailyDraw),
             if (committed.isNotEmpty || completed.isNotEmpty) ...[
-              SizedBox(height: compact ? 16 : 24),
+              const SizedBox(height: 24),
               Row(
                 children: [
                   const Expanded(
@@ -611,7 +602,7 @@ class _DailyCardSystem extends StatelessWidget {
                 backgroundColor: _raised,
                 borderRadius: BorderRadius.circular(9),
               ),
-              SizedBox(height: compact ? 8 : 12),
+              const SizedBox(height: 12),
               ...[...committed, ...completed].map(
                 (card) => _CommittedCard(controller: controller, card: card),
               ),
@@ -664,15 +655,13 @@ class _DailyCard extends StatelessWidget {
   const _DailyCard({
     required this.controller,
     required this.card,
-    this.compact = false,
   });
   final WellnessController controller;
   final Map<String, dynamic> card;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.all(compact ? 13 : 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xff191c21),
           border: Border.all(color: _line),
@@ -695,7 +684,7 @@ class _DailyCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: compact ? 10 : 16),
+            const SizedBox(height: 16),
             Text(
               card['title'].toString(),
               style: const TextStyle(
@@ -704,37 +693,24 @@ class _DailyCard extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            if (!compact) ...[
-              const SizedBox(height: 6),
-              Text(
-                card['description'].toString(),
-                style:
-                    const TextStyle(color: _muted, fontSize: 12, height: 1.4),
-              ),
-            ],
-            SizedBox(height: compact ? 10 : 15),
-            if (compact)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
+            const SizedBox(height: 6),
+            Text(
+              card['description'].toString(),
+              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                const Text('Satu paket untuk progres hari ini.',
+                    style: TextStyle(color: _muted, fontSize: 12)),
+                const Spacer(),
+                FilledButton(
                   onPressed: () => _commit(context),
                   style: _greenButton,
                   child: const Text('Commit pack'),
                 ),
-              )
-            else
-              Row(
-                children: [
-                  const Text('Satu paket untuk progres hari ini.',
-                      style: TextStyle(color: _muted, fontSize: 12)),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: () => _commit(context),
-                    style: _greenButton,
-                    child: const Text('Commit pack'),
-                  ),
-                ],
-              ),
+              ],
+            ),
           ],
         ),
       );
@@ -819,167 +795,125 @@ class _CommittedCard extends StatelessWidget {
 }
 
 class _ComplianceRewardsCard extends StatelessWidget {
-  const _ComplianceRewardsCard({
-    required this.controller,
-    this.compact = false,
-  });
+  const _ComplianceRewardsCard({required this.controller});
   final WellnessController controller;
-  final bool compact;
 
   @override
-  Widget build(BuildContext context) {
-    if (compact) {
-      return _Card(
-        padding: 14,
+  Widget build(BuildContext context) => _Card(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Weekly Compliance',
-              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 10),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('${(controller.compliance(7) * 100).round()}%',
-                style: const TextStyle(
-                    color: _green,
-                    fontSize: 30,
-                    height: .9,
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(width: 12),
-            Expanded(
-                child:
-                    SizedBox(height: 48, child: _Bars(controller: controller))),
-          ]),
-          const SizedBox(height: 12),
-          Row(children: [
-            const Icon(Icons.auto_awesome_rounded, color: _amber, size: 17),
-            const SizedBox(width: 7),
-            Expanded(
-              child: Text('${controller.dailyXp} XP earned today',
-                  style: const TextStyle(color: _muted, fontSize: 11)),
+          const Text(
+            'Weekly Compliance & Rewards',
+            style: TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
             ),
-            _Pill('${controller.streak}d', _green),
-          ]),
-        ]),
-      );
-    }
-    return _Card(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text(
-          'Weekly Compliance & Rewards',
-          style: TextStyle(
-            color: _text,
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
           ),
-        ),
-        const SizedBox(height: 20),
-        LayoutBuilder(builder: (context, box) {
-          final metric = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${(controller.compliance(7) * 100).round()}%',
-                style: const TextStyle(
-                  color: _green,
-                  fontSize: 42,
-                  height: .9,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                '7 hari terakhir',
-                style: TextStyle(color: _muted, fontSize: 11),
-              ),
-            ],
-          );
-          final chart = SizedBox(
-            height: 98,
-            child: _Bars(controller: controller),
-          );
-          if (box.maxWidth < 490) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [metric, const SizedBox(height: 18), chart],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              metric,
-              const SizedBox(width: 30),
-              Expanded(child: chart),
-            ],
-          );
-        }),
-        const SizedBox(height: 20),
-        const Divider(color: _line, height: 1),
-        const SizedBox(height: 15),
-        Row(children: [
-          const Icon(Icons.auto_awesome_rounded, color: _amber, size: 21),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
+          const SizedBox(height: 20),
+          LayoutBuilder(builder: (context, box) {
+            final metric = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Today’s rewards',
-                    style:
-                        TextStyle(color: _text, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 3),
-                Text('${controller.dailyXp} XP earned',
-                    style: const TextStyle(color: _muted, fontSize: 12)),
+                Text(
+                  '${(controller.compliance(7) * 100).round()}%',
+                  style: const TextStyle(
+                    color: _green,
+                    fontSize: 42,
+                    height: .9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '7 hari terakhir',
+                  style: TextStyle(color: _muted, fontSize: 11),
+                ),
               ],
+            );
+            final chart = SizedBox(
+              height: 98,
+              child: _Bars(controller: controller),
+            );
+            if (box.maxWidth < 490) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [metric, const SizedBox(height: 18), chart],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                metric,
+                const SizedBox(width: 30),
+                Expanded(child: chart),
+              ],
+            );
+          }),
+          const SizedBox(height: 20),
+          const Divider(color: _line, height: 1),
+          const SizedBox(height: 15),
+          Row(children: [
+            const Icon(Icons.auto_awesome_rounded, color: _amber, size: 21),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Today’s rewards',
+                      style:
+                          TextStyle(color: _text, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text('${controller.dailyXp} XP earned',
+                      style: const TextStyle(color: _muted, fontSize: 12)),
+                ],
+              ),
+            ),
+            _Pill('${controller.streak} day streak', _green),
+          ]),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _Pill(
+              controller.tokens > 0
+                  ? '${controller.tokens} Streak Freeze ready'
+                  : 'No Streak Freeze available',
+              controller.tokens > 0 ? _cyan : _muted,
             ),
           ),
-          _Pill('${controller.streak} day streak', _green),
         ]),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: _Pill(
-            controller.tokens > 0
-                ? '${controller.tokens} Streak Freeze ready'
-                : 'No Streak Freeze available',
-            controller.tokens > 0 ? _cyan : _muted,
-          ),
-        ),
-      ]),
-    );
-  }
+      );
 }
 
 class _SquadHubWidget extends StatelessWidget {
   const _SquadHubWidget({
     required this.controller,
     required this.onOpenSquad,
-    this.compact = false,
   });
   final WellnessController controller;
   final VoidCallback onOpenSquad;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     if (!controller.hasSquad) {
       return _Card(
         tint: const Color(0xff151f1d),
-        padding: compact ? 14 : 20,
+        padding: 20,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Icon(Icons.groups_rounded, color: _cyan, size: 27),
-          SizedBox(height: compact ? 9 : 15),
+          const SizedBox(height: 15),
           const Text('Squad Progress',
               style: TextStyle(
                   color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
-          if (!compact) ...[
-            const SizedBox(height: 7),
-            const Text(
-              'Saling jaga habit bareng 3–5 teman. Capai target mingguan bersama!',
-              style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
-            ),
-          ],
-          SizedBox(height: compact ? 13 : 24),
+          const SizedBox(height: 7),
+          const Text(
+            'Saling jaga habit bareng 3–5 teman. Capai target mingguan bersama!',
+            style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
+          ),
+          const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onOpenSquad,
             icon: const Icon(Icons.add_rounded, size: 17),
-            label: Text(compact ? 'Cari Squad' : 'Cari / Buat Squad'),
+            label: const Text('Cari / Buat Squad'),
             style: _greenButton,
           ),
         ]),
@@ -988,7 +922,7 @@ class _SquadHubWidget extends StatelessWidget {
 
     return _Card(
       tint: const Color(0xff152420),
-      padding: compact ? 14 : 20,
+      padding: 20,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Expanded(
@@ -998,12 +932,10 @@ class _SquadHubWidget extends StatelessWidget {
           ),
           const _Pill('Active', _green),
         ]),
-        if (!compact) ...[
-          const SizedBox(height: 7),
-          const Text('Weekly group quest',
-              style: TextStyle(color: _muted, fontSize: 12)),
-        ],
-        SizedBox(height: compact ? 13 : 24),
+        const SizedBox(height: 7),
+        const Text('Weekly group quest',
+            style: TextStyle(color: _muted, fontSize: 12)),
+        const SizedBox(height: 24),
         const Text('24 / 50 Tasks Completed',
             style: TextStyle(
                 color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
@@ -1017,11 +949,9 @@ class _SquadHubWidget extends StatelessWidget {
             backgroundColor: Color(0xff2a4039),
           ),
         ),
-        if (!compact) ...[
-          const SizedBox(height: 17),
-          const _AvatarStack(),
-        ],
-        SizedBox(height: compact ? 10 : 24),
+        const SizedBox(height: 17),
+        const _AvatarStack(),
+        const SizedBox(height: 24),
         TextButton(
           onPressed: onOpenSquad,
           child: const Text('Buka Squad Hub →'),
@@ -1085,10 +1015,9 @@ class _SquadAvatar extends StatelessWidget {
 }
 
 class _QuickDeskHabits extends StatelessWidget {
-  const _QuickDeskHabits({required this.controller, this.compact = false});
+  const _QuickDeskHabits({required this.controller});
 
   final WellnessController controller;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1096,19 +1025,19 @@ class _QuickDeskHabits extends StatelessWidget {
     final water = controller.water.round().clamp(0, target);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 0 : 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: compact ? Colors.transparent : const Color(0xff1a2421),
-        border: compact ? null : Border.all(color: const Color(0xff2c443a)),
-        borderRadius: BorderRadius.circular(compact ? 0 : 12),
+        color: const Color(0xff1a2421),
+        border: Border.all(color: const Color(0xff2c443a)),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Desk Energy Hub',
             style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-        SizedBox(height: compact ? 2 : 4),
+        const SizedBox(height: 4),
         Text('Water intake • $water / $target ml',
             style: const TextStyle(color: _muted, fontSize: 11)),
-        SizedBox(height: compact ? 9 : 13),
+        const SizedBox(height: 13),
         Wrap(spacing: 8, runSpacing: 8, children: [
           FilledButton.tonalIcon(
             onPressed: () {
@@ -1124,7 +1053,7 @@ class _QuickDeskHabits extends StatelessWidget {
             label: const Text('60s Stretch'),
           ),
         ]),
-        SizedBox(height: compact ? 10 : 15),
+        const SizedBox(height: 15),
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
@@ -1206,7 +1135,7 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
     ];
     final dialogue = dialogues[_dialogueIndex % dialogues.length];
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: const RadialGradient(
           center: Alignment(0, -.18),
@@ -1239,8 +1168,10 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, box) {
           final narrow = box.maxWidth < 540;
+          final avatarSize = narrow ? 310.0 : 370.0;
+          final characterSize = narrow ? 280.0 : 330.0;
           return SizedBox(
-            height: narrow ? 370 : 340,
+            height: narrow ? 430 : 445,
             child: Stack(children: [
               AnimatedBuilder(
                 animation: Listenable.merge([
@@ -1279,8 +1210,8 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: Container(
-                        width: 315,
-                        height: 315,
+                        width: avatarSize,
+                        height: avatarSize,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
@@ -1291,8 +1222,8 @@ class _CompanionShowcaseState extends State<_CompanionShowcase>
                         ),
                         child: Center(
                           child: SizedBox(
-                            width: 285,
-                            height: 285,
+                            width: characterSize,
+                            height: characterSize,
                             child: FittedBox(
                               child: WellnessCompanion(
                                 kind: kind,
