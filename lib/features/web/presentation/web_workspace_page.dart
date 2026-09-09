@@ -475,32 +475,36 @@ class _TodayPage extends StatelessWidget {
                   squad,
                 ]);
               }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 7, child: companion),
-                  const SizedBox(width: 22),
-                  Expanded(
-                    flex: 5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        tasks,
-                        const SizedBox(height: 14),
-                        desk,
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: complianceAndRewards),
-                            const SizedBox(width: 14),
-                            Expanded(child: squad),
-                          ],
-                        ),
-                      ],
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 7, child: companion),
+                    const SizedBox(width: 22),
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          tasks,
+                          const SizedBox(height: 14),
+                          desk,
+                          const SizedBox(height: 14),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(child: complianceAndRewards),
+                                const SizedBox(width: 14),
+                                Expanded(child: squad),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -793,45 +797,25 @@ class _ComplianceRewardsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          LayoutBuilder(builder: (context, box) {
-            final metric = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${(controller.compliance(7) * 100).round()}%',
-                  style: const TextStyle(
-                    color: _green,
-                    fontSize: 42,
-                    height: .9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  '7 hari terakhir',
-                  style: TextStyle(color: _muted, fontSize: 11),
-                ),
-              ],
-            );
-            final chart = SizedBox(
-              height: 98,
-              child: _Bars(controller: controller),
-            );
-            if (box.maxWidth < 490) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [metric, const SizedBox(height: 18), chart],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                metric,
-                const SizedBox(width: 30),
-                Expanded(child: chart),
-              ],
-            );
-          }),
+          Text(
+            '${(controller.compliance(7) * 100).round()}%',
+            style: const TextStyle(
+              color: _green,
+              fontSize: 42,
+              height: .9,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            '7 hari terakhir',
+            style: TextStyle(color: _muted, fontSize: 11),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 98,
+            child: _Bars(controller: controller),
+          ),
           const SizedBox(height: 20),
           const Divider(color: _line, height: 1),
           const SizedBox(height: 15),
