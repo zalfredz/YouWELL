@@ -18,9 +18,9 @@ atau memakai aplikasi mobile.
 
 ## Cakupan workspace
 
-- **Hari ini:** melihat 3–5 **Gacha Cards** dan menyelesaikan task nonfisik.
-  Gerak serta catatan nutrisi diarahkan ke mobile; kartu yang selesai dapat
-  dibatalkan bila pengguna berubah pikiran.
+- **Daily Card Draw:** melihat 3–5 kartu yang difilter berdasarkan jalur,
+  difficulty, compliance, dan kondisi pengguna. Kartu harus di-commit sebelum
+  dapat diselesaikan; commitment tidak dapat diganti pada hari yang sama.
 - **Relief Room:** breathing circle, timer 5/10 menit, serta soundscape lokal.
 - **Insights:** compliance, streak, companion, dan pintu ke Wrapped.
 - **Komunitas:** membaca encouragement wall dan memberi reaksi cepat; tidak ada
@@ -37,8 +37,8 @@ Web app menerapkan 8 Golden Rules pada keputusan yang terlihat pengguna:
    ketika workspace dibuka dari layar kecil;
 3. feedback langsung melalui status kartu, snackbar, dan status antrean;
 4. aksi selesai dengan pesan hasil yang jelas;
-5. aksi fisik/foto tidak dapat keliru ditandai dari web dan diarahkan ke mobile;
-6. penyelesaian Gacha Card serta keputusan moderasi memiliki tombol **Batalkan**;
+5. kartu yang belum di-commit tidak dapat keliru ditandai selesai;
+6. status available, committed, dan completed selalu tampil pada kartu;
 7. audio, timer, reaksi, dan navigasi selalu dimulai oleh pengguna;
 8. kategori, tempat menyelesaikan kartu, dan status tampil pada konteks yang sama.
 

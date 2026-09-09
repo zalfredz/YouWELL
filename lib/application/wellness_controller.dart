@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/data/models/wellness_snapshot.dart';
-import 'package:youwell/features/home/domain/quest_generator.dart';
+import 'package:youwell/features/home/domain/daily_card_generator.dart';
 import 'package:youwell/features/home/domain/progress_calculator.dart';
 
 /// Application state and commands shared across features.
@@ -48,6 +48,20 @@ class WellnessController extends ChangeNotifier {
   List<JsonMap> get quests => ((days[today]?['quests'] ?? []) as List)
       .map((e) => Map<String, dynamic>.from(e))
       .toList();
+  List<JsonMap> get dailyCards => quests;
+  List<JsonMap> get availableCards =>
+      dailyCards.where((card) => _cardStatus(card) == 'available').toList();
+  List<JsonMap> get committedCards =>
+      dailyCards.where((card) => _cardStatus(card) == 'committed').toList();
+  List<JsonMap> get completedCards =>
+      dailyCards.where((card) => _cardStatus(card) == 'completed').toList();
+  int get dailyXp => completedCards.fold(
+        0,
+        (sum, card) => sum + ((card['xp'] ?? 0) as num).toInt(),
+      );
+  double get dailyProgress => committedCards.isEmpty && completedCards.isEmpty
+      ? 0
+      : completedCards.length / (committedCards.length + completedCards.length);
   ProgressCalculator get _progress => ProgressCalculator(
         days: days,
         frozenDays: frozenDays,
@@ -121,40 +135,57 @@ class WellnessController extends ChangeNotifier {
     await _save();
   }
 
-  void draw() {
-    if (quests.isNotEmpty || profile == null) return;
-    final d = difficulty;
-    final list = const QuestGenerator().generate(
+  void drawDailyCards() {
+    if (profile == null) return;
+    if (dailyCards.isNotEmpty &&
+        dailyCards.every((card) => card.containsKey('status'))) {
+      return;
+    }
+    final list = const DailyCardGenerator().generate(
       today: today,
-      difficulty: d,
+      difficulty: difficulty,
       lowImpact: profile?['lowImpact'] == true,
       reduction: reduction,
+      compliance: compliance(7),
+      daysUsingApp: _daysUsingApp,
     );
     _data['days'][today] = {
       ...?days[today] as Map?,
       'quests': list,
-      'difficulty': d,
+      'difficulty': difficulty,
     };
     _save();
   }
 
-  void complete(String id) {
-    final list = quests;
+  bool commitCard(String id) {
+    final list = dailyCards;
     final i = list.indexWhere((q) => q['id'] == id);
-    if (i < 0 || list[i]['done'] == true) return;
+    if (i < 0 || _cardStatus(list[i]) != 'available') return false;
+    list[i]['status'] = 'committed';
+    list[i]['committedAt'] = now.toIso8601String();
+    _data['days'][today]['quests'] = list;
+    _save();
+    return true;
+  }
+
+  bool completeCard(String id) {
+    final list = dailyCards;
+    final i = list.indexWhere((q) => q['id'] == id);
+    if (i < 0 || _cardStatus(list[i]) != 'committed') return false;
+    list[i]['status'] = 'completed';
     list[i]['done'] = true;
     _data['days'][today]['quests'] = list;
     _save();
+    return true;
   }
 
-  /// Restores a task completion when a user changes their mind.
-  void undoComplete(String id) {
-    final list = quests;
-    final i = list.indexWhere((q) => q['id'] == id);
-    if (i < 0 || list[i]['done'] != true) return;
-    list[i]['done'] = false;
-    _data['days'][today]['quests'] = list;
-    _save();
+  String _cardStatus(JsonMap card) =>
+      card['status']?.toString() ??
+      (card['done'] == true ? 'completed' : 'available');
+
+  int get _daysUsingApp {
+    final started = DateTime.tryParse(profile?['started']?.toString() ?? '');
+    return started == null ? 1 : now.difference(started).inDays.abs() + 1;
   }
 
   bool freeze() {
@@ -250,8 +281,12 @@ class WellnessController extends ChangeNotifier {
     _data['profile']['lowImpact'] = enabled;
     if (enabled) {
       for (final quest in _data['days'][today]?['quests'] ?? []) {
-        if (quest['category'] == 'Gerak' && quest['done'] != true) {
-          quest['title'] = 'Istirahat nyaman dan ambil jeda layar 5 menit';
+        if (quest['category'] == 'Physical' && quest['status'] == 'available') {
+          quest['title'] = 'Gentle Stretch Break';
+          quest['description'] =
+              'Move and stretch gently for five minutes at your own pace.';
+          quest['difficulty'] = 1;
+          quest['xp'] = 20;
         }
       }
     }

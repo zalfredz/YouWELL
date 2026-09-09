@@ -39,7 +39,7 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
   @override
   void initState() {
     super.initState();
-    widget.controller.draw();
+    widget.controller.drawDailyCards();
   }
 
   @override
@@ -95,8 +95,7 @@ class _Dashboard extends StatelessWidget {
     ];
     void openCompanion() => setCompanion(open: true, minimized: false);
     final pages = <Widget>[
-      _TodayPage(
-          controller: controller, openCompanion: openCompanion, onTab: onTab),
+      _TodayPage(controller: controller, onTab: onTab),
       _AnalyticsPage(controller: controller, openCompanion: openCompanion),
       _SquadPage(openCompanion: openCompanion),
       _WallPage(controller: controller),
@@ -315,18 +314,12 @@ class _Scroll extends StatelessWidget {
 }
 
 class _TodayPage extends StatelessWidget {
-  const _TodayPage(
-      {required this.controller,
-      required this.openCompanion,
-      required this.onTab});
+  const _TodayPage({required this.controller, required this.onTab});
   final WellnessController controller;
-  final VoidCallback openCompanion;
   final ValueChanged<int> onTab;
 
   @override
   Widget build(BuildContext context) {
-    final completed =
-        controller.quests.where((item) => item['done'] == true).length;
     final alias = controller.profile?['alias']?.toString() ?? 'teman';
     return _Scroll(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -341,11 +334,9 @@ class _TodayPage extends StatelessWidget {
           style: TextStyle(color: _muted, fontSize: 14)),
       const SizedBox(height: 24),
       LayoutBuilder(builder: (context, box) {
-        final tasks = _TaskList(controller: controller, completed: completed);
-        final stats = _TodayStats(
-            controller: controller,
-            openCompanion: openCompanion,
-            onAnalytics: () => onTab(1));
+        final tasks = _DailyCardSystem(controller: controller);
+        final stats =
+            _TodayStats(controller: controller, onAnalytics: () => onTab(1));
         return box.maxWidth < 940
             ? Column(children: [tasks, const SizedBox(height: 16), stats])
             : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -354,30 +345,6 @@ class _TodayPage extends StatelessWidget {
                 Expanded(flex: 8, child: stats)
               ]);
       }),
-      const SizedBox(height: 16),
-      _Card(
-          child: Row(children: [
-        const CircleAvatar(
-            radius: 21,
-            backgroundColor: Color(0xff193239),
-            foregroundColor: _cyan,
-            child: Icon(Icons.self_improvement_rounded)),
-        const SizedBox(width: 14),
-        const Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Big-screen breathing break',
-              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-          SizedBox(height: 4),
-          Text('Gunakan Companion saat belajar atau bekerja terasa berat.',
-              style: TextStyle(color: _muted, fontSize: 12)),
-        ])),
-        FilledButton.icon(
-            onPressed: openCompanion,
-            style: _greenButton,
-            icon: const Icon(Icons.play_arrow_rounded, size: 18),
-            label: const Text('Start a reset')),
-      ])),
     ]));
   }
 
@@ -388,115 +355,197 @@ class _TodayPage extends StatelessWidget {
           : 'evening';
 }
 
-class _TaskList extends StatelessWidget {
-  const _TaskList({required this.controller, required this.completed});
+class _DailyCardSystem extends StatelessWidget {
+  const _DailyCardSystem({required this.controller});
   final WellnessController controller;
-  final int completed;
-  @override
-  Widget build(BuildContext context) => _Card(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text('Today’s Progress',
-                    style: TextStyle(
-                        color: _text,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800)),
-                SizedBox(height: 4),
-                Text('Gacha Cards yang dapat diselesaikan dari web.',
-                    style: TextStyle(color: _muted, fontSize: 12)),
-              ])),
-          _Pill('$completed / ${controller.quests.length} done', _green),
-        ]),
-        const SizedBox(height: 20),
-        if (controller.quests.isEmpty)
-          const _Empty(Icons.auto_awesome_outlined,
-              'Menyusun kartu kecil untuk hari ini…'),
-        ...controller.quests
-            .map((quest) => _TaskRow(controller: controller, quest: quest)),
-      ]));
-}
 
-class _TaskRow extends StatelessWidget {
-  const _TaskRow({required this.controller, required this.quest});
-  final WellnessController controller;
-  final Map<String, dynamic> quest;
-  bool get mobileOnly =>
-      quest['category'] == 'Gerak' || quest['category'] == 'Nutrisi';
   @override
   Widget build(BuildContext context) {
-    final done = quest['done'] == true;
+    final cards = controller.dailyCards;
+    final committed = controller.committedCards;
+    final completed = controller.completedCards;
+    return _Card(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Daily Card Draw',
+                  style: TextStyle(
+                      color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
+              SizedBox(height: 4),
+              Text(
+                  'Pilih kartu yang terasa realistis, lalu commit untuk menguncinya hari ini.',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+            ]),
+          ),
+          _Pill('${cards.length} cards', _cyan),
+        ]),
+        const SizedBox(height: 18),
+        if (cards.isEmpty)
+          const _Empty(
+              Icons.auto_awesome_outlined, 'Menyiapkan Daily Card Draw…')
+        else ...[
+          LayoutBuilder(
+            builder: (context, box) {
+              final width =
+                  box.maxWidth > 680 ? (box.maxWidth - 12) / 2 : box.maxWidth;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: controller.availableCards
+                    .map((card) => SizedBox(
+                        width: width,
+                        child: _DailyCard(controller: controller, card: card)))
+                    .toList(),
+              );
+            },
+          ),
+          if (committed.isNotEmpty || completed.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Row(children: [
+              const Expanded(
+                  child: Text('Today’s Progress',
+                      style: TextStyle(
+                          color: _text,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800))),
+              _Pill(
+                  '${completed.length} / ${committed.length + completed.length} complete',
+                  _green),
+            ]),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+                value: controller.dailyProgress,
+                minHeight: 7,
+                color: _green,
+                backgroundColor: _raised,
+                borderRadius: BorderRadius.circular(9)),
+            const SizedBox(height: 12),
+            ...[
+              ...committed,
+              ...completed
+            ].map((card) => _CommittedCard(controller: controller, card: card)),
+          ],
+        ],
+      ]),
+    );
+  }
+}
+
+class _DailyCard extends StatelessWidget {
+  const _DailyCard({required this.controller, required this.card});
+  final WellnessController controller;
+  final Map<String, dynamic> card;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff191c21),
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _Pill(card['category'].toString(), _cyan),
+            const Spacer(),
+            Text('+${card['xp']} XP',
+                style: const TextStyle(
+                    color: _green, fontSize: 12, fontWeight: FontWeight.w800)),
+          ]),
+          const SizedBox(height: 16),
+          Text(card['title'].toString(),
+              style: const TextStyle(
+                  color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text(card['description'].toString(),
+              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4)),
+          const SizedBox(height: 15),
+          Row(children: [
+            Text(
+                'Difficulty: ${'★' * (card['difficulty'] as int)}${'☆' * (3 - (card['difficulty'] as int))}',
+                style: const TextStyle(color: _amber, fontSize: 12)),
+            const Spacer(),
+            FilledButton(
+                onPressed: () => _commit(context),
+                style: _greenButton,
+                child: const Text('Commit')),
+          ]),
+        ]),
+      );
+
+  void _commit(BuildContext context) {
+    if (!controller.commitCard(card['id'].toString())) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content:
+              Text('Card committed. Challenge ini terkunci untuk hari ini.')),
+    );
+  }
+}
+
+class _CommittedCard extends StatelessWidget {
+  const _CommittedCard({required this.controller, required this.card});
+  final WellnessController controller;
+  final Map<String, dynamic> card;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = card['status'] == 'completed';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       decoration: BoxDecoration(
-          color: done ? const Color(0xff17241f) : const Color(0xff191c21),
-          border: Border.all(color: done ? const Color(0xff2c4a3c) : _line),
+          color: completed ? const Color(0xff17241f) : _raised,
+          border:
+              Border.all(color: completed ? const Color(0xff2c4a3c) : _line),
           borderRadius: BorderRadius.circular(10)),
       child: Row(children: [
         Icon(
-            done
-                ? Icons.check_circle_rounded
-                : mobileOnly
-                    ? Icons.phone_iphone_rounded
-                    : Icons.circle_outlined,
-            color: done ? _green : _muted,
+            completed ? Icons.check_circle_rounded : Icons.lock_outline_rounded,
+            color: completed ? _green : _amber,
             size: 21),
         const SizedBox(width: 12),
         Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(quest['title'].toString(),
+          Text(card['title'].toString(),
               style: TextStyle(
-                  color: done ? _muted : _text,
+                  color: completed ? _muted : _text,
                   fontWeight: FontWeight.w700,
-                  decoration: done ? TextDecoration.lineThrough : null)),
+                  decoration: completed ? TextDecoration.lineThrough : null)),
           const SizedBox(height: 3),
           Text(
-              mobileOnly
-                  ? '${quest['category']} • Selesaikan di mobile'
-                  : quest['category'].toString(),
+              completed
+                  ? '+${card['xp']} XP earned'
+                  : 'Committed • locked for today',
               style: const TextStyle(color: _muted, fontSize: 11)),
         ])),
-        if (done)
-          TextButton(
-              onPressed: () => controller.undoComplete(quest['id'].toString()),
-              child: const Text('Undo'))
-        else if (mobileOnly)
-          const _Pill('Mobile', _cyan)
+        if (completed)
+          const _Pill('Completed', _green)
         else
-          IconButton(
-              tooltip: 'Tandai selesai',
+          FilledButton(
               onPressed: () => _complete(context),
-              icon: const Icon(Icons.arrow_forward_rounded, color: _muted)),
+              style: _greenButton,
+              child: const Text('Complete')),
       ]),
     );
   }
 
   void _complete(BuildContext context) {
-    controller.complete(quest['id'].toString());
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-          content: const Text('Gacha Card ditandai selesai.'),
-          action: SnackBarAction(
-              label: 'UNDO',
-              onPressed: () =>
-                  controller.undoComplete(quest['id'].toString()))));
+    if (!controller.completeCard(card['id'].toString())) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content:
+              Text('Completed! +${card['xp']} XP added to your progress.')),
+    );
   }
 }
 
 class _TodayStats extends StatelessWidget {
-  const _TodayStats(
-      {required this.controller,
-      required this.openCompanion,
-      required this.onAnalytics});
+  const _TodayStats({required this.controller, required this.onAnalytics});
   final WellnessController controller;
-  final VoidCallback openCompanion;
   final VoidCallback onAnalytics;
   @override
   Widget build(BuildContext context) => Column(children: [
@@ -531,22 +580,21 @@ class _TodayStats extends StatelessWidget {
         _Card(
             tint: const Color(0xff162927),
             child: Row(children: [
-              const Icon(Icons.bolt_rounded, color: _amber, size: 28),
+              const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text('Butuh jeda sekarang?',
+                    const Text('Today’s rewards',
                         style: TextStyle(
                             color: _text, fontWeight: FontWeight.w800)),
                     SizedBox(height: 3),
-                    Text('Companion siap membantumu menunda craving.',
-                        style: TextStyle(color: _muted, fontSize: 11))
+                    Text(
+                        '${controller.dailyXp} XP earned • ${controller.streak} day streak',
+                        style: const TextStyle(color: _muted, fontSize: 11))
                   ])),
-              IconButton(
-                  onPressed: openCompanion,
-                  icon: const Icon(Icons.open_in_new_rounded, color: _green)),
+              const _Pill('Daily cards', _green),
             ])),
       ]);
 }

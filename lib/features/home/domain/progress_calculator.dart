@@ -16,21 +16,30 @@ class ProgressCalculator {
   final int fitness;
   final bool lowImpact;
   String get today => dayKey(now);
-  List<String> get completedDays =>
-      days.entries
-          .where(
-            (e) =>
-                (e.value['quests'] as List).isNotEmpty &&
-                (e.value['quests'] as List).every((q) => q['done'] == true),
-          )
-          .map((e) => e.key)
-          .toList()
-        ..sort();
+  List<String> get completedDays => days.entries
+      .where(
+        (e) {
+          final cards = (e.value['quests'] as List);
+          final committed =
+              cards.where((card) => _status(card) != 'available').toList();
+          return committed.isNotEmpty &&
+              committed.every((card) => _status(card) == 'completed');
+        },
+      )
+      .map((e) => e.key)
+      .toList()
+    ..sort();
   int get xp => days.values.fold(
-    0,
-    (sum, d) =>
-        sum + (d['quests'] as List).where((q) => q['done'] == true).length * 20,
-  );
+        0,
+        (sum, day) =>
+            sum +
+            (day['quests'] as List)
+                .where((card) => _status(card) == 'completed')
+                .fold<int>(
+                    0,
+                    (total, card) =>
+                        total + ((card['xp'] ?? 20) as num).toInt()),
+      );
   int get level => 1 + xp ~/ 100;
   int get tokens => max(0, 1 + completedDays.length ~/ 7 - frozenDays.length);
   int get streak {
@@ -51,9 +60,11 @@ class ProgressCalculator {
     for (final e in days.entries.where(
       (e) => e.key.compareTo(start) >= 0 && e.key.compareTo(today) <= 0,
     )) {
-      final q = e.value['quests'] as List;
-      total += q.length;
-      done += q.where((q) => q['done'] == true).length;
+      final committed = (e.value['quests'] as List)
+          .where((card) => _status(card) != 'available')
+          .toList();
+      total += committed.length;
+      done += committed.where((card) => _status(card) == 'completed').length;
     }
     return total == 0 ? 0 : done / total;
   }
@@ -70,16 +81,23 @@ class ProgressCalculator {
     final base = fitness;
     if (lowImpact) return 1;
     if (previous.length < 3) return base;
-    final all = previous.expand((e) => e.value['quests'] as List).toList();
+    final all = previous
+        .expand((e) => e.value['quests'] as List)
+        .where((card) => _status(card) != 'available')
+        .toList();
     final rate = all.isEmpty
         ? 0
-        : all.where((q) => q['done'] == true).length / all.length;
+        : all.where((card) => _status(card) == 'completed').length / all.length;
     return (base +
             (rate > .8
                 ? 1
                 : rate < .4
-                ? -1
-                : 0))
+                    ? -1
+                    : 0))
         .clamp(1, 3);
   }
+
+  String _status(dynamic card) =>
+      card['status']?.toString() ??
+      (card['done'] == true ? 'completed' : 'available');
 }

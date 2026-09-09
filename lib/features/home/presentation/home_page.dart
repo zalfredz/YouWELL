@@ -13,8 +13,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = controller.quests.where((q) => q['done'] == true).length;
-    final frozen =
-        controller.frozenDays.contains(
+    final frozen = controller.frozenDays.contains(
           dayKey(controller.now.subtract(const Duration(days: 1))),
         ) &&
         !controller.completedDays.contains(controller.today);
@@ -64,7 +63,7 @@ class HomePage extends StatelessWidget {
                           FilledButton.icon(
                             onPressed: controller.quests.isEmpty
                                 ? () {
-                                    controller.draw();
+                                    controller.drawDailyCards();
                                     toast(
                                       context,
                                       'Kartu terbuka! Misi hari ini tersimpan.',
@@ -149,16 +148,22 @@ class HomePage extends StatelessWidget {
                           style: const TextStyle(fontSize: 12, color: muted),
                         ),
                         trailing: IconButton(
-                          tooltip: q['done'] == true
+                          tooltip: q['status'] == 'completed'
                               ? 'Sudah selesai'
-                              : 'Tandai selesai',
-                          onPressed: q['done'] == true
+                              : q['status'] == 'committed'
+                                  ? 'Tandai selesai'
+                                  : 'Commit challenge',
+                          onPressed: q['status'] == 'completed'
                               ? null
-                              : () => controller.complete(q['id']),
+                              : q['status'] == 'committed'
+                                  ? () => controller.completeCard(q['id'])
+                                  : () => controller.commitCard(q['id']),
                           icon: Icon(
-                            q['done'] == true
+                            q['status'] == 'completed'
                                 ? Icons.check_circle
-                                : Icons.circle_outlined,
+                                : q['status'] == 'committed'
+                                    ? Icons.lock_outline
+                                    : Icons.circle_outlined,
                             color: green,
                           ),
                         ),
@@ -209,10 +214,10 @@ class HomePage extends StatelessWidget {
                       frozen
                           ? 'Aku istirahat dulu, ya.'
                           : done == controller.quests.length && done > 0
-                          ? 'Kita tumbuh bersama hari ini!'
-                          : controller.streak == 0
-                          ? 'Senang kamu ada di sini.'
-                          : 'Satu langkah lagi. Aku temani.',
+                              ? 'Kita tumbuh bersama hari ini!'
+                              : controller.streak == 0
+                                  ? 'Senang kamu ada di sini.'
+                                  : 'Satu langkah lagi. Aku temani.',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),

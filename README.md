@@ -63,7 +63,7 @@ awal, buka `http://localhost:8080/?reset=1` sekali lalu kembali ke URL normal.
 | Wrapped publik web | `lib/features/web/presentation/public_recap_page.dart` |
 | Onboarding aplikasi mobile | `lib/features/onboarding/presentation/onboarding_page.dart` |
 | Tampilan Home | `lib/features/home/presentation/home_page.dart` |
-| Daftar dan aturan misi | `lib/features/home/domain/quest_generator.dart` |
+| Pool, filter, dan aturan Daily Card | `lib/features/home/domain/daily_card_generator.dart` |
 | XP, streak, freeze, difficulty | `lib/features/home/domain/progress_calculator.dart` |
 | Statistik | `lib/features/statistics/presentation/statistics_page.dart` |
 | Daftar makanan | `lib/features/nutrition/data/food_catalog.dart` |
@@ -78,7 +78,7 @@ awal, buka `http://localhost:8080/?reset=1` sekali lalu kembali ke URL normal.
 
 Penjelasan lengkap ada di [struktur project](docs/PROJECT_STRUCTURE.md). Cakupan
 fitur dan batas preview ada di [daftar fitur](docs/FEATURES.md), termasuk
-[pembagian produk web](docs/WEB_PRODUCT.md).
+[pembagian produk web](docs/WEB_PRODUCT.md) dan [Daily Card System](docs/DAILY_CARD_SYSTEM.md).
 
 ## Build untuk hosting
 
