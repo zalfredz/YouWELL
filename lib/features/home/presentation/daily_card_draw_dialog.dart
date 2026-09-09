@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
@@ -330,20 +331,33 @@ class _FaceDownDeckState extends State<_FaceDownDeck> {
           const SizedBox(height: 25),
           SizedBox(
             height: 306,
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (value) => setState(() => _page = value),
-              itemCount: 1000,
-              itemBuilder: (context, physicalIndex) {
-                final cardIndex = physicalIndex % widget.cards.length;
-                return _CarouselCard(
-                  index: cardIndex,
-                  selected: physicalIndex == _page,
-                  passed: widget.passedCardIds
-                      .contains(widget.cards[cardIndex]['id'].toString()),
-                  onTap: () => _choose(physicalIndex),
-                );
-              },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: const {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                  },
+                ),
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (value) => setState(() => _page = value),
+                  itemCount: 1000,
+                  itemBuilder: (context, physicalIndex) {
+                    final cardIndex = physicalIndex % widget.cards.length;
+                    return _CarouselCard(
+                      index: cardIndex,
+                      selected: physicalIndex == _page,
+                      passed: widget.passedCardIds
+                          .contains(widget.cards[cardIndex]['id'].toString()),
+                      onTap: () => _choose(physicalIndex),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
           Text(
