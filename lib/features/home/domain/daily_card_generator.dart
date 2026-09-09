@@ -35,10 +35,14 @@ class DailyCardGenerator {
         (a, b) => _dailyScore(a.id, today).compareTo(_dailyScore(b.id, today)),
       );
 
-    // Five choices make the draw feel like a proper collectible-card deck,
-    // while the user still commits to only one challenge.
-    const target = 5;
-    final selected = <_CardDefinition>[];
+    // The deck always contains five collectible cards. One card is a package
+    // of 3–5 tasks, not a single task, so the chosen card becomes a full day.
+    const cardCount = 5;
+    final taskCount = daysUsingApp <= 2
+        ? 3
+        : compliance >= .75
+            ? 5
+            : 4;
     final categories = reduction
         ? const [
             'Reduction Challenge',
@@ -49,41 +53,51 @@ class DailyCardGenerator {
           ]
         : const ['Mental', 'Nutrition', 'Physical', 'Social/Wellbeing'];
 
-    for (final category in categories) {
-      final candidates =
-          matching.where((card) => card.category == category).toList();
-      if (candidates.isNotEmpty && selected.length < target) {
-        selected.add(candidates.first);
+    return List.generate(cardCount, (cardIndex) {
+      final ranked = [...matching]..sort(
+          (a, b) => _dailyScore(a.id, '$today:pack:$cardIndex')
+              .compareTo(_dailyScore(b.id, '$today:pack:$cardIndex')),
+        );
+      final tasks = <_CardDefinition>[];
+
+      for (final category in categories) {
+        final candidate = ranked.where((task) => task.category == category);
+        if (candidate.isNotEmpty && tasks.length < taskCount) {
+          tasks.add(candidate.first);
+        }
       }
-    }
-    for (final card in matching) {
-      if (selected.length == target) break;
-      if (!selected.contains(card)) selected.add(card);
-    }
+      for (final task in ranked) {
+        if (tasks.length == taskCount) break;
+        if (!tasks.contains(task)) tasks.add(task);
+      }
 
-    // The pool is filtered first; only the placement in the deck is shuffled.
-    selected.sort(
-      (a, b) => _dailyScore(
-        a.id,
-        '$today:deck',
-      ).compareTo(_dailyScore(b.id, '$today:deck')),
-    );
-
-    return selected.indexed
-        .map(
-          (entry) => {
-            'id': '$today-${entry.$2.id}-${entry.$1}',
-            'title': entry.$2.title,
-            'description': entry.$2.description,
-            'category': entry.$2.category,
-            'difficulty': entry.$2.difficulty,
-            'xp': entry.$2.xp,
-            'cardStyle': entry.$1,
-            'status': 'available',
-            'done': false,
-          },
-        )
-        .toList();
+      final pack = _packThemes[cardIndex];
+      final taskRows = tasks.indexed
+          .map(
+            (entry) => {
+              'id': '$today-pack-$cardIndex-${entry.$2.id}-${entry.$1}',
+              'title': entry.$2.title,
+              'description': entry.$2.description,
+              'category': entry.$2.category,
+              'difficulty': entry.$2.difficulty,
+              'xp': entry.$2.xp,
+              'status': 'available',
+              'done': false,
+            },
+          )
+          .toList();
+      return {
+        'id': '$today-pack-$cardIndex',
+        'title': pack.$1,
+        'description': pack.$2,
+        'taskCount': taskRows.length,
+        'xp':
+            taskRows.fold<int>(0, (total, task) => total + (task['xp'] as int)),
+        'cardStyle': cardIndex,
+        'tasks': taskRows,
+        'status': 'available',
+      };
+    });
   }
 
   int _dailyScore(String value, String day) {
@@ -94,6 +108,14 @@ class DailyCardGenerator {
     return score;
   }
 }
+
+const _packThemes = [
+  ('Soft Reset', 'A gentle set of small wins for your day.'),
+  ('Bright Momentum', 'A balanced mini-plan to build momentum.'),
+  ('Steady Energy', 'A focused mix for feeling a little more grounded.'),
+  ('Kind to Yourself', 'Small tasks designed to meet you where you are.'),
+  ('Fresh Start', 'A playful set of steps for a healthier rhythm.'),
+];
 
 class _CardDefinition {
   const _CardDefinition({

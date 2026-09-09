@@ -42,7 +42,7 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
   }
 
   void _commit(JsonMap card) {
-    if (!widget.controller.commitCard(card['id'].toString())) return;
+    if (!widget.controller.commitDailyCardPack()) return;
     Navigator.of(context).pop(true);
   }
 
@@ -212,7 +212,7 @@ class _DeckStep extends StatelessWidget {
                   ],
                 ),
               ),
-              _DrawPill(label: '1 choice', color: _aqua),
+              _DrawPill(label: '2 switches', color: _aqua),
               const SizedBox(width: 10),
               IconButton(
                 tooltip: 'Tutup',
@@ -225,7 +225,7 @@ class _DeckStep extends StatelessWidget {
           Expanded(
             child: selected == null
                 ? _FaceDownDeck(
-                    cards: controller.dailyCards,
+                    cards: controller.dailyDrawCards,
                     passedCardIds: controller.passedDailyCardIds,
                     initialCardIndex: controller.dailyDeckStartIndex,
                     onSelect: onSelect,
@@ -233,6 +233,7 @@ class _DeckStep extends StatelessWidget {
                 : _FlipRevealCard(
                     card: selected,
                     canChooseAnother: controller.canChooseAnotherDailyCard,
+                    switchesRemaining: controller.dailyCardSwitchesRemaining,
                     onBackToDeck: onBackToDeck,
                     onCommit: () => onCommit(selected),
                   ),
@@ -596,12 +597,14 @@ class _FlipRevealCard extends StatelessWidget {
   const _FlipRevealCard({
     required this.card,
     required this.canChooseAnother,
+    required this.switchesRemaining,
     required this.onBackToDeck,
     required this.onCommit,
   });
 
   final JsonMap card;
   final bool canChooseAnother;
+  final int switchesRemaining;
   final VoidCallback onBackToDeck;
   final VoidCallback onCommit;
 
@@ -623,6 +626,7 @@ class _FlipRevealCard extends StatelessWidget {
                 ? _RevealedCard(
                     card: card,
                     canChooseAnother: canChooseAnother,
+                    switchesRemaining: switchesRemaining,
                     onBackToDeck: onBackToDeck,
                     onCommit: onCommit,
                   )
@@ -692,24 +696,28 @@ class _RevealedCard extends StatelessWidget {
   const _RevealedCard({
     required this.card,
     required this.canChooseAnother,
+    required this.switchesRemaining,
     required this.onBackToDeck,
     required this.onCommit,
   });
 
   final JsonMap card;
   final bool canChooseAnother;
+  final int switchesRemaining;
   final VoidCallback onBackToDeck;
   final VoidCallback onCommit;
 
   @override
   Widget build(BuildContext context) {
-    final difficulty = (card['difficulty'] as num).toInt();
     final palette = _paletteFor(card);
+    final tasks = ((card['tasks'] ?? []) as List)
+        .map((task) => Map<String, dynamic>.from(task))
+        .toList();
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 470),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -742,20 +750,14 @@ class _RevealedCard extends StatelessWidget {
                 card['description'].toString(),
                 style: const TextStyle(color: _secondaryText, height: 1.5),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
               Row(
                 children: [
                   _DrawPill(
-                      label: card['category'].toString(),
-                      color: palette.character),
+                      label: '${tasks.length} TASKS', color: palette.character),
                   const Spacer(),
                   Text(
-                    'Difficulty: ${'★' * difficulty}${'☆' * (3 - difficulty)}',
-                    style: TextStyle(color: palette.light, fontSize: 12),
-                  ),
-                  const SizedBox(width: 13),
-                  Text(
-                    '+${card['xp']} XP',
+                    '+${card['xp']} XP total',
                     style: TextStyle(
                       color: palette.light,
                       fontSize: 12,
@@ -764,13 +766,21 @@ class _RevealedCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 14),
+              ...tasks.indexed.map(
+                (entry) => _TaskPreviewRow(
+                  task: entry.$2,
+                  number: entry.$1 + 1,
+                  color: palette.light,
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: onCommit,
                   icon: const Icon(Icons.lock_rounded),
-                  label: const Text('Commit this challenge'),
+                  label: Text('Commit ${tasks.length} tasks'),
                   style: FilledButton.styleFrom(
                     backgroundColor: palette.light,
                     foregroundColor: palette.ink,
@@ -783,13 +793,15 @@ class _RevealedCard extends StatelessWidget {
                 Center(
                   child: TextButton(
                     onPressed: onBackToDeck,
-                    child: const Text('Pilih kartu lain (sekali saja)'),
+                    child: Text(
+                      'Pilih kartu lain ($switchesRemaining switch tersisa)',
+                    ),
                   ),
                 )
               else
                 const Center(
                   child: Text(
-                    'Pilihan kedua harus di-commit agar deck tetap fair.',
+                    'Pilihan ketiga harus di-commit agar deck tetap fair.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: _secondaryText, fontSize: 11),
                   ),
@@ -800,6 +812,56 @@ class _RevealedCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TaskPreviewRow extends StatelessWidget {
+  const _TaskPreviewRow({
+    required this.task,
+    required this.number,
+    required this.color,
+  });
+
+  final JsonMap task;
+  final int number;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: .16),
+          border: Border.all(color: Colors.white.withValues(alpha: .12)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Text('$number',
+                style: const TextStyle(
+                    color: _background,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900)),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(task['title'].toString(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: _primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 8),
+          Text('+${task['xp']} XP',
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w800)),
+        ]),
+      );
 }
 
 class _DrawPill extends StatelessWidget {

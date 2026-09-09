@@ -67,25 +67,25 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: widget.controller,
-    builder: (context, _) => WebWorkspaceGate(
-      onReturnToLanding: () =>
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
-      child: _Dashboard(
-        controller: widget.controller,
-        isAdmin: widget.isAdmin,
-        tab: _tab,
-        onTab: (value) => setState(() => _tab = value),
-        onOpenDailyDraw: _presentDailyDraw,
-        showCompanion: _showCompanion,
-        minimized: _minimizeCompanion,
-        setCompanion: ({bool? open, bool? minimized}) => setState(() {
-          _showCompanion = open ?? _showCompanion;
-          _minimizeCompanion = minimized ?? _minimizeCompanion;
-        }),
-      ),
-    ),
-  );
+        animation: widget.controller,
+        builder: (context, _) => WebWorkspaceGate(
+          onReturnToLanding: () =>
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
+          child: _Dashboard(
+            controller: widget.controller,
+            isAdmin: widget.isAdmin,
+            tab: _tab,
+            onTab: (value) => setState(() => _tab = value),
+            onOpenDailyDraw: _presentDailyDraw,
+            showCompanion: _showCompanion,
+            minimized: _minimizeCompanion,
+            setCompanion: ({bool? open, bool? minimized}) => setState(() {
+              _showCompanion = open ?? _showCompanion;
+              _minimizeCompanion = minimized ?? _minimizeCompanion;
+            }),
+          ),
+        ),
+      );
 }
 
 class _Dashboard extends StatelessWidget {
@@ -213,112 +213,112 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 244,
-    decoration: const BoxDecoration(
-      color: Color(0xff101216),
-      border: Border(right: BorderSide(color: _line)),
-    ),
-    padding: const EdgeInsets.fromLTRB(14, 21, 14, 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10),
-          child: Row(
-            children: [
-              _Mark(),
-              SizedBox(width: 9),
-              Text(
-                'YouWell.MD',
-                style: TextStyle(
-                  color: _text,
-                  fontSize: 17,
+        width: 244,
+        decoration: const BoxDecoration(
+          color: Color(0xff101216),
+          border: Border(right: BorderSide(color: _line)),
+        ),
+        padding: const EdgeInsets.fromLTRB(14, 21, 14, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  _Mark(),
+                  SizedBox(width: 9),
+                  Text(
+                    'YouWell.MD',
+                    style: TextStyle(
+                      color: _text,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(11, 8, 11, 28),
+              child: Text(
+                admin ? 'ADMIN WORKSPACE' : 'PERSONAL WORKSPACE',
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 9,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
                 ),
               ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(11, 8, 11, 28),
-          child: Text(
-            admin ? 'ADMIN WORKSPACE' : 'PERSONAL WORKSPACE',
-            style: const TextStyle(
-              color: _muted,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
             ),
-          ),
-        ),
-        ...List.generate(nav.length, (index) {
-          final selected = index == current;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 3),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => onTab(index),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xff20242a)
-                      : Colors.transparent,
-                  border: selected
-                      ? Border.all(color: const Color(0xff323741))
-                      : null,
+            ...List.generate(nav.length, (index) {
+              final selected = index == current;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      nav[index].icon,
-                      size: 18,
-                      color: selected ? _green : _muted,
+                  onTap: () => onTab(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 10,
                     ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Text(
-                        nav[index].label,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selected ? _text : _muted,
-                          fontSize: 13,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xff20242a)
+                          : Colors.transparent,
+                      border: selected
+                          ? Border.all(color: const Color(0xff323741))
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          nav[index].icon,
+                          size: 18,
+                          color: selected ? _green : _muted,
                         ),
-                      ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Text(
+                            nav[index].label,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: selected ? _text : _muted,
+                              fontSize: 13,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
+              );
+            }),
+            const Spacer(),
+            const _Card(
+              padding: 12,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.phone_iphone_rounded, color: _cyan, size: 17),
+                  SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      'Log foto dan check-in cepat tersedia di mobile.',
+                      style:
+                          TextStyle(color: _muted, fontSize: 11, height: 1.4),
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        }),
-        const Spacer(),
-        const _Card(
-          padding: 12,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.phone_iphone_rounded, color: _cyan, size: 17),
-              SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  'Log foto dan check-in cepat tersedia di mobile.',
-                  style: TextStyle(color: _muted, fontSize: 11, height: 1.4),
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _Header extends StatelessWidget {
@@ -333,57 +333,58 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 64,
-    padding: const EdgeInsets.symmetric(horizontal: 28),
-    decoration: const BoxDecoration(
-      color: Color(0xff101216),
-      border: Border(bottom: BorderSide(color: _line)),
-    ),
-    child: Row(
-      children: [
-        const Text('Workspace', style: TextStyle(color: _muted, fontSize: 13)),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Icon(Icons.chevron_right_rounded, color: _muted, size: 17),
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        decoration: const BoxDecoration(
+          color: Color(0xff101216),
+          border: Border(bottom: BorderSide(color: _line)),
         ),
-        Text(
-          section,
-          style: const TextStyle(
-            color: _text,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const Spacer(),
-        const _Dot(),
-        const SizedBox(width: 7),
-        const Text(
-          'Local preview',
-          style: TextStyle(color: _muted, fontSize: 12),
-        ),
-        const SizedBox(width: 18),
-        Tooltip(
-          message: 'Buka settings',
-          child: InkWell(
-            onTap: onSettings,
-            borderRadius: BorderRadius.circular(20),
-            child: CircleAvatar(
-              radius: 15,
-              backgroundColor: const Color(0xff233a35),
-              foregroundColor: _green,
-              child: Text(
-                alias.isEmpty ? 'Y' : alias.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+        child: Row(
+          children: [
+            const Text('Workspace',
+                style: TextStyle(color: _muted, fontSize: 13)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.chevron_right_rounded, color: _muted, size: 17),
+            ),
+            Text(
+              section,
+              style: const TextStyle(
+                color: _text,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            const _Dot(),
+            const SizedBox(width: 7),
+            const Text(
+              'Local preview',
+              style: TextStyle(color: _muted, fontSize: 12),
+            ),
+            const SizedBox(width: 18),
+            Tooltip(
+              message: 'Buka settings',
+              child: InkWell(
+                onTap: onSettings,
+                borderRadius: BorderRadius.circular(20),
+                child: CircleAvatar(
+                  radius: 15,
+                  backgroundColor: const Color(0xff233a35),
+                  foregroundColor: _green,
+                  child: Text(
+                    alias.isEmpty ? 'Y' : alias.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _Scroll extends StatelessWidget {
@@ -391,14 +392,14 @@ class _Scroll extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) => Scrollbar(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(30, 28, 30, 100),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1380),
-        child: child,
-      ),
-    ),
-  );
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(30, 28, 30, 100),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: child,
+          ),
+        ),
+      );
 }
 
 class _TodayPage extends StatelessWidget {
@@ -463,8 +464,8 @@ class _TodayPage extends StatelessWidget {
   String _greeting() => DateTime.now().hour < 11
       ? 'morning'
       : DateTime.now().hour < 17
-      ? 'afternoon'
-      : 'evening';
+          ? 'afternoon'
+          : 'evening';
 }
 
 class _DailyCardSystem extends StatelessWidget {
@@ -477,7 +478,7 @@ class _DailyCardSystem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cards = controller.dailyCards;
+    final drawCards = controller.dailyDrawCards;
     final committed = controller.committedCards;
     final completed = controller.completedCards;
     final selected = controller.selectedDailyCard;
@@ -507,11 +508,11 @@ class _DailyCardSystem extends StatelessWidget {
                   ],
                 ),
               ),
-              _Pill('${cards.length} cards', _cyan),
+              _Pill('${drawCards.length} cards', _cyan),
             ],
           ),
           const SizedBox(height: 18),
-          if (cards.isEmpty)
+          if (drawCards.isEmpty)
             _EmptyDailyDraw(onOpenDailyDraw: onOpenDailyDraw)
           else ...[
             if (selected != null && !controller.hasCommittedDailyCard)
@@ -565,34 +566,34 @@ class _EmptyDailyDraw extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 25),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.style_outlined, color: _cyan, size: 31),
-          const SizedBox(height: 10),
-          const Text(
-            'Kartu harianmu belum dipilih.',
-            style: TextStyle(color: _text, fontWeight: FontWeight.w700),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.style_outlined, color: _cyan, size: 31),
+              const SizedBox(height: 10),
+              const Text(
+                'Kartu harianmu belum dipilih.',
+                style: TextStyle(color: _text, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Swipe lima kartu tertutup; satu kartu berisi 3–5 task hari ini.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _muted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: onOpenDailyDraw,
+                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
+                label: const Text('Open Daily Draw'),
+                style: _greenButton,
+              ),
+            ],
           ),
-          const SizedBox(height: 5),
-          const Text(
-            'Swipe lima kartu tertutup dan pilih satu challenge.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: _muted, fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          FilledButton.icon(
-            onPressed: onOpenDailyDraw,
-            icon: const Icon(Icons.auto_awesome_rounded, size: 17),
-            label: const Text('Open Daily Draw'),
-            style: _greenButton,
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _DailyCard extends StatelessWidget {
@@ -602,64 +603,62 @@ class _DailyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xff191c21),
-      border: Border.all(color: _line),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff191c21),
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Pill(card['category'].toString(), _cyan),
-            const Spacer(),
+            Row(
+              children: [
+                _Pill('${card['taskCount']} tasks', _cyan),
+                const Spacer(),
+                Text(
+                  '+${card['xp']} XP total',
+                  style: const TextStyle(
+                    color: _green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Text(
-              '+${card['xp']} XP',
+              card['title'].toString(),
               style: const TextStyle(
-                color: _green,
-                fontSize: 12,
+                color: _text,
+                fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          card['title'].toString(),
-          style: const TextStyle(
-            color: _text,
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          card['description'].toString(),
-          style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
+            const SizedBox(height: 6),
             Text(
-              'Difficulty: ${'★' * (card['difficulty'] as int)}${'☆' * (3 - (card['difficulty'] as int))}',
-              style: const TextStyle(color: _amber, fontSize: 12),
+              card['description'].toString(),
+              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
             ),
-            const Spacer(),
-            FilledButton(
-              onPressed: () => _commit(context),
-              style: _greenButton,
-              child: const Text('Commit'),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                const Text('Satu paket untuk progres hari ini.',
+                    style: TextStyle(color: _muted, fontSize: 12)),
+                const Spacer(),
+                FilledButton(
+                  onPressed: () => _commit(context),
+                  style: _greenButton,
+                  child: const Text('Commit pack'),
+                ),
+              ],
             ),
           ],
         ),
-      ],
-    ),
-  );
+      );
 
   void _commit(BuildContext context) {
-    if (!controller.commitCard(card['id'].toString())) return;
+    if (!controller.commitDailyCardPack()) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Card committed. Challenge ini terkunci untuk hari ini.'),
@@ -743,81 +742,82 @@ class _TodayStats extends StatelessWidget {
   final VoidCallback onAnalytics;
   @override
   Widget build(BuildContext context) => Column(
-    children: [
-      _Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Weekly Compliance',
-              style: TextStyle(
-                color: _text,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${(controller.compliance(7) * 100).round()}%',
-                  style: const TextStyle(
-                    color: _green,
-                    fontSize: 42,
-                    height: .9,
+                const Text(
+                  'Weekly Compliance',
+                  style: TextStyle(
+                    color: _text,
+                    fontSize: 17,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 8, bottom: 3),
-                  child: Text(
-                    '7 hari terakhir',
-                    style: TextStyle(color: _muted, fontSize: 11),
-                  ),
+                const SizedBox(height: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${(controller.compliance(7) * 100).round()}%',
+                      style: const TextStyle(
+                        color: _green,
+                        fontSize: 42,
+                        height: .9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, bottom: 3),
+                      child: Text(
+                        '7 hari terakhir',
+                        style: TextStyle(color: _muted, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                SizedBox(height: 120, child: _Bars(controller: controller)),
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: onAnalytics,
+                  icon: const Icon(Icons.insights_rounded, size: 16),
+                  label: const Text('Lihat analytics'),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            SizedBox(height: 120, child: _Bars(controller: controller)),
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: onAnalytics,
-              icon: const Icon(Icons.insights_rounded, size: 16),
-              label: const Text('Lihat analytics'),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      _Card(
-        tint: const Color(0xff162927),
-        child: Row(
-          children: [
-            const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Today’s rewards',
-                    style: TextStyle(color: _text, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          _Card(
+            tint: const Color(0xff162927),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Today’s rewards',
+                        style: TextStyle(
+                            color: _text, fontWeight: FontWeight.w800),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        '${controller.dailyXp} XP earned • ${controller.streak} day streak',
+                        style: const TextStyle(color: _muted, fontSize: 11),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 3),
-                  Text(
-                    '${controller.dailyXp} XP earned • ${controller.streak} day streak',
-                    style: const TextStyle(color: _muted, fontSize: 11),
-                  ),
-                ],
-              ),
+                ),
+                const _Pill('Daily cards', _green),
+              ],
             ),
-            const _Pill('Daily cards', _green),
-          ],
-        ),
-      ),
-    ],
-  );
+          ),
+        ],
+      );
 }
 
 class _AnalyticsPage extends StatelessWidget {
@@ -826,131 +826,131 @@ class _AnalyticsPage extends StatelessWidget {
   final VoidCallback openCompanion;
   @override
   Widget build(BuildContext context) => _Scroll(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Craving Analytics',
-          style: TextStyle(
-            color: _text,
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -.9,
-          ),
-        ),
-        const SizedBox(height: 7),
-        const Text(
-          'Pola adalah informasi untuk membantumu, bukan nilai untuk dihakimi.',
-          style: TextStyle(color: _muted),
-        ),
-        const SizedBox(height: 24),
-        LayoutBuilder(
-          builder: (context, box) {
-            final cards = [
-              _Metric(
-                'Compliance',
-                '${(controller.compliance(7) * 100).round()}%',
-                '7 hari terakhir',
-                _green,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Craving Analytics',
+              style: TextStyle(
+                color: _text,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -.9,
               ),
-              _Metric(
-                'Current streak',
-                '${controller.streak}',
-                'hari kecil yang terjaga',
-                _cyan,
-              ),
-              _Metric(
-                'Delay attempts',
-                '${controller.cravings.length}',
-                'tercatat di akunmu',
-                _amber,
-              ),
-            ];
-            return box.maxWidth < 700
-                ? Column(
-                    children: cards
-                        .map(
-                          (card) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: card,
-                          ),
-                        )
-                        .toList(),
-                  )
-                : Row(
-                    children: cards
-                        .map(
-                          (card) => Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: card,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-          },
-        ),
-        const SizedBox(height: 16),
-        _Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Weekly rhythm',
-                style: TextStyle(
-                  color: _text,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Penyelesaian Gacha Cards selama tujuh hari terakhir.',
-                style: TextStyle(color: _muted, fontSize: 12),
-              ),
-              const SizedBox(height: 26),
-              SizedBox(height: 190, child: _Bars(controller: controller)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _Card(
-          tint: const Color(0xff252018),
-          child: Row(
-            children: [
-              const Icon(Icons.timer_outlined, color: _amber, size: 31),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Jangan lawan craving sendirian.',
-                      style: TextStyle(
-                        color: _text,
-                        fontWeight: FontWeight.w800,
-                      ),
+            ),
+            const SizedBox(height: 7),
+            const Text(
+              'Pola adalah informasi untuk membantumu, bukan nilai untuk dihakimi.',
+              style: TextStyle(color: _muted),
+            ),
+            const SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, box) {
+                final cards = [
+                  _Metric(
+                    'Compliance',
+                    '${(controller.compliance(7) * 100).round()}%',
+                    '7 hari terakhir',
+                    _green,
+                  ),
+                  _Metric(
+                    'Current streak',
+                    '${controller.streak}',
+                    'hari kecil yang terjaga',
+                    _cyan,
+                  ),
+                  _Metric(
+                    'Delay attempts',
+                    '${controller.cravings.length}',
+                    'tercatat di akunmu',
+                    _amber,
+                  ),
+                ];
+                return box.maxWidth < 700
+                    ? Column(
+                        children: cards
+                            .map(
+                              (card) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: card,
+                              ),
+                            )
+                            .toList(),
+                      )
+                    : Row(
+                        children: cards
+                            .map(
+                              (card) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: card,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+              },
+            ),
+            const SizedBox(height: 16),
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Weekly rhythm',
+                    style: TextStyle(
+                      color: _text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Mulai delay timer 5 atau 10 menit dengan napas dan soundscape.',
-                      style: TextStyle(color: _muted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Penyelesaian Gacha Cards selama tujuh hari terakhir.',
+                    style: TextStyle(color: _muted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 26),
+                  SizedBox(height: 190, child: _Bars(controller: controller)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _Card(
+              tint: const Color(0xff252018),
+              child: Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: _amber, size: 31),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jangan lawan craving sendirian.',
+                          style: TextStyle(
+                            color: _text,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Mulai delay timer 5 atau 10 menit dengan napas dan soundscape.',
+                          style: TextStyle(color: _muted, fontSize: 12),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  FilledButton(
+                    onPressed: openCompanion,
+                    style: _greenButton,
+                    child: const Text('Open Companion'),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: openCompanion,
-                style: _greenButton,
-                child: const Text('Open Companion'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _Metric extends StatelessWidget {
@@ -959,24 +959,24 @@ class _Metric extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => _Card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: _muted, fontSize: 12)),
-        const SizedBox(height: 12),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: _muted, fontSize: 12)),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(detail, style: const TextStyle(color: _muted, fontSize: 11)),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(detail, style: const TextStyle(color: _muted, fontSize: 11)),
-      ],
-    ),
-  );
+      );
 }
 
 class _Bars extends StatelessWidget {
@@ -1035,118 +1035,119 @@ class _SquadPage extends StatelessWidget {
   final VoidCallback openCompanion;
   @override
   Widget build(BuildContext context) => _Scroll(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Squad Quests',
-          style: TextStyle(
-            color: _text,
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 7),
-        const Text(
-          'Dampak langkah kecil tanpa membandingkan perjalananmu.',
-          style: TextStyle(color: _muted),
-        ),
-        const SizedBox(height: 24),
-        _Card(
-          tint: const Color(0xff152420),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Squad Quests',
+              style: TextStyle(
+                color: _text,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 7),
+            const Text(
+              'Dampak langkah kecil tanpa membandingkan perjalananmu.',
+              style: TextStyle(color: _muted),
+            ),
+            const SizedBox(height: 24),
+            _Card(
+              tint: const Color(0xff152420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Mark(size: 39),
-                  SizedBox(width: 13),
-                  Expanded(
+                  const Row(
+                    children: [
+                      _Mark(size: 39),
+                      SizedBox(width: 13),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'September reset',
+                              style: TextStyle(
+                                color: _text,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Squad momentum minggu ini',
+                              style: TextStyle(color: _muted, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _Pill('Active', _green),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  const Text(
+                    '183 / 250 acts of care',
+                    style: TextStyle(
+                      color: _text,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: const LinearProgressIndicator(
+                      value: .732,
+                      minHeight: 11,
+                      color: _green,
+                      backgroundColor: Color(0xff2a4039),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Setiap Gacha Card yang selesai menambah satu langkah untuk squad. Tidak ada leaderboard personal.',
+                    style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _Card(
+              child: Row(
+                children: [
+                  const Icon(Icons.emoji_emotions_outlined,
+                      color: _cyan, size: 29),
+                  const SizedBox(width: 13),
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'September reset',
+                          'Kirim dorongan singkat',
                           style: TextStyle(
                             color: _text,
-                            fontSize: 19,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         SizedBox(height: 3),
                         Text(
-                          'Squad momentum minggu ini',
+                          'Satu reaksi akan terlihat sebagai semangat bersama.',
                           style: TextStyle(color: _muted, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  _Pill('Active', _green),
+                  FilledButton.tonal(
+                    onPressed: () =>
+                        toast(context, 'Semangatmu sudah dikirim ke squad.'),
+                    child: const Text('Send 🌿'),
+                  ),
                 ],
               ),
-              const SizedBox(height: 28),
-              const Text(
-                '183 / 250 acts of care',
-                style: TextStyle(
-                  color: _text,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: const LinearProgressIndicator(
-                  value: .732,
-                  minHeight: 11,
-                  color: _green,
-                  backgroundColor: Color(0xff2a4039),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Setiap Gacha Card yang selesai menambah satu langkah untuk squad. Tidak ada leaderboard personal.',
-                style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        _Card(
-          child: Row(
-            children: [
-              const Icon(Icons.emoji_emotions_outlined, color: _cyan, size: 29),
-              const SizedBox(width: 13),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Kirim dorongan singkat',
-                      style: TextStyle(
-                        color: _text,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Satu reaksi akan terlihat sebagai semangat bersama.',
-                      style: TextStyle(color: _muted, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              FilledButton.tonal(
-                onPressed: () =>
-                    toast(context, 'Semangatmu sudah dikirim ke squad.'),
-                child: const Text('Send 🌿'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _WallPage extends StatelessWidget {
@@ -1382,25 +1383,26 @@ class _Setting extends StatelessWidget {
   final String label, value;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 145,
-          child: Text(
-            label,
-            style: const TextStyle(color: _muted, fontSize: 12),
-          ),
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 145,
+              child: Text(
+                label,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style:
+                    const TextStyle(color: _text, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(color: _text, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _AdminPage extends StatelessWidget {
@@ -1408,9 +1410,8 @@ class _AdminPage extends StatelessWidget {
   final WellnessController controller;
   @override
   Widget build(BuildContext context) {
-    final pending = controller.posts
-        .where((post) => post['status'] == 'pending')
-        .toList();
+    final pending =
+        controller.posts.where((post) => post['status'] == 'pending').toList();
     return _Scroll(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1786,48 +1787,49 @@ class _CompanionState extends State<_Companion> {
   }
 
   void pickSound() => showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: _raised,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pilih soundscape',
-              style: TextStyle(
-                color: _text,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...{
-              'rain': 'Hujan',
-              'ambient': 'Ambient',
-              'breathing': 'Napas',
-            }.entries.map(
-              (item) => ListTile(
-                leading: Icon(
-                  item.key == sound
-                      ? Icons.check_circle_rounded
-                      : Icons.graphic_eq_rounded,
-                  color: item.key == sound ? _green : _muted,
+        context: context,
+        backgroundColor: _raised,
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pilih soundscape',
+                  style: TextStyle(
+                    color: _text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                title: Text(item.value, style: const TextStyle(color: _text)),
-                onTap: () {
-                  setState(() => sound = item.key);
-                  Navigator.pop(context);
-                },
-              ),
+                const SizedBox(height: 10),
+                ...{
+                  'rain': 'Hujan',
+                  'ambient': 'Ambient',
+                  'breathing': 'Napas',
+                }.entries.map(
+                      (item) => ListTile(
+                        leading: Icon(
+                          item.key == sound
+                              ? Icons.check_circle_rounded
+                              : Icons.graphic_eq_rounded,
+                          color: item.key == sound ? _green : _muted,
+                        ),
+                        title: Text(item.value,
+                            style: const TextStyle(color: _text)),
+                        onTap: () {
+                          setState(() => sound = item.key);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _Message {
@@ -1841,38 +1843,39 @@ class _Bubble extends StatelessWidget {
   final _Message message;
   @override
   Widget build(BuildContext context) => Align(
-    alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 9),
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      constraints: const BoxConstraints(maxWidth: 295),
-      decoration: BoxDecoration(
-        color: message.mine ? const Color(0xff204438) : _raised,
-        border: Border.all(
-          color: message.mine ? const Color(0xff356451) : _line,
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            message.sender,
-            style: TextStyle(
-              color: message.mine ? _green : _cyan,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+        alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          constraints: const BoxConstraints(maxWidth: 295),
+          decoration: BoxDecoration(
+            color: message.mine ? const Color(0xff204438) : _raised,
+            border: Border.all(
+              color: message.mine ? const Color(0xff356451) : _line,
             ),
+            borderRadius: BorderRadius.circular(10),
           ),
-          const SizedBox(height: 3),
-          Text(
-            message.text,
-            style: const TextStyle(color: _text, fontSize: 12, height: 1.35),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message.sender,
+                style: TextStyle(
+                  color: message.mine ? _green : _cyan,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                message.text,
+                style:
+                    const TextStyle(color: _text, fontSize: 12, height: 1.35),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _Timer extends StatelessWidget {
@@ -1881,38 +1884,38 @@ class _Timer extends StatelessWidget {
   final VoidCallback onStop;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: const Color(0xff19342d),
-      border: Border.all(color: const Color(0xff315545)),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Row(
-      children: [
-        const Icon(Icons.self_improvement_rounded, color: _green),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Delay in progress · $time',
-                style: const TextStyle(
-                  color: _text,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                'Soundscape: $sound',
-                style: const TextStyle(color: _muted, fontSize: 10),
-              ),
-            ],
-          ),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xff19342d),
+          border: Border.all(color: const Color(0xff315545)),
+          borderRadius: BorderRadius.circular(10),
         ),
-        TextButton(onPressed: onStop, child: const Text('Stop')),
-      ],
-    ),
-  );
+        child: Row(
+          children: [
+            const Icon(Icons.self_improvement_rounded, color: _green),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delay in progress · $time',
+                    style: const TextStyle(
+                      color: _text,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    'Soundscape: $sound',
+                    style: const TextStyle(color: _muted, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(onPressed: onStop, child: const Text('Stop')),
+          ],
+        ),
+      );
 }
 
 class _Action extends StatelessWidget {
@@ -1922,13 +1925,13 @@ class _Action extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => ActionChip(
-    avatar: Icon(icon, size: 15, color: _cyan),
-    label: Text(label),
-    onPressed: onTap,
-    backgroundColor: _raised,
-    side: const BorderSide(color: _line),
-    labelStyle: const TextStyle(color: _text, fontSize: 11),
-  );
+        avatar: Icon(icon, size: 15, color: _cyan),
+        label: Text(label),
+        onPressed: onTap,
+        backgroundColor: _raised,
+        side: const BorderSide(color: _line),
+        labelStyle: const TextStyle(color: _text, fontSize: 11),
+      );
 }
 
 class _Card extends StatelessWidget {
@@ -1938,21 +1941,21 @@ class _Card extends StatelessWidget {
   final double padding;
   @override
   Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.all(padding),
-    decoration: BoxDecoration(
-      color: tint ?? _panel,
-      border: Border.all(color: _line),
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x33000000),
-          blurRadius: 18,
-          offset: Offset(0, 8),
+        padding: EdgeInsets.all(padding),
+        decoration: BoxDecoration(
+          color: tint ?? _panel,
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33000000),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
         ),
-      ],
-    ),
-    child: child,
-  );
+        child: child,
+      );
 }
 
 class _Pill extends StatelessWidget {
@@ -1961,17 +1964,18 @@ class _Pill extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: .13),
-      border: Border.all(color: color.withValues(alpha: .35)),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .13),
+          border: Border.all(color: color.withValues(alpha: .35)),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+              color: color, fontSize: 10, fontWeight: FontWeight.w700),
+        ),
+      );
 }
 
 class _Empty extends StatelessWidget {
@@ -1980,20 +1984,20 @@ class _Empty extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 18),
-    child: Row(
-      children: [
-        Icon(icon, color: _muted),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(color: _muted, height: 1.4),
-          ),
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        child: Row(
+          children: [
+            Icon(icon, color: _muted),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: _muted, height: 1.4),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _Mark extends StatelessWidget {
@@ -2001,29 +2005,29 @@ class _Mark extends StatelessWidget {
   final double size;
   @override
   Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      color: const Color(0xff1e3931),
-      borderRadius: BorderRadius.circular(size * .32),
-      border: Border.all(color: const Color(0xff345d4f)),
-    ),
-    child: Icon(Icons.spa_rounded, size: size * .6, color: _green),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: const Color(0xff1e3931),
+          borderRadius: BorderRadius.circular(size * .32),
+          border: Border.all(color: const Color(0xff345d4f)),
+        ),
+        child: Icon(Icons.spa_rounded, size: size * .6, color: _green),
+      );
 }
 
 class _Dot extends StatelessWidget {
   const _Dot();
   @override
   Widget build(BuildContext context) => Container(
-    width: 7,
-    height: 7,
-    decoration: const BoxDecoration(
-      color: _green,
-      shape: BoxShape.circle,
-      boxShadow: [BoxShadow(color: Color(0xaa78e3b1), blurRadius: 8)],
-    ),
-  );
+        width: 7,
+        height: 7,
+        decoration: const BoxDecoration(
+          color: _green,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: Color(0xaa78e3b1), blurRadius: 8)],
+        ),
+      );
 }
 
 final _greenButton = FilledButton.styleFrom(

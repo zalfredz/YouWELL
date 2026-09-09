@@ -8,7 +8,7 @@ versi ini disimpan melalui SharedPreferences di browser, dengan namespace baru
 | Fitur konsep | Implementasi yang dapat dicoba |
 | --- | --- |
 | Landing + onboarding | Tiga slide, profiling dua jalur, baseline kebugaran, kondisi cedera, alias persisten, tiga companion |
-| Gacha | Sekali per tanggal lokal, deck 5 kartu terfilter jalur/kondisi/tingkat, tersimpan saat reload |
+| Gacha | Sekali per tanggal lokal, deck 5 kartu paket berisi 3–5 task terfilter jalur/kondisi/tingkat, tersimpan saat reload |
 | Adaptive difficulty | Sesudah tiga hari data: >80% naik satu tingkat, <40% turun; low-impact tingkat 1 |
 | Checklist + XP | Satu completion per misi, 20 XP; tanpa duplikasi reward |
 | Companion | Mori/Milo/Awan, level, pesan kontekstual, status istirahat saat freeze |

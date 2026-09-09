@@ -49,6 +49,15 @@ class WellnessController extends ChangeNotifier {
       .map((e) => Map<String, dynamic>.from(e))
       .toList();
   List<JsonMap> get dailyCards => quests;
+  List<JsonMap> get dailyDrawCards {
+    final value = days[today]?['dailyDrawCards'];
+    if (value is List) {
+      return value.map((card) => Map<String, dynamic>.from(card)).toList();
+    }
+    // Preview data from older versions stored the card itself as a task.
+    return dailyCards;
+  }
+
   JsonMap? get dailyCardDraw {
     final value = days[today]?['cardDraw'];
     return value is Map ? Map<String, dynamic>.from(value) : null;
@@ -56,7 +65,7 @@ class WellnessController extends ChangeNotifier {
 
   /// A draw is considered complete once its card pool exists. This also keeps
   /// previews created before the reveal experience compatible with the new UI.
-  bool get hasDrawnDailyCards => dailyCards.isNotEmpty;
+  bool get hasDrawnDailyCards => dailyDrawCards.isNotEmpty;
 
   /// Keep presenting an unfinished deck on later visits, but never interrupt a
   /// user who has already committed today's challenge.
@@ -69,27 +78,31 @@ class WellnessController extends ChangeNotifier {
           .toList();
   bool isDailyCardPassed(String id) => passedDailyCardIds.contains(id);
   int get dailyDeckStartIndex {
-    if (dailyCards.isEmpty) return 0;
+    if (dailyDrawCards.isEmpty) return 0;
     return ((dailyCardDraw?['deckStartIndex'] ?? 0) as num).toInt() %
-        dailyCards.length;
+        dailyDrawCards.length;
   }
 
   JsonMap? get selectedDailyCard {
     final id = selectedDailyCardId;
     if (id == null) return null;
-    for (final card in dailyCards) {
+    for (final card in dailyDrawCards) {
       if (card['id'] == id) return card;
     }
     return null;
   }
 
   bool get hasCommittedDailyCard =>
-      committedCards.isNotEmpty || completedCards.isNotEmpty;
+      dailyDrawCards.any((card) => _cardStatus(card) == 'committed') ||
+      committedCards.isNotEmpty ||
+      completedCards.isNotEmpty;
   bool get canChooseAnotherDailyCard =>
       !hasCommittedDailyCard &&
       selectedDailyCardId != null &&
-      passedDailyCardIds.isEmpty &&
-      dailyCards.length > 1;
+      passedDailyCardIds.length < 2 &&
+      dailyDrawCards.length > passedDailyCardIds.length + 1;
+  int get dailyCardSwitchesRemaining =>
+      (2 - passedDailyCardIds.length).clamp(0, 2);
   List<JsonMap> get availableCards =>
       dailyCards.where((card) => _cardStatus(card) == 'available').toList();
   List<JsonMap> get committedCards =>
@@ -194,7 +207,8 @@ class WellnessController extends ChangeNotifier {
     );
     _data['days'][today] = {
       ...?days[today] as Map?,
-      'quests': list,
+      'dailyDrawCards': list,
+      'quests': <JsonMap>[],
       'difficulty': difficulty,
       'cardDraw': {
         'startedAt': now.toIso8601String(),
@@ -211,7 +225,8 @@ class WellnessController extends ChangeNotifier {
   bool selectDailyCard(String id) {
     if (hasCommittedDailyCard ||
         isDailyCardPassed(id) ||
-        !availableCards.any((card) => card['id'] == id)) {
+        !dailyDrawCards.any(
+            (card) => card['id'] == id && _cardStatus(card) == 'available')) {
       return false;
     }
     final existing = dailyCardDraw ?? const <String, dynamic>{};
@@ -227,13 +242,13 @@ class WellnessController extends ChangeNotifier {
     return true;
   }
 
-  /// Gives one safe change-of-mind without turning the draw into a way to
-  /// inspect every card. The revealed card stays face-down and unavailable.
+  /// Gives two safe changes-of-mind without turning the draw into a way to
+  /// inspect every card. A third reveal is the final card choice.
   bool chooseAnotherDailyCard() {
     if (!canChooseAnotherDailyCard || selectedDailyCardId == null) return false;
     final existing = dailyCardDraw ?? const <String, dynamic>{};
     final passed = [...passedDailyCardIds, selectedDailyCardId!];
-    final nextIndex = dailyCards.indexWhere(
+    final nextIndex = dailyDrawCards.indexWhere(
       (card) =>
           card['id'] != selectedDailyCardId &&
           !passed.contains(card['id'].toString()),
@@ -252,13 +267,45 @@ class WellnessController extends ChangeNotifier {
     return true;
   }
 
+  /// Commits every task inside the selected card package. Individual tasks
+  /// then move through committed → completed as usual.
+  bool commitDailyCardPack() {
+    final selected = selectedDailyCard;
+    if (selected == null || _cardStatus(selected) != 'available') return false;
+    final tasks = ((selected['tasks'] ?? []) as List)
+        .map((task) => Map<String, dynamic>.from(task))
+        .toList();
+    if (tasks.isEmpty) return false;
+    final packs = dailyDrawCards;
+    final packIndex = packs.indexWhere((pack) => pack['id'] == selected['id']);
+    if (packIndex < 0) return false;
+    final committedAt = now.toIso8601String();
+    packs[packIndex]['status'] = 'committed';
+    packs[packIndex]['committedAt'] = committedAt;
+    _data['days'][today] = {
+      ...?days[today] as Map?,
+      'dailyDrawCards': packs,
+      'quests': tasks
+          .map((task) => {
+                ...task,
+                'status': 'committed',
+                'committedAt': committedAt,
+                'done': false,
+              })
+          .toList(),
+    };
+    _save();
+    return true;
+  }
+
   bool commitCard(String id) {
     final list = dailyCards;
     final i = list.indexWhere((q) => q['id'] == id);
     final draw = dailyCardDraw;
+    final usesTaskPacks = days[today]?['dailyDrawCards'] is List;
     if (i < 0 ||
         _cardStatus(list[i]) != 'available' ||
-        (draw != null && selectedDailyCardId != id)) {
+        (draw != null && !usesTaskPacks && selectedDailyCardId != id)) {
       return false;
     }
     list[i]['status'] = 'committed';
