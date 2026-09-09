@@ -1006,7 +1006,6 @@ class _QuickDeskHabits extends StatelessWidget {
           FilledButton.tonalIcon(
             onPressed: () {
               controller.addWater();
-              toast(context, 'Water reset logged: +250 ml.');
             },
             icon: const Icon(Icons.water_drop_outlined, size: 16),
             label: const Text('+250 ml Water'),
