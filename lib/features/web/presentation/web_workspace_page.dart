@@ -466,15 +466,17 @@ class _TodayPage extends StatelessWidget {
                 controller: controller,
                 onOpenDailyDraw: onOpenDailyDraw,
               );
-              final companion = _CompanionShowcase(controller: controller);
-              final compliance = _WeeklyComplianceCard(
-                controller: controller,
-                onAnalytics: () => onTab(1),
-              );
-              final rewards = _RewardsCard(controller: controller);
-              final desk = _QuickDeskHabits(
+              final companion = _CompanionShowcase(
                 controller: controller,
                 onFocus: () => onTab(1),
+              );
+              final complianceAndRewards = _ComplianceRewardsCard(
+                controller: controller,
+                onFocus: () => onTab(1),
+              );
+              final squad = _SquadHubWidget(
+                controller: controller,
+                onOpenSquad: () => onTab(2),
               );
               if (box.maxWidth < 1040) {
                 return Column(children: [
@@ -482,11 +484,9 @@ class _TodayPage extends StatelessWidget {
                   const SizedBox(height: 18),
                   tasks,
                   const SizedBox(height: 18),
-                  compliance,
+                  complianceAndRewards,
                   const SizedBox(height: 18),
-                  rewards,
-                  const SizedBox(height: 18),
-                  desk,
+                  squad,
                 ]);
               }
               return Column(children: [
@@ -500,13 +500,16 @@ class _TodayPage extends StatelessWidget {
                       ]),
                 ),
                 const SizedBox(height: 22),
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(flex: 6, child: compliance),
-                  const SizedBox(width: 22),
-                  Expanded(flex: 3, child: rewards),
-                  const SizedBox(width: 22),
-                  Expanded(flex: 3, child: desk),
-                ]),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(flex: 8, child: complianceAndRewards),
+                      const SizedBox(width: 22),
+                      Expanded(flex: 4, child: squad),
+                    ],
+                  ),
+                ),
               ]);
             },
           ),
@@ -790,38 +793,99 @@ class _CommittedCard extends StatelessWidget {
   }
 }
 
-class _WeeklyComplianceCard extends StatelessWidget {
-  const _WeeklyComplianceCard({
+class _ComplianceRewardsCard extends StatelessWidget {
+  const _ComplianceRewardsCard({
     required this.controller,
-    required this.onAnalytics,
+    required this.onFocus,
   });
   final WellnessController controller;
-  final VoidCallback onAnalytics;
+  final VoidCallback onFocus;
+
   @override
   Widget build(BuildContext context) => _Card(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Weekly Compliance',
-              style: TextStyle(
-                  color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
+          const Text(
+            'Weekly Compliance & Rewards',
+            style: TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 20),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('${(controller.compliance(7) * 100).round()}%',
-                style: const TextStyle(
+          LayoutBuilder(builder: (context, box) {
+            final metric = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${(controller.compliance(7) * 100).round()}%',
+                  style: const TextStyle(
                     color: _green,
                     fontSize: 42,
                     height: .9,
-                    fontWeight: FontWeight.w800)),
-            const Padding(
-              padding: EdgeInsets.only(left: 8, bottom: 3),
-              child: Text('7 hari terakhir',
-                  style: TextStyle(color: _muted, fontSize: 11)),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '7 hari terakhir',
+                  style: TextStyle(color: _muted, fontSize: 11),
+                ),
+              ],
+            );
+            final chart = SizedBox(
+              height: 98,
+              child: _Bars(controller: controller),
+            );
+            if (box.maxWidth < 490) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [metric, const SizedBox(height: 18), chart],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                metric,
+                const SizedBox(width: 30),
+                Expanded(child: chart),
+              ],
+            );
+          }),
+          const SizedBox(height: 20),
+          const Divider(color: _line, height: 1),
+          const SizedBox(height: 15),
+          Row(children: [
+            const Icon(Icons.auto_awesome_rounded, color: _amber, size: 21),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Today’s rewards',
+                      style:
+                          TextStyle(color: _text, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text('${controller.dailyXp} XP earned',
+                      style: const TextStyle(color: _muted, fontSize: 12)),
+                ],
+              ),
             ),
+            _Pill('${controller.streak} day streak', _green),
           ]),
-          const SizedBox(height: 18),
-          SizedBox(height: 120, child: _Bars(controller: controller)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _Pill(
+              controller.tokens > 0
+                  ? '${controller.tokens} Streak Freeze ready'
+                  : 'No Streak Freeze available',
+              controller.tokens > 0 ? _cyan : _muted,
+            ),
+          ),
+          const SizedBox(height: 22),
           TextButton.icon(
-            onPressed: onAnalytics,
+            onPressed: onFocus,
             icon: const Icon(Icons.timer_outlined, size: 16),
             label: const Text('Buka Focus & Craving'),
           ),
@@ -829,25 +893,131 @@ class _WeeklyComplianceCard extends StatelessWidget {
       );
 }
 
-class _RewardsCard extends StatelessWidget {
-  const _RewardsCard({required this.controller});
-
+class _SquadHubWidget extends StatelessWidget {
+  const _SquadHubWidget({
+    required this.controller,
+    required this.onOpenSquad,
+  });
   final WellnessController controller;
+  final VoidCallback onOpenSquad;
 
   @override
-  Widget build(BuildContext context) => _Card(
-        tint: const Color(0xff162927),
+  Widget build(BuildContext context) {
+    if (!controller.hasSquad) {
+      return _Card(
+        tint: const Color(0xff151f1d),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.auto_awesome_rounded, color: _amber, size: 28),
+          const Icon(Icons.groups_rounded, color: _cyan, size: 27),
           const SizedBox(height: 15),
-          const Text('Today’s rewards',
-              style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text('${controller.dailyXp} XP earned',
-              style: const TextStyle(color: _muted, fontSize: 12)),
-          const SizedBox(height: 16),
-          _Pill('${controller.streak} day streak', _green),
+          const Text('Squad Progress',
+              style: TextStyle(
+                  color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 7),
+          const Text(
+            'Saling jaga habit bareng 3–5 teman. Capai target mingguan bersama!',
+            style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: onOpenSquad,
+            icon: const Icon(Icons.add_rounded, size: 17),
+            label: const Text('Cari / Buat Squad'),
+            style: _greenButton,
+          ),
         ]),
+      );
+    }
+
+    return _Card(
+      tint: const Color(0xff152420),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Expanded(
+            child: Text('September reset',
+                style: TextStyle(
+                    color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
+          ),
+          const _Pill('Active', _green),
+        ]),
+        const SizedBox(height: 7),
+        const Text('Weekly group quest',
+            style: TextStyle(color: _muted, fontSize: 12)),
+        const SizedBox(height: 24),
+        const Text('24 / 50 Tasks Completed',
+            style: TextStyle(
+                color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: const LinearProgressIndicator(
+            value: .48,
+            minHeight: 8,
+            color: _green,
+            backgroundColor: Color(0xff2a4039),
+          ),
+        ),
+        const SizedBox(height: 17),
+        const _AvatarStack(),
+        const SizedBox(height: 24),
+        TextButton(
+          onPressed: onOpenSquad,
+          child: const Text('Buka Squad Hub →'),
+        ),
+      ]),
+    );
+  }
+}
+
+class _AvatarStack extends StatelessWidget {
+  const _AvatarStack();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 32,
+        child: Stack(
+          children: const [
+            _SquadAvatar(alias: 'D', color: Color(0xff2e7d68), left: 0),
+            _SquadAvatar(alias: 'J', color: Color(0xff407a9d), left: 22),
+            _SquadAvatar(alias: 'M', color: Color(0xff856cbb), left: 44),
+            _SquadAvatar(alias: 'A', color: Color(0xffa6784f), left: 66),
+            Positioned(
+              left: 100,
+              top: 8,
+              child: Text('daunpagi, jeda_sore +2',
+                  style: TextStyle(color: _muted, fontSize: 11)),
+            ),
+          ],
+        ),
+      );
+}
+
+class _SquadAvatar extends StatelessWidget {
+  const _SquadAvatar({
+    required this.alias,
+    required this.color,
+    required this.left,
+  });
+
+  final String alias;
+  final Color color;
+  final double left;
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+        left: left,
+        child: CircleAvatar(
+          radius: 16,
+          backgroundColor: const Color(0xff0d0e11),
+          child: CircleAvatar(
+            radius: 13,
+            backgroundColor: color,
+            child: Text(alias,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800)),
+          ),
+        ),
       );
 }
 
@@ -861,7 +1031,14 @@ class _QuickDeskHabits extends StatelessWidget {
   Widget build(BuildContext context) {
     const target = 2000;
     final water = controller.water.round().clamp(0, target);
-    return _Card(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xff1a2421),
+        border: Border.all(color: const Color(0xff2c443a)),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Quick desk reset',
             style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
@@ -900,9 +1077,13 @@ class _QuickDeskHabits extends StatelessWidget {
 }
 
 class _CompanionShowcase extends StatelessWidget {
-  const _CompanionShowcase({required this.controller});
+  const _CompanionShowcase({
+    required this.controller,
+    required this.onFocus,
+  });
 
   final WellnessController controller;
+  final VoidCallback onFocus;
 
   @override
   Widget build(BuildContext context) {
@@ -966,6 +1147,8 @@ class _CompanionShowcase extends StatelessWidget {
           backgroundColor: _raised,
           borderRadius: BorderRadius.circular(8),
         ),
+        const SizedBox(height: 18),
+        _QuickDeskHabits(controller: controller, onFocus: onFocus),
       ]),
     );
   }
@@ -1224,47 +1407,84 @@ class _CommunityHubPage extends StatelessWidget {
             style: TextStyle(color: _muted)),
         const SizedBox(height: 24),
         LayoutBuilder(builder: (context, box) {
-          final squad = _Card(
-            tint: const Color(0xff152420),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                _Mark(size: 35),
-                SizedBox(width: 12),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text('September reset',
+          final squad = controller.hasSquad
+              ? _Card(
+                  tint: const Color(0xff152420),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(children: [
+                          _Mark(size: 35),
+                          SizedBox(width: 12),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text('September reset',
+                                    style: TextStyle(
+                                        color: _text,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800)),
+                                SizedBox(height: 3),
+                                Text('Squad momentum minggu ini',
+                                    style:
+                                        TextStyle(color: _muted, fontSize: 12)),
+                              ])),
+                          _Pill('Active', _green),
+                        ]),
+                        const SizedBox(height: 26),
+                        const Text('183 / 250 acts of care',
+                            style: TextStyle(
+                                color: _text,
+                                fontSize: 25,
+                                fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 11),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: const LinearProgressIndicator(
+                              value: .732,
+                              minHeight: 11,
+                              color: _green,
+                              backgroundColor: Color(0xff2a4039)),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                            'Task yang kamu selesaikan dan focus time squad sama-sama menambah progres.',
+                            style: TextStyle(
+                                color: _muted, fontSize: 12, height: 1.45)),
+                      ]),
+                )
+              : _Card(
+                  tint: const Color(0xff151f1d),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.groups_rounded, color: _cyan, size: 31),
+                      const SizedBox(height: 16),
+                      const Text('Belum punya squad',
                           style: TextStyle(
                               color: _text,
                               fontSize: 18,
                               fontWeight: FontWeight.w800)),
-                      SizedBox(height: 3),
-                      Text('Squad momentum minggu ini',
-                          style: TextStyle(color: _muted, fontSize: 12)),
-                    ])),
-                _Pill('Active', _green),
-              ]),
-              const SizedBox(height: 26),
-              const Text('183 / 250 acts of care',
-                  style: TextStyle(
-                      color: _text, fontSize: 25, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 11),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: const LinearProgressIndicator(
-                    value: .732,
-                    minHeight: 11,
-                    color: _green,
-                    backgroundColor: Color(0xff2a4039)),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                  'Task yang kamu selesaikan dan focus time squad sama-sama menambah progres.',
-                  style: TextStyle(color: _muted, fontSize: 12, height: 1.45)),
-            ]),
-          );
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Mulai preview squad untuk melihat target mingguan dan progress bersama.',
+                        style: TextStyle(
+                            color: _muted, fontSize: 12, height: 1.45),
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: () {
+                          controller.joinSquad();
+                          toast(context, 'Kamu masuk ke preview squad.');
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 17),
+                        label: const Text('Gabung preview squad'),
+                        style: _greenButton,
+                      ),
+                    ],
+                  ),
+                );
           final wall =
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Padding(
