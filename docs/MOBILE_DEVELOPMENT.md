@@ -34,6 +34,10 @@ langsung oleh pemilik perangkat.
 
 ## Setup setelah clone
 
+Bagian ini hanya untuk perangkat yang **belum memiliki project YouWELL**.
+Jika folder project sudah terbuka di VS Code, jangan jalankan `git clone` lagi
+di dalamnya; langsung mulai dari `flutter pub get` pada root project.
+
 ```bash
 git clone https://github.com/zalfredz/YouWELL.git
 cd YouWELL
