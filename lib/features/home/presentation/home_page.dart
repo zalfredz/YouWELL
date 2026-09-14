@@ -13,7 +13,8 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = controller.quests.where((q) => q['done'] == true).length;
-    final frozen = controller.frozenDays.contains(
+    final frozen =
+        controller.frozenDays.contains(
           dayKey(controller.now.subtract(const Duration(days: 1))),
         ) &&
         !controller.completedDays.contains(controller.today);
@@ -29,66 +30,6 @@ class HomePage extends StatelessWidget {
             final primary = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  margin: const EdgeInsets.only(bottom: 22),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffe4ecdd),
-                    borderRadius: BorderRadius.circular(26),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      tag('A LITTLE SURPRISE FOR YOU'),
-                      gap(18),
-                      title(
-                        controller.quests.isEmpty
-                            ? 'Hari baru.\nKesempatan baru.'
-                            : 'Misi kecilmu\nsudah menunggu.',
-                        size: 34,
-                      ),
-                      gap(10),
-                      Text(
-                        controller.quests.isEmpty
-                            ? 'Buka kartu harian dan temukan tantangan\nyang pas dengan ritmemu.'
-                            : 'Tidak perlu buru-buru. Lakukan satu per satu,\ndan rayakan usahamu hari ini.',
-                      ),
-                      gap(24),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 12,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: controller.quests.isEmpty
-                                ? () {
-                                    controller.drawDailyCards();
-                                    toast(
-                                      context,
-                                      'Kartu terbuka! Misi hari ini tersimpan.',
-                                    );
-                                  }
-                                : null,
-                            icon: Icon(
-                              controller.quests.isEmpty
-                                  ? Icons.auto_awesome
-                                  : Icons.check,
-                            ),
-                            label: Text(
-                              controller.quests.isEmpty
-                                  ? 'Buka kartu hari ini'
-                                  : 'Kartu hari ini terbuka',
-                            ),
-                          ),
-                          caption(
-                            'Level ${controller.difficulty} • ${controller.reduction ? 'Habit swap' : 'Wellness'}',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
                 Row(
                   children: [
                     Expanded(child: title('Langkah hari ini', size: 22)),
@@ -98,8 +39,12 @@ class HomePage extends StatelessWidget {
                 gap(12),
                 if (controller.quests.isEmpty)
                   panel([
+                    const Icon(Icons.style_rounded, color: appAccent, size: 30),
+                    gap(10),
+                    title('Daily Draw siap.', size: 21),
+                    gap(6),
                     caption(
-                      'Buka deck untuk mendapatkan 5 kartu yang sesuai jalur dan kondisimu.',
+                      'Pilih satu paket challenge dari pop-up kartu. Kamu bisa membukanya dari ikon kartu di kanan atas kapan saja hari ini.',
                     ),
                   ])
                 else ...[
@@ -113,7 +58,7 @@ class HomePage extends StatelessWidget {
                     (q) => Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: appRaised,
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: ListTile(
@@ -122,7 +67,7 @@ class HomePage extends StatelessWidget {
                           vertical: 10,
                         ),
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xfff2f4eb),
+                          backgroundColor: appSurface,
                           child: Icon(
                             {
                               'Gerak': Icons.directions_walk,
@@ -131,7 +76,7 @@ class HomePage extends StatelessWidget {
                               'Habit swap': Icons.air,
                               'Sosial': Icons.people_outline,
                             }[q['category']],
-                            color: green,
+                            color: appAccent,
                           ),
                         ),
                         title: Text(
@@ -145,26 +90,26 @@ class HomePage extends StatelessWidget {
                         ),
                         subtitle: Text(
                           '${q['category']} · +20 XP',
-                          style: const TextStyle(fontSize: 12, color: muted),
+                          style: const TextStyle(fontSize: 12, color: appMuted),
                         ),
                         trailing: IconButton(
                           tooltip: q['status'] == 'completed'
                               ? 'Sudah selesai'
                               : q['status'] == 'committed'
-                                  ? 'Tandai selesai'
-                                  : 'Commit challenge',
+                              ? 'Tandai selesai'
+                              : 'Commit challenge',
                           onPressed: q['status'] == 'completed'
                               ? null
                               : q['status'] == 'committed'
-                                  ? () => controller.completeCard(q['id'])
-                                  : () => controller.commitCard(q['id']),
+                              ? () => controller.completeCard(q['id'])
+                              : () => controller.commitCard(q['id']),
                           icon: Icon(
                             q['status'] == 'completed'
                                 ? Icons.check_circle
                                 : q['status'] == 'committed'
-                                    ? Icons.lock_outline
-                                    : Icons.circle_outlined,
-                            color: green,
+                                ? Icons.lock_outline
+                                : Icons.circle_outlined,
+                            color: appAccent,
                           ),
                         ),
                       ),
@@ -175,7 +120,7 @@ class HomePage extends StatelessWidget {
                 panel([
                   Row(
                     children: [
-                      const Icon(Icons.favorite_border, color: green),
+                      const Icon(Icons.favorite_border, color: appAccent),
                       const SizedBox(width: 10),
                       Expanded(child: title('Apa kabarmu hari ini?', size: 19)),
                     ],
@@ -214,10 +159,10 @@ class HomePage extends StatelessWidget {
                       frozen
                           ? 'Aku istirahat dulu, ya.'
                           : done == controller.quests.length && done > 0
-                              ? 'Kita tumbuh bersama hari ini!'
-                              : controller.streak == 0
-                                  ? 'Senang kamu ada di sini.'
-                                  : 'Satu langkah lagi. Aku temani.',
+                          ? 'Kita tumbuh bersama hari ini!'
+                          : controller.streak == 0
+                          ? 'Senang kamu ada di sini.'
+                          : 'Satu langkah lagi. Aku temani.',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),

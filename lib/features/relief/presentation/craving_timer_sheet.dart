@@ -115,7 +115,7 @@ class _CravingTimerSheetState extends State<CravingTimerSheet> {
                     : '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}',
                 style: const TextStyle(
                   fontSize: 36,
-                  color: ink,
+                  color: appCanvas,
                   fontWeight: FontWeight.w700,
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/community/presentation/community_page.dart';
+import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
 import 'package:youwell/features/relief/presentation/relief_menu_sheet.dart';
@@ -19,6 +20,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int tab = 0;
+  bool _isPresentingDailyDraw = false;
   late Timer clock;
   @override
   void initState() {
@@ -26,6 +28,22 @@ class _AppShellState extends State<AppShell> {
     clock = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _presentDailyDraw());
+  }
+
+  Future<void> _presentDailyDraw() async {
+    if (!mounted ||
+        _isPresentingDailyDraw ||
+        !widget.controller.needsDailyCardDraw) {
+      return;
+    }
+    _isPresentingDailyDraw = true;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => DailyCardDrawDialog(controller: widget.controller),
+    );
+    _isPresentingDailyDraw = false;
   }
 
   @override
@@ -62,17 +80,15 @@ class _AppShellState extends State<AppShell> {
                 width: 235,
                 padding: const EdgeInsets.fromLTRB(22, 30, 22, 24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    right: BorderSide(color: ink.withValues(alpha: .06)),
-                  ),
+                  color: appSurface,
+                  border: Border(right: const BorderSide(color: appBorder)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.spa, color: green),
+                        const Icon(Icons.spa, color: appAccent),
                         const SizedBox(width: 8),
                         Expanded(
                           child: FittedBox(
@@ -95,10 +111,10 @@ class _AppShellState extends State<AppShell> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           selected: tab == i,
-                          selectedTileColor: const Color(0xffedf2e9),
+                          selectedTileColor: appRaised,
                           leading: Icon(
                             icons[i],
-                            color: tab == i ? green : muted,
+                            color: tab == i ? appAccent : appMuted,
                           ),
                           title: Text(labels[i]),
                           onTap: () => setState(() => tab = i),
@@ -107,7 +123,7 @@ class _AppShellState extends State<AppShell> {
                     ),
                     const Spacer(),
                     panel([
-                      const Icon(Icons.wb_sunny_outlined, color: green),
+                      const Icon(Icons.wb_sunny_outlined, color: appAccent),
                       gap(),
                       const Text(
                         'Pelan juga\ntetap berjalan.',
@@ -118,7 +134,7 @@ class _AppShellState extends State<AppShell> {
                       ),
                       gap(8),
                       caption('Kamu tidak perlu sempurna untuk memulai.'),
-                    ], color: cream),
+                    ], color: appRaised),
                     tag('PREVIEW • DATA LOKAL'),
                   ],
                 ),
@@ -131,7 +147,7 @@ class _AppShellState extends State<AppShell> {
                       horizontal: wide ? 36 : 20,
                       vertical: 18,
                     ),
-                    color: cream,
+                    color: appSurface,
                     child: Row(
                       children: [
                         if (!wide)
@@ -141,15 +157,24 @@ class _AppShellState extends State<AppShell> {
                             'YOUR WELLNESS SPACE  /  ${labels[tab].toUpperCase()}',
                           ),
                         const Spacer(),
+                        if (widget.controller.needsDailyCardDraw)
+                          IconButton(
+                            tooltip: 'Buka Daily Draw',
+                            onPressed: _presentDailyDraw,
+                            icon: const Icon(
+                              Icons.style_rounded,
+                              color: appAccent,
+                            ),
+                          ),
                         if (!wide) tag('LOKAL'),
                         const SizedBox(width: 10),
                         CircleAvatar(
-                          backgroundColor: const Color(0xffe5eddf),
+                          backgroundColor: appRaised,
                           child: Text(
                             widget.controller.profile!['alias']
                                 .toString()[0]
                                 .toUpperCase(),
-                            style: const TextStyle(color: green),
+                            style: const TextStyle(color: appAccent),
                           ),
                         ),
                       ],
@@ -186,8 +211,8 @@ class _AppShellState extends State<AppShell> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () =>
             sheet(context, ReliefMenuSheet(controller: widget.controller)),
-        backgroundColor: ink,
-        foregroundColor: Colors.white,
+        backgroundColor: appAccent,
+        foregroundColor: appCanvas,
         icon: const Icon(Icons.add),
         label: const Text('Ambil jeda'),
       ),

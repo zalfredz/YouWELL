@@ -81,7 +81,7 @@ class _SoundscapeSheetState extends State<SoundscapeSheet> {
                 style: const TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.w700,
-                  color: green,
+                  color: appAccent,
                 ),
               ),
               gap(),

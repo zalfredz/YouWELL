@@ -20,7 +20,7 @@ class ReliefMenuSheet extends StatelessWidget {
       gap(20),
       if (controller.reduction)
         ListTile(
-          leading: const Icon(Icons.air, color: green),
+          leading: const Icon(Icons.air, color: appAccent),
           title: const Text('Lagi pengen ngerokok / vape'),
           subtitle: const Text('Delay timer & latihan napas'),
           onTap: () {
@@ -29,7 +29,10 @@ class ReliefMenuSheet extends StatelessWidget {
           },
         ),
       ListTile(
-        leading: const Icon(Icons.local_fire_department_outlined, color: green),
+        leading: const Icon(
+          Icons.local_fire_department_outlined,
+          color: appAccent,
+        ),
         title: const Text('Lagi stres / overwhelmed'),
         subtitle: const Text('Lepaskan lewat Micro-Vent'),
         onTap: () {
@@ -38,7 +41,7 @@ class ReliefMenuSheet extends StatelessWidget {
         },
       ),
       ListTile(
-        leading: const Icon(Icons.headphones, color: green),
+        leading: const Icon(Icons.headphones, color: appAccent),
         title: const Text('Dengarkan yang menenangkan'),
         subtitle: const Text('Soundscape & napas 1–3 menit'),
         onTap: () {

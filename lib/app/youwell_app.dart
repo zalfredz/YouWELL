@@ -17,21 +17,20 @@ class YouWellApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: '${AppEnvironment.appName} • Little steps, better days',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        routes: {
-          '/app': (_) => _LocalAppEntry(controller: controller),
-          '/recap': (_) => PublicRecapPage(controller: controller),
-          '/admin': (_) =>
-              _LocalAppEntry(controller: controller, isAdmin: true),
-          '/moderator': (_) =>
-              _LocalAppEntry(controller: controller, isAdmin: true),
-        },
-        home: kIsWeb
-            ? _WebLandingEntry(controller: controller)
-            : _LocalAppEntry(controller: controller),
-      );
+    title: '${AppEnvironment.appName} • Little steps, better days',
+    debugShowCheckedModeBanner: false,
+    theme: kIsWeb ? AppTheme.light : AppTheme.mobile,
+    routes: {
+      '/app': (_) => _LocalAppEntry(controller: controller),
+      '/recap': (_) => PublicRecapPage(controller: controller),
+      '/admin': (_) => _LocalAppEntry(controller: controller, isAdmin: true),
+      '/moderator': (_) =>
+          _LocalAppEntry(controller: controller, isAdmin: true),
+    },
+    home: kIsWeb
+        ? _WebLandingEntry(controller: controller)
+        : _LocalAppEntry(controller: controller),
+  );
 }
 
 class _WebLandingEntry extends StatelessWidget {
@@ -40,9 +39,8 @@ class _WebLandingEntry extends StatelessWidget {
   final WellnessController controller;
 
   @override
-  Widget build(BuildContext context) => WebLandingPage(
-        onJoin: () async => Navigator.pushNamed(context, '/app'),
-      );
+  Widget build(BuildContext context) =>
+      WebLandingPage(onJoin: () async => Navigator.pushNamed(context, '/app'));
 }
 
 class _LocalAppEntry extends StatelessWidget {
@@ -53,14 +51,14 @@ class _LocalAppEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          if (controller.profile == null) {
-            return OnboardingPage(controller: controller);
-          }
-          return kIsWeb
-              ? WebWorkspacePage(controller: controller, isAdmin: isAdmin)
-              : AppShell(controller: controller);
-        },
-      );
+    animation: controller,
+    builder: (context, _) {
+      if (controller.profile == null) {
+        return OnboardingPage(controller: controller);
+      }
+      return kIsWeb
+          ? WebWorkspacePage(controller: controller, isAdmin: isAdmin)
+          : AppShell(controller: controller);
+    },
+  );
 }

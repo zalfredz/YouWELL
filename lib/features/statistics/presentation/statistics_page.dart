@@ -98,7 +98,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             height: 8 + rate * 65,
                             decoration: BoxDecoration(
                               color: key == s.today
-                                  ? green
+                                  ? appAccent
                                   : const Color(0xffb6caa8),
                               borderRadius: BorderRadius.circular(5),
                             ),
@@ -109,7 +109,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               key.substring(8),
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: muted,
+                                color: appMuted,
                               ),
                             ),
                         ],
@@ -196,7 +196,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : const Icon(Icons.restaurant, color: green),
+                      : const Icon(Icons.restaurant, color: appAccent),
                   title: Text('${r['name']} · ${r['servings']} porsi'),
                   subtitle: Text(
                     '${r['day']} · ${(r['kcal'] as num).round()} kkal · P ${(r['protein'] as num).round()}g · K ${(r['carbs'] as num).round()}g',
@@ -227,7 +227,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               .map(
                 (r) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.directions_walk, color: green),
+                  leading: const Icon(Icons.directions_walk, color: appAccent),
                   title: Text('${r['type']} · ${r['km']} km'),
                   subtitle: Text('${r['day']} · ${r['minutes']} menit'),
                   trailing: IconButton(
@@ -349,7 +349,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Widget stat(String name, String value, IconData icon) => SizedBox(
     width: 190,
     child: panel([
-      Icon(icon, color: green),
+      Icon(icon, color: appAccent),
       gap(12),
       title(value, size: 28),
       caption(name),

@@ -11,7 +11,7 @@ class SupportCard extends StatelessWidget {
       compact
           ? 'Butuh bantuan lebih lanjut?'
           : 'Kamu layak mendapat dukungan sekarang.',
-      style: const TextStyle(fontWeight: FontWeight.w700, color: ink),
+      style: const TextStyle(fontWeight: FontWeight.w700, color: appText),
     ),
     if (!compact) ...[
       gap(8),

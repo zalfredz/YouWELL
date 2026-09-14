@@ -45,7 +45,7 @@ class _MicroVentSheetState extends State<MicroVentSheet> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.spa, size: 56, color: green),
+                    const Icon(Icons.spa, size: 56, color: appAccent),
                     gap(),
                     const Text('Sudah dilepas. Ambil satu napas lagi.'),
                   ],
