@@ -6,12 +6,16 @@
 .pub-cache/
 /build/
 
-# Platform-generated files
-android/
-ios/
+# Native platforms are version-controlled. Only generated state inside each
+# platform is ignored by android/.gitignore and ios/.gitignore.
 linux/
 macos/
 windows/
+
+# Editor and generated project metadata
+.idea/
+*.iml
+test/
 
 # Local configuration and OS files
 .env

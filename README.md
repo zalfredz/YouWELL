@@ -6,6 +6,8 @@ di browser dan tidak membutuhkan Supabase atau Google Login.
 
 ## Menjalankan aplikasi
 
+### Web
+
 ```bash
 bash scripts/preview.sh
 ```
@@ -20,6 +22,17 @@ Buka [http://localhost:8080](http://localhost:8080). Hentikan server dengan
 
 Flutter SDK lokal berada di `.tools/flutter` dan tidak masuk Git. Jika Flutter
 sudah terpasang secara global, script otomatis memakai instalasi global.
+
+### Mobile
+
+Platform iOS dan Android sudah tersedia. Untuk menjalankan simulator/device:
+
+```bash
+bash scripts/run-mobile.sh -d "ID-ATAU-NAMA-DEVICE"
+```
+
+Panduan setup Xcode, simulator, signing, dan struktur file tersedia di
+[docs/MOBILE_DEVELOPMENT.md](docs/MOBILE_DEVELOPMENT.md).
 
 ## Konfigurasi environment
 
