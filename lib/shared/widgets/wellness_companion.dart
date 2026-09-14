@@ -7,18 +7,27 @@ class WellnessCompanion extends StatelessWidget {
     required this.kind,
     required this.level,
     this.frozen = false,
+    this.size = 200,
   });
   final String kind;
   final int level;
   final bool frozen;
+  final double size;
   @override
   Widget build(BuildContext context) => Semantics(
     label:
         'Companion $kind level $level${frozen ? ' sedang beristirahat' : ''}',
     child: SizedBox(
-      width: 200,
-      height: 185,
-      child: CustomPaint(painter: _CompanionPainter(kind, level, frozen)),
+      width: size,
+      height: size * .925,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 200,
+          height: 185,
+          child: CustomPaint(painter: _CompanionPainter(kind, level, frozen)),
+        ),
+      ),
     ),
   );
 }

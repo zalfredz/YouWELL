@@ -166,17 +166,29 @@ class _AppShellState extends State<AppShell> {
                               color: appAccent,
                             ),
                           ),
-                        if (!wide) tag('LOKAL'),
-                        const SizedBox(width: 10),
-                        CircleAvatar(
-                          backgroundColor: appRaised,
-                          child: Text(
-                            widget.controller.profile!['alias']
-                                .toString()[0]
-                                .toUpperCase(),
-                            style: const TextStyle(color: appAccent),
+                        IconButton(
+                          tooltip: 'Ambil jeda',
+                          onPressed: () => sheet(
+                            context,
+                            ReliefMenuSheet(controller: widget.controller),
+                          ),
+                          icon: const Icon(
+                            Icons.self_improvement_rounded,
+                            color: appAccent,
                           ),
                         ),
+                        if (wide) ...[
+                          const SizedBox(width: 10),
+                          CircleAvatar(
+                            backgroundColor: appRaised,
+                            child: Text(
+                              widget.controller.profile!['alias']
+                                  .toString()[0]
+                                  .toUpperCase(),
+                              style: const TextStyle(color: appAccent),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -208,14 +220,18 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () =>
-            sheet(context, ReliefMenuSheet(controller: widget.controller)),
-        backgroundColor: appAccent,
-        foregroundColor: appCanvas,
-        icon: const Icon(Icons.add),
-        label: const Text('Ambil jeda'),
-      ),
+      floatingActionButton: wide
+          ? FloatingActionButton.extended(
+              onPressed: () => sheet(
+                context,
+                ReliefMenuSheet(controller: widget.controller),
+              ),
+              backgroundColor: appAccent,
+              foregroundColor: appCanvas,
+              icon: const Icon(Icons.add),
+              label: const Text('Ambil jeda'),
+            )
+          : null,
     );
   }
 }
