@@ -2,12 +2,13 @@
 
 YouWell adalah **better-life companion** untuk membangun ritme harian lewat
 langkah kecil, companion, dan progress yang tidak menghukum. Produk saat ini
-local-first: belum ada Google Auth, Supabase, komunitas, atau data cloud.
+local-first: belum ada Google Auth, Supabase, pengguna komunitas nyata, atau
+data cloud.
 
 ## Produk saat ini
 
-- Mobile: Home, Reset, Progress, dan Profile/Settings dari avatar.
-- Web: landing publik, Home workspace, Focus Station, Progress, dan recap.
+- Mobile: Home, Reset, Progress, Community, dan Profile dari avatar.
+- Web: landing, Home, Focus Station, Progress, Community, Admin, dan recap.
 - Core loop: 3 quest adaptif + 1 bonus Daily Card, completion, XP, companion.
 - Path reduction opsional untuk habit swap rokok/vape; bukan identitas utama.
 
@@ -38,6 +39,8 @@ Salin dari `config/env/development.example.json` setelah clone.
 | Aturan quest adaptif | `lib/features/home/domain/daily_card_generator.dart` |
 | Reset / quick focus | `lib/features/reset/presentation/reset_page.dart` |
 | Progress | `lib/features/progress/presentation/progress_page.dart` |
+| Community, Squad, Buddy, Vibe Map | `lib/features/community/presentation/community_page.dart` |
+| Antrean Admin | `lib/features/community/presentation/admin_moderation_page.dart` |
 | Onboarding | `lib/features/onboarding/presentation/onboarding_page.dart` |
 | Profile & settings | `lib/features/profile/presentation/profile_page.dart` |
 | Workspace web | `lib/features/web/presentation/web_workspace_page.dart` |

@@ -23,6 +23,7 @@ class YouWellApp extends StatelessWidget {
     routes: {
       '/app': (_) => _LocalAppEntry(controller: controller),
       '/recap': (_) => PublicRecapPage(controller: controller),
+      '/admin': (_) => _LocalAppEntry(controller: controller, isAdmin: true),
     },
     home: kIsWeb
         ? _WebLandingEntry(controller: controller)
@@ -41,9 +42,10 @@ class _WebLandingEntry extends StatelessWidget {
 }
 
 class _LocalAppEntry extends StatelessWidget {
-  const _LocalAppEntry({required this.controller});
+  const _LocalAppEntry({required this.controller, this.isAdmin = false});
 
   final WellnessController controller;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -56,7 +58,7 @@ class _LocalAppEntry extends StatelessWidget {
         );
       }
       return kIsWeb
-          ? WebWorkspacePage(controller: controller)
+          ? WebWorkspacePage(controller: controller, isAdmin: isAdmin)
           : AppShell(controller: controller);
     },
   );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
@@ -51,12 +52,14 @@ class _AppShellState extends State<AppShell> {
       HomePage(controller: widget.controller, onOpenDraw: _openDailyDraw),
       ResetPage(controller: widget.controller),
       ProgressPage(controller: widget.controller),
+      CommunityPage(controller: widget.controller),
     ];
-    const labels = ['Hari ini', 'Reset', 'Progress'];
+    const labels = ['Hari ini', 'Reset', 'Progress', 'Komunitas'];
     const icons = [
       Icons.home_rounded,
       Icons.bolt_rounded,
       Icons.insights_rounded,
+      Icons.people_alt_outlined,
     ];
     final alias = widget.controller.profile!['alias'].toString();
     return Scaffold(

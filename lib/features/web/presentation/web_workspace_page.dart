@@ -2,14 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:youwell/app/web_experience_gate.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/features/community/presentation/admin_moderation_page.dart';
+import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
 import 'package:youwell/features/web/presentation/pomodoro_page.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 class WebWorkspacePage extends StatefulWidget {
-  const WebWorkspacePage({super.key, required this.controller});
+  const WebWorkspacePage({
+    super.key,
+    required this.controller,
+    this.isAdmin = false,
+  });
   final WellnessController controller;
+  final bool isAdmin;
   @override
   State<WebWorkspacePage> createState() => _WebWorkspacePageState();
 }
@@ -49,66 +56,80 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
   );
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: widget.controller,
-    builder: (context, _) => WebWorkspaceGate(
-      onReturnToLanding: () =>
-          Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false),
-      child: Theme(
-        data: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: appCanvas,
-          colorScheme: const ColorScheme.dark(
-            primary: appAccent,
-            secondary: appAccentCyan,
-            surface: appSurface,
-          ),
+  Widget build(BuildContext context) {
+    final sections = [
+      'Home',
+      'Focus Station',
+      'Progress',
+      'Community',
+      if (widget.isAdmin) 'Community Admin',
+    ];
+    final pages = <Widget>[
+      _WebHome(controller: widget.controller, onDraw: _draw),
+      WebPomodoroPage(controller: widget.controller),
+      _WebProgress(controller: widget.controller),
+      Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: CommunityPage(controller: widget.controller),
         ),
-        child: Scaffold(
-          body: Row(
-            children: [
-              _Sidebar(
-                tab: _tab,
-                onTab: (value) => setState(() => _tab = value),
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    _Header(
-                      section: const [
-                        'Home',
-                        'Focus Station',
-                        'Progress',
-                      ][_tab],
-                      alias: widget.controller.profile!['alias'].toString(),
-                      onProfile: _profile,
-                    ),
-                    Expanded(
-                      child: IndexedStack(
-                        index: _tab,
-                        children: [
-                          _WebHome(
-                            controller: widget.controller,
-                            onDraw: _draw,
-                          ),
-                          WebPomodoroPage(controller: widget.controller),
-                          _WebProgress(controller: widget.controller),
-                        ],
-                      ),
-                    ),
-                  ],
+      ),
+      if (widget.isAdmin) AdminModerationPage(controller: widget.controller),
+    ];
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) => WebWorkspaceGate(
+        onReturnToLanding: () =>
+            Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false),
+        child: Theme(
+          data: ThemeData.dark(useMaterial3: true).copyWith(
+            scaffoldBackgroundColor: appCanvas,
+            colorScheme: const ColorScheme.dark(
+              primary: appAccent,
+              secondary: appAccentCyan,
+              surface: appSurface,
+            ),
+          ),
+          child: Scaffold(
+            body: Row(
+              children: [
+                _Sidebar(
+                  tab: _tab,
+                  isAdmin: widget.isAdmin,
+                  onTab: (value) => setState(() => _tab = value),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      _Header(
+                        section: sections[_tab],
+                        alias: widget.controller.profile!['alias'].toString(),
+                        onProfile: _profile,
+                      ),
+                      Expanded(
+                        child: IndexedStack(index: _tab, children: pages),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.tab, required this.onTab});
+  const _Sidebar({
+    required this.tab,
+    required this.isAdmin,
+    required this.onTab,
+  });
   final int tab;
+  final bool isAdmin;
   final ValueChanged<int> onTab;
   @override
   Widget build(BuildContext context) => Container(
@@ -131,10 +152,12 @@ class _Sidebar extends StatelessWidget {
           style: TextStyle(color: appMuted, fontSize: 10, letterSpacing: 1.2),
         ),
         const SizedBox(height: 34),
-        ...const [
+        ...[
           ('Home', Icons.home_outlined),
           ('Focus Station', Icons.timer_outlined),
           ('Progress', Icons.insights_outlined),
+          ('Community', Icons.groups_2_outlined),
+          if (isAdmin) ('Community Admin', Icons.admin_panel_settings_outlined),
         ].indexed.map(
           (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 8),

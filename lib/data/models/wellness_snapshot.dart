@@ -12,6 +12,11 @@ JsonMap createEmptyWellnessState() => {
   'energyCheckIns': <dynamic>[],
   'focusSessions': <dynamic>[],
   'habitDelays': <dynamic>[],
+  'communityPosts': <dynamic>[],
+  'communityReactions': <dynamic>[],
+  'communityReports': <dynamic>[],
+  'squad': null,
+  'buddy': null,
 };
 
 JsonMap restoreWellnessState(String serialized) {

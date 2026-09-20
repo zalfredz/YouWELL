@@ -114,6 +114,21 @@ class WellnessController extends ChangeNotifier {
   List<JsonMap> get energyCheckIns => _rows('energyCheckIns');
   List<JsonMap> get focusSessions => _rows('focusSessions');
   List<JsonMap> get habitDelays => _rows('habitDelays');
+  List<JsonMap> get communityPosts => [
+    ..._seedCommunityPosts,
+    ..._rows('communityPosts'),
+  ];
+  List<JsonMap> get approvedCommunityPosts =>
+      communityPosts.where((post) => post['status'] == 'approved').toList()
+        ..sort((a, b) => b['time'].toString().compareTo(a['time'].toString()));
+  List<JsonMap> get moderationQueue => _rows(
+    'communityPosts',
+  ).where((post) => post['status'] == 'pending').toList();
+  List<JsonMap> get communityReports => _rows('communityReports');
+  JsonMap? get squad =>
+      _data['squad'] == null ? null : Map<String, dynamic>.from(_data['squad']);
+  JsonMap? get buddy =>
+      _data['buddy'] == null ? null : Map<String, dynamic>.from(_data['buddy']);
   int get focusMinutesToday => focusSessions
       .where((row) => row['day'] == today)
       .fold<int>(
@@ -259,6 +274,91 @@ class WellnessController extends ChangeNotifier {
   void recordHabitDelay({int minutes = 5}) =>
       _add('habitDelays', {'minutes': minutes});
 
+  void submitCommunityPost(String text) {
+    final clean = text.trim();
+    if (clean.length < 3 || clean.length > 180) {
+      throw ArgumentError('Post harus 3–180 karakter.');
+    }
+    _add('communityPosts', {
+      'alias': profile?['alias'] ?? 'anonymous',
+      'text': clean,
+      'status': 'pending',
+      'moderationNote': '',
+    });
+  }
+
+  void moderateCommunityPost(String id, String status, {String note = ''}) {
+    if (!const {'approved', 'rejected'}.contains(status)) return;
+    for (final post in _data['communityPosts'] as List) {
+      if (post['id'] == id) {
+        post['status'] = status;
+        post['moderationNote'] = note.trim();
+        post['reviewedAt'] = now.toIso8601String();
+      }
+    }
+    _save();
+  }
+
+  bool hasCommunityReaction(String postId, String reaction) =>
+      (_data['communityReactions'] as List).any(
+        (row) => row['postId'] == postId && row['reaction'] == reaction,
+      );
+
+  void reactToCommunityPost(String postId, String reaction) {
+    final rows = _data['communityReactions'] as List;
+    final index = rows.indexWhere(
+      (row) => row['postId'] == postId && row['reaction'] == reaction,
+    );
+    if (index >= 0) {
+      rows.removeAt(index);
+    } else {
+      rows.add({'postId': postId, 'reaction': reaction});
+    }
+    _save();
+  }
+
+  void reportCommunityPost(String postId, String reason) {
+    if (communityReports.any((report) => report['postId'] == postId)) return;
+    _add('communityReports', {'postId': postId, 'reason': reason});
+  }
+
+  void resolveCommunityReport(String id) {
+    (_data['communityReports'] as List).removeWhere((row) => row['id'] == id);
+    _save();
+  }
+
+  void joinSquad() {
+    _data['squad'] = {
+      'name': 'Small Steps Club',
+      'goal': 50,
+      'progress': 18,
+      'members': ['daunpagi', 'awanbiru', 'ruangbaru', profile?['alias']],
+    };
+    _save();
+  }
+
+  void leaveSquad() {
+    _data['squad'] = null;
+    _save();
+  }
+
+  void matchBuddy() {
+    final aliases = reduction
+        ? ['pelanpelan', 'jeda_sore', 'ruangbaru']
+        : ['daunpagi', 'mori_kecil', 'awanbiru'];
+    _data['buddy'] = {
+      'alias': aliases[Random().nextInt(aliases.length)],
+      'activeDays': 3,
+      'path': reduction ? 'reduction' : 'wellness',
+    };
+    _save();
+  }
+
+  void endBuddy() {
+    _data['buddy'] = null;
+    _save();
+  }
+
   void _add(String key, JsonMap value) {
     (_data[key] as List).add({
       ...value,
@@ -290,3 +390,20 @@ class WellnessController extends ChangeNotifier {
     await _save();
   }
 }
+
+final List<JsonMap> _seedCommunityPosts = [
+  {
+    'id': 'seed-water',
+    'alias': 'daunpagi',
+    'text': 'Hari ini berhasil memenuhi target minum air. Small win!',
+    'status': 'approved',
+    'time': '2026-09-20T08:00:00.000',
+  },
+  {
+    'id': 'seed-walk',
+    'alias': 'awanbiru',
+    'text': 'Jalan santai sepuluh menit ternyata bikin energi balik lagi.',
+    'status': 'approved',
+    'time': '2026-09-20T07:00:00.000',
+  },
+];
