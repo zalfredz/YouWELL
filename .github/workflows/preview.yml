@@ -17,7 +17,7 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter build web --release --no-web-resources-cdn --pwa-strategy=none --dart-define-from-file=config/env/production.example.json
+      - run: flutter build web --release --no-web-resources-cdn --dart-define-from-file=config/env/production.example.json
       - uses: actions/upload-artifact@v4
         with:
           name: youwell-web-preview

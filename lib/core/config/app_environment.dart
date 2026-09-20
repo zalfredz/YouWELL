@@ -11,7 +11,7 @@ abstract final class AppEnvironment {
   );
   static const storageKey = String.fromEnvironment(
     'LOCAL_STORAGE_KEY',
-    defaultValue: 'youwell.local.v2',
+    defaultValue: 'youwell.local.v3',
   );
   static const showPreviewTools = bool.fromEnvironment(
     'SHOW_PREVIEW_TOOLS',

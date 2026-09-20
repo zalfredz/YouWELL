@@ -10,7 +10,7 @@ capability iOS, archive, dan distribusi.
 - Minimum iOS deployment target: iOS 15.
 - iPhone menggunakan orientasi portrait.
 - Penyimpanan masih local-first melalui `SharedPreferences`.
-- Pilih foto, share file/recap, dan buka tautan sudah memakai API native.
+- Ekspor data dan buka tautan sudah memakai API native.
 - Supabase, Google Sign-In, push notification, dan production signing belum
   diaktifkan. Tambahkan setelah alur mobile stabil.
 - App icon dan launch screen masih placeholder Flutter dan harus diganti

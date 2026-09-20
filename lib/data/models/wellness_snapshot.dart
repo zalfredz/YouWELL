@@ -1,28 +1,22 @@
 import 'dart:convert';
+
 import 'package:youwell/core/types/json_map.dart';
 
-/// Version-2 storage schema. Keep existing keys compatible to retain local progress.
+/// Local-only product state while the experience is being validated.
+/// Version 3 drops earlier social, moderation, nutrition, and clinical demos.
 JsonMap createEmptyWellnessState() => {
-      'version': 2,
-      'dayOffset': 0,
-      'profile': null,
-      'days': <String, dynamic>{},
-      'meals': [],
-      'activities': [],
-      'moods': [],
-      'cravings': [],
-      'focusSessions': [],
-      'posts': [],
-      'reactions': [],
-      'reports': [],
-      'frozen': [],
-      'buddy': null,
-      'squad': false,
-    };
+  'version': 3,
+  'dayOffset': 0,
+  'profile': null,
+  'days': <String, dynamic>{},
+  'energyCheckIns': <dynamic>[],
+  'focusSessions': <dynamic>[],
+  'habitDelays': <dynamic>[],
+};
 
 JsonMap restoreWellnessState(String serialized) {
   final decoded = jsonDecode(serialized);
-  if (decoded is! Map<String, dynamic> || decoded['version'] != 2) {
+  if (decoded is! Map<String, dynamic> || decoded['version'] != 3) {
     throw const FormatException('Unsupported local state format');
   }
   return {...createEmptyWellnessState(), ...decoded};

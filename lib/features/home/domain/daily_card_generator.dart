@@ -1,235 +1,256 @@
 import 'package:youwell/core/types/json_map.dart';
 
-/// Creates a stable daily draw from challenges suitable for a user's rhythm.
-/// The same profile receives the same set for the same day; cards never reroll.
+/// Explainable, rule-based personalization for the local prototype.
+/// Three core quests are prepared automatically; the draw adds one bonus.
 class DailyCardGenerator {
   const DailyCardGenerator();
 
-  List<JsonMap> generate({
+  List<JsonMap> coreQuests({
     required String today,
     required int difficulty,
     required bool lowImpact,
     required bool reduction,
-    required double compliance,
+    required double completionRate,
     required int daysUsingApp,
   }) {
-    final matching = _catalog.where((card) {
-      if (card.reductionOnly && !reduction) return false;
-      if (!card.reductionOnly &&
-          card.category == 'Reduction Challenge' &&
-          !reduction) {
-        return false;
-      }
-      if (card.difficulty > difficulty) return false;
-      // The first days and a rough recent rhythm should start gently. The
-      // adaptive difficulty also accounts for longer-term completion history.
-      if ((daysUsingApp <= 2 || compliance < .35) && card.difficulty > 1) {
-        return false;
-      }
-      if (lowImpact && card.category == 'Physical' && !card.lowImpact) {
-        return false;
-      }
+    final easyDay = daysUsingApp <= 2 || completionRate < .4;
+    final maxDifficulty = easyDay ? 1 : difficulty;
+    final eligible = _catalog.where((task) {
+      if (task.bonusOnly || (task.reductionOnly && !reduction)) return false;
+      if (task.difficulty > maxDifficulty) return false;
+      if (lowImpact && task.category == 'Body' && !task.lowImpact) return false;
       return true;
-    }).toList()
-      ..sort(
-        (a, b) => _dailyScore(a.id, today).compareTo(_dailyScore(b.id, today)),
-      );
-
-    // The deck always contains five collectible cards. One card is a package
-    // of 3–5 tasks, not a single task, so the chosen card becomes a full day.
-    const cardCount = 5;
-    final taskCount = daysUsingApp <= 2
-        ? 3
-        : compliance >= .75
-            ? 5
-            : 4;
+    }).toList();
     final categories = reduction
-        ? const [
-            'Reduction Challenge',
-            'Mental',
-            'Nutrition',
-            'Physical',
-            'Social/Wellbeing',
-          ]
-        : const ['Mental', 'Nutrition', 'Physical', 'Social/Wellbeing'];
+        ? const ['Body', 'Energy', 'Reduction']
+        : const ['Body', 'Energy', 'Lifestyle'];
+    return categories.indexed.map((entry) {
+      final candidates =
+          eligible.where((task) => task.category == entry.$2).toList()..sort(
+            (a, b) => _score(
+              a.id,
+              '$today:${entry.$1}',
+            ).compareTo(_score(b.id, '$today:${entry.$1}')),
+          );
+      return _toMap(candidates.first, today, 'core-${entry.$1}', 'core');
+    }).toList();
+  }
 
-    return List.generate(cardCount, (cardIndex) {
-      final ranked = [...matching]..sort(
-          (a, b) => _dailyScore(a.id, '$today:pack:$cardIndex')
-              .compareTo(_dailyScore(b.id, '$today:pack:$cardIndex')),
+  List<JsonMap> bonusCards({
+    required String today,
+    required int difficulty,
+    required bool lowImpact,
+    required bool reduction,
+    required Set<String> excludedTitles,
+  }) {
+    final eligible =
+        _catalog.where((task) {
+          if (task.reductionOnly && !reduction) return false;
+          if (task.difficulty > (difficulty + 1).clamp(1, 3)) return false;
+          if (lowImpact && task.category == 'Body' && !task.lowImpact) {
+            return false;
+          }
+          return !excludedTitles.contains(task.title);
+        }).toList()..sort(
+          (a, b) => _score(
+            a.id,
+            '$today:bonus',
+          ).compareTo(_score(b.id, '$today:bonus')),
         );
-      final tasks = <_CardDefinition>[];
-
-      for (final category in categories) {
-        final candidate = ranked.where((task) => task.category == category);
-        if (candidate.isNotEmpty && tasks.length < taskCount) {
-          tasks.add(candidate.first);
-        }
-      }
-      for (final task in ranked) {
-        if (tasks.length == taskCount) break;
-        if (!tasks.contains(task)) tasks.add(task);
-      }
-
-      final pack = _packThemes[cardIndex];
-      final taskRows = tasks.indexed
-          .map(
-            (entry) => {
-              'id': '$today-pack-$cardIndex-${entry.$2.id}-${entry.$1}',
-              'title': entry.$2.title,
-              'description': entry.$2.description,
-              'category': entry.$2.category,
-              'difficulty': entry.$2.difficulty,
-              'xp': entry.$2.xp,
-              'status': 'available',
-              'done': false,
-            },
-          )
-          .toList();
+    return List.generate(5, (index) {
+      final task = eligible[index % eligible.length];
       return {
-        'id': '$today-pack-$cardIndex',
-        'title': pack.$1,
-        'description': pack.$2,
-        'taskCount': taskRows.length,
-        'xp':
-            taskRows.fold<int>(0, (total, task) => total + (task['xp'] as int)),
-        'cardStyle': cardIndex,
-        'tasks': taskRows,
-        'status': 'available',
+        ..._toMap(task, today, 'bonus-$index', 'bonus'),
+        'cardStyle': index,
       };
     });
   }
 
-  int _dailyScore(String value, String day) {
+  JsonMap _toMap(
+    _TaskDefinition task,
+    String today,
+    String suffix,
+    String source,
+  ) => {
+    'id': '$today-$suffix-${task.id}',
+    'title': task.title,
+    'description': task.description,
+    'category': task.category,
+    'difficulty': task.difficulty,
+    'durationMinutes': task.durationMinutes,
+    'xp': task.xp,
+    'source': source,
+    'status': source == 'core' ? 'committed' : 'available',
+    'done': false,
+  };
+
+  int _score(String value, String salt) {
     var score = 17;
-    for (final code in '$day:$value'.codeUnits) {
+    for (final code in '$salt:$value'.codeUnits) {
       score = (score * 31 + code) % 100003;
     }
     return score;
   }
 }
 
-const _packThemes = [
-  ('Soft Reset', 'A gentle set of small wins for your day.'),
-  ('Bright Momentum', 'A balanced mini-plan to build momentum.'),
-  ('Steady Energy', 'A focused mix for feeling a little more grounded.'),
-  ('Kind to Yourself', 'Small tasks designed to meet you where you are.'),
-  ('Fresh Start', 'A playful set of steps for a healthier rhythm.'),
-];
-
-class _CardDefinition {
-  const _CardDefinition({
+class _TaskDefinition {
+  const _TaskDefinition({
     required this.id,
     required this.title,
     required this.description,
     required this.category,
     required this.difficulty,
+    required this.durationMinutes,
     required this.xp,
     this.lowImpact = true,
     this.reductionOnly = false,
+    this.bonusOnly = false,
   });
-
-  final String id;
-  final String title;
-  final String description;
-  final String category;
-  final int difficulty;
-  final int xp;
-  final bool lowImpact;
-  final bool reductionOnly;
+  final String id, title, description, category;
+  final int difficulty, durationMinutes, xp;
+  final bool lowImpact, reductionOnly, bonusOnly;
 }
 
 const _catalog = [
-  _CardDefinition(
-    id: 'walk-15',
-    title: 'Walk 15 Minutes',
-    description: 'Walk for 15 minutes today at a comfortable pace.',
-    category: 'Physical',
+  _TaskDefinition(
+    id: 'water',
+    title: 'Minum satu gelas air',
+    description: 'Satu gelas, pelan-pelan.',
+    category: 'Body',
+    difficulty: 1,
+    durationMinutes: 1,
+    xp: 15,
+  ),
+  _TaskDefinition(
+    id: 'posture',
+    title: 'Posture reset',
+    description: 'Lepaskan bahu dan rapikan posisi duduk.',
+    category: 'Body',
+    difficulty: 1,
+    durationMinutes: 1,
+    xp: 15,
+  ),
+  _TaskDefinition(
+    id: 'stretch',
+    title: 'Stretch ringan',
+    description: 'Gerakkan tubuh dengan nyaman.',
+    category: 'Body',
+    difficulty: 1,
+    durationMinutes: 3,
+    xp: 20,
+  ),
+  _TaskDefinition(
+    id: 'walk',
+    title: 'Jalan santai',
+    description: 'Berjalan dengan ritmemu sendiri.',
+    category: 'Body',
     difficulty: 2,
+    durationMinutes: 10,
     xp: 30,
     lowImpact: false,
   ),
-  _CardDefinition(
-    id: 'stretch-5',
-    title: 'Gentle Stretch Break',
-    description: 'Move and stretch gently for five minutes.',
-    category: 'Physical',
+  _TaskDefinition(
+    id: 'sunlight',
+    title: 'Cari cahaya pagi',
+    description: 'Keluar atau duduk dekat jendela.',
+    category: 'Energy',
     difficulty: 1,
-    xp: 20,
-  ),
-  _CardDefinition(
-    id: 'posture-reset',
-    title: 'Posture Reset',
-    description: 'Relax your shoulders and reset your posture for one minute.',
-    category: 'Physical',
-    difficulty: 1,
+    durationMinutes: 3,
     xp: 15,
   ),
-  _CardDefinition(
-    id: 'breathing',
-    title: 'One Minute to Breathe',
-    description: 'Take six slow breaths before continuing your day.',
-    category: 'Mental',
+  _TaskDefinition(
+    id: 'screen-break',
+    title: 'Jeda layar',
+    description: 'Alihkan pandangan dari layar.',
+    category: 'Energy',
     difficulty: 1,
+    durationMinutes: 2,
     xp: 15,
   ),
-  _CardDefinition(
-    id: 'journal',
-    title: 'Three-Line Journal',
-    description: 'Write three lines about what you need today.',
-    category: 'Mental',
+  _TaskDefinition(
+    id: 'focus-sprint',
+    title: 'Focus sprint',
+    description: 'Kerjakan satu hal tanpa berpindah.',
+    category: 'Energy',
     difficulty: 2,
+    durationMinutes: 10,
     xp: 30,
   ),
-  _CardDefinition(
-    id: 'water',
-    title: 'Water Reset',
-    description: 'Drink one glass of water with full attention.',
-    category: 'Nutrition',
+  _TaskDefinition(
+    id: 'tidy',
+    title: 'Rapikan satu sudut',
+    description: 'Cukup satu area kecil di dekatmu.',
+    category: 'Lifestyle',
     difficulty: 1,
-    xp: 15,
+    durationMinutes: 3,
+    xp: 20,
   ),
-  _CardDefinition(
-    id: 'color-plate',
-    title: 'Add One Color',
-    description: 'Add one fruit or vegetable color to a meal today.',
-    category: 'Nutrition',
+  _TaskDefinition(
+    id: 'tomorrow',
+    title: 'Siapkan besok',
+    description: 'Pilih satu hal yang ingin dipermudah.',
+    category: 'Lifestyle',
     difficulty: 2,
+    durationMinutes: 5,
     xp: 25,
   ),
-  _CardDefinition(
+  _TaskDefinition(
     id: 'kind-message',
-    title: 'Send a Kind Message',
-    description: 'Send one sincere check-in to someone you trust.',
-    category: 'Social/Wellbeing',
+    title: 'Kirim kabar baik',
+    description: 'Sapa satu orang yang kamu pedulikan.',
+    category: 'Lifestyle',
     difficulty: 1,
+    durationMinutes: 2,
     xp: 20,
   ),
-  _CardDefinition(
-    id: 'quiet-connection',
-    title: 'Quiet Connection',
-    description: 'Share a small moment with someone without multitasking.',
-    category: 'Social/Wellbeing',
-    difficulty: 2,
-    xp: 30,
-  ),
-  _CardDefinition(
-    id: 'delay-five',
-    title: 'Delay the Urge',
-    description:
-        'When an urge appears, wait five minutes with water or breath.',
-    category: 'Reduction Challenge',
+  _TaskDefinition(
+    id: 'delay',
+    title: 'Tunda 5 menit',
+    description: 'Saat ingin merokok atau vape, beri jeda.',
+    category: 'Reduction',
     difficulty: 1,
+    durationMinutes: 5,
     xp: 25,
     reductionOnly: true,
   ),
-  _CardDefinition(
-    id: 'trigger-note',
-    title: 'Name the Trigger',
-    description: 'Write one trigger and one gentler alternative for today.',
-    category: 'Reduction Challenge',
-    difficulty: 2,
-    xp: 35,
+  _TaskDefinition(
+    id: 'habit-swap',
+    title: 'Siapkan habit swap',
+    description: 'Taruh air atau permen bebas gula di dekatmu.',
+    category: 'Reduction',
+    difficulty: 1,
+    durationMinutes: 2,
+    xp: 20,
     reductionOnly: true,
+  ),
+  _TaskDefinition(
+    id: 'trigger',
+    title: 'Kenali satu pemicu',
+    description: 'Catat situasi dan alternatif yang lebih baik.',
+    category: 'Reduction',
+    difficulty: 2,
+    durationMinutes: 3,
+    xp: 30,
+    reductionOnly: true,
+  ),
+  _TaskDefinition(
+    id: 'fresh-air',
+    title: 'Cari udara segar',
+    description: 'Keluar sebentar dan ubah suasana.',
+    category: 'Lifestyle',
+    difficulty: 1,
+    durationMinutes: 5,
+    xp: 25,
+    bonusOnly: true,
+  ),
+  _TaskDefinition(
+    id: 'music',
+    title: 'Satu lagu tanpa layar',
+    description: 'Nikmati satu lagu tanpa membuka aplikasi lain.',
+    category: 'Energy',
+    difficulty: 1,
+    durationMinutes: 4,
+    xp: 20,
+    bonusOnly: true,
   ),
 ];

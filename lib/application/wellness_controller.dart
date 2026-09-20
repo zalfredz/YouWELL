@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
@@ -7,170 +8,130 @@ import 'package:youwell/data/models/wellness_snapshot.dart';
 import 'package:youwell/features/home/domain/daily_card_generator.dart';
 import 'package:youwell/features/home/domain/progress_calculator.dart';
 
-/// Application state and commands shared across features.
-/// Widgets may read state, but all changes are saved in order through this class.
+/// Single local-first state boundary shared by mobile and web.
+/// Remote auth and sync can later replace [persist] without changing the UI.
 class WellnessController extends ChangeNotifier {
   WellnessController({String? saved, this.persist, DateTime Function()? clock})
-      : clock = clock ?? DateTime.now {
+    : clock = clock ?? DateTime.now {
     if (saved != null) {
       try {
         _data = restoreWellnessState(saved);
       } catch (_) {
         storageError =
-            'Data lokal tidak terbaca. Simpan salinan data browser sebelum menghapus penyimpanan.';
+            'Preview lokal lama direset untuk memakai versi terbaru.';
       }
     }
   }
+
   final Future<void> Function(String)? persist;
   final DateTime Function() clock;
   JsonMap _data = createEmptyWellnessState();
-
-  /// UI reads snapshots and invokes named commands; it never mutates state.
-  List<String> get frozenDays => List<String>.from(_data['frozen']);
-  int get dayOffset => (_data['dayOffset'] ?? 0) as int;
-  bool get hasSquad => _data['squad'] == true;
-  JsonMap? get buddy =>
-      _data['buddy'] == null ? null : Map<String, dynamic>.from(_data['buddy']);
-  bool hasReaction(String id) => (_data['reactions'] as List).contains(id);
-  bool isReported(String id) => reports.any((report) => report['post'] == id);
-  String? storageError;
   Future<void> _pending = Future.value();
-  DateTime get now =>
-      clock().add(Duration(days: (_data['dayOffset'] ?? 0) as int));
+  String? storageError;
+
+  int get dayOffset => (_data['dayOffset'] as num?)?.toInt() ?? 0;
+  DateTime get now => clock().add(Duration(days: dayOffset));
   String get today => dayKey(now);
   JsonMap? get profile => _data['profile'] == null
       ? null
       : Map<String, dynamic>.from(_data['profile']);
   bool get reduction => profile?['path'] == 'reduction';
   Map<String, dynamic> get days => Map<String, dynamic>.from(_data['days']);
-  List<JsonMap> _rows(String key) =>
-      (_data[key] as List).map((e) => Map<String, dynamic>.from(e)).toList();
-  List<JsonMap> get quests => ((days[today]?['quests'] ?? []) as List)
-      .map((e) => Map<String, dynamic>.from(e))
-      .toList();
-  List<JsonMap> get dailyCards => quests;
-  List<JsonMap> get dailyDrawCards {
-    final value = days[today]?['dailyDrawCards'];
-    if (value is List) {
-      return value.map((card) => Map<String, dynamic>.from(card)).toList();
-    }
-    // Preview data from older versions stored the card itself as a task.
-    return dailyCards;
-  }
 
+  List<JsonMap> _rows(String key) => ((_data[key] ?? const []) as List)
+      .whereType<Map>()
+      .map((row) => Map<String, dynamic>.from(row))
+      .toList();
+
+  List<JsonMap> get quests => ((days[today]?['quests'] ?? const []) as List)
+      .whereType<Map>()
+      .map((task) => Map<String, dynamic>.from(task))
+      .toList();
+  List<JsonMap> get dailyDrawCards =>
+      ((days[today]?['bonusCards'] ?? const []) as List)
+          .whereType<Map>()
+          .map((card) => Map<String, dynamic>.from(card))
+          .toList();
   JsonMap? get dailyCardDraw {
     final value = days[today]?['cardDraw'];
     return value is Map ? Map<String, dynamic>.from(value) : null;
   }
 
-  /// A draw is considered complete once its card pool exists. This also keeps
-  /// previews created before the reveal experience compatible with the new UI.
-  bool get hasDrawnDailyCards => dailyDrawCards.isNotEmpty;
-
-  /// Keep presenting an unfinished deck on later visits, but never interrupt a
-  /// user who has already committed today's challenge.
-  bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
   String? get selectedDailyCardId =>
       dailyCardDraw?['selectedCardId']?.toString();
   List<String> get passedDailyCardIds =>
-      ((dailyCardDraw?['passedCardIds'] ?? []) as List)
+      ((dailyCardDraw?['passedCardIds'] ?? const []) as List)
           .map((id) => id.toString())
           .toList();
-  bool isDailyCardPassed(String id) => passedDailyCardIds.contains(id);
   int get dailyDeckStartIndex {
     if (dailyDrawCards.isEmpty) return 0;
-    return ((dailyCardDraw?['deckStartIndex'] ?? 0) as num).toInt() %
+    return ((dailyCardDraw?['deckStartIndex'] as num?)?.toInt() ?? 0) %
         dailyDrawCards.length;
   }
 
   JsonMap? get selectedDailyCard {
     final id = selectedDailyCardId;
     if (id == null) return null;
-    for (final card in dailyDrawCards) {
-      if (card['id'] == id) return card;
-    }
-    return null;
+    return dailyDrawCards.cast<JsonMap?>().firstWhere(
+      (card) => card?['id'] == id,
+      orElse: () => null,
+    );
   }
 
-  bool get hasCommittedDailyCard =>
-      dailyDrawCards.any((card) => _cardStatus(card) == 'committed') ||
-      committedCards.isNotEmpty ||
-      completedCards.isNotEmpty;
-  bool get canChooseAnotherDailyCard =>
-      !hasCommittedDailyCard &&
-      selectedDailyCardId != null &&
-      passedDailyCardIds.length < 2 &&
-      dailyDrawCards.length > passedDailyCardIds.length + 1;
+  bool get hasCommittedDailyCard => dailyCardDraw?['committedCardId'] != null;
+  bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
   int get dailyCardSwitchesRemaining =>
       (2 - passedDailyCardIds.length).clamp(0, 2);
-  List<JsonMap> get availableCards =>
-      dailyCards.where((card) => _cardStatus(card) == 'available').toList();
-  List<JsonMap> get committedCards =>
-      dailyCards.where((card) => _cardStatus(card) == 'committed').toList();
+  bool get canChooseAnotherDailyCard =>
+      selectedDailyCard != null &&
+      dailyCardSwitchesRemaining > 0 &&
+      !hasCommittedDailyCard;
+
   List<JsonMap> get completedCards =>
-      dailyCards.where((card) => _cardStatus(card) == 'completed').toList();
-  int get dailyXp => completedCards.fold(
-        0,
-        (sum, card) => sum + ((card['xp'] ?? 0) as num).toInt(),
-      );
-  double get dailyProgress => committedCards.isEmpty && completedCards.isEmpty
-      ? 0
-      : completedCards.length / (committedCards.length + completedCards.length);
+      quests.where((task) => task['status'] == 'completed').toList();
+  int get dailyXp => completedCards.fold<int>(
+    0,
+    (sum, task) => sum + ((task['xp'] as num?)?.toInt() ?? 0),
+  );
+  double get dailyProgress =>
+      quests.isEmpty ? 0 : completedCards.length / quests.length;
+  double get water => ((days[today]?['water'] ?? 0) as num).toDouble();
+
   ProgressCalculator get _progress => ProgressCalculator(
-        days: days,
-        frozenDays: frozenDays,
-        now: now,
-        fitness: (profile?['fitness'] ?? 1) as int,
-        lowImpact: profile?['lowImpact'] == true,
-      );
+    days: days,
+    now: now,
+    basePace: (profile?['pace'] as num?)?.toInt() ?? 1,
+    lowImpact: profile?['lowImpact'] == true,
+  );
   List<String> get completedDays => _progress.completedDays;
+  List<String> get activeDays => _progress.activeDays;
   int get xp => _progress.xp;
   int get level => _progress.level;
-  int get tokens => _progress.tokens;
-  int get streak => _progress.streak;
-  double compliance(int period) => _progress.compliance(period);
-  int get difficulty => _progress.difficulty;
+  int get difficulty => _progress.recommendedDifficulty;
+  int activeDaysIn(int period) => _progress.activeDaysIn(period);
+  double compliance(int period) => _progress.completionRate(period);
 
-  double total(String key, String field, {int period = 1}) {
-    final start = dayKey(now.subtract(Duration(days: period - 1)));
-    return _rows(key)
-        .where(
-          (r) =>
-              r['day'].toString().compareTo(start) >= 0 &&
-              r['day'].toString().compareTo(today) <= 0,
-        )
-        .fold(0.0, (sum, r) => sum + ((r[field] ?? 0) as num).toDouble());
-  }
-
-  double get water => ((days[today]?['water'] ?? 0) as num).toDouble();
-  double savings(int period) => _rows('cravings')
-      .where(
-        (r) =>
-            r['success'] == true &&
-            r['day'].toString().compareTo(
-                      dayKey(now.subtract(Duration(days: period - 1))),
-                    ) >=
-                0 &&
-            r['day'].toString().compareTo(today) <= 0 &&
-            r['avoided'] == true,
-      )
-      .fold(
-        0.0,
-        (sum, r) =>
-            sum + ((r['cost'] ?? profile?['cost'] ?? 0) as num).toDouble(),
+  List<JsonMap> get energyCheckIns => _rows('energyCheckIns');
+  List<JsonMap> get focusSessions => _rows('focusSessions');
+  List<JsonMap> get habitDelays => _rows('habitDelays');
+  int get focusMinutesToday => focusSessions
+      .where((row) => row['day'] == today)
+      .fold<int>(
+        0,
+        (sum, row) => sum + ((row['minutes'] as num?)?.toInt() ?? 0),
       );
+  int get delayedToday =>
+      habitDelays.where((row) => row['day'] == today).length;
+
   Future<void> _save() {
     notifyListeners();
     final value = jsonEncode(_data);
     _pending = _pending.then((_) async {
       try {
         await persist?.call(value);
-        storageError = null;
       } catch (_) {
-        storageError =
-            'Perubahan belum tersimpan. Penyimpanan browser mungkin penuh. Ekspor datamu dan kurangi foto.';
+        storageError = 'Perubahan lokal belum tersimpan.';
       }
-      notifyListeners();
     });
     return _pending;
   }
@@ -185,317 +146,147 @@ class WellnessController extends ChangeNotifier {
       ...value,
       'alias': alias,
       'started': profile?['started'] ?? today,
+      'waterGoal': value['waterGoal'] ?? profile?['waterGoal'] ?? 2000,
     };
+    prepareToday();
     await _save();
   }
 
-  /// Starts one curated, non-rerollable deck for this local calendar day.
-  /// The UI reveals a choice from this deck; generation never happens again
-  /// once a deck has been stored.
-  void drawDailyCards() {
-    if (profile == null) return;
-    if (hasDrawnDailyCards) {
-      return;
-    }
-    final list = const DailyCardGenerator().generate(
+  void prepareToday() {
+    if (profile == null || days[today] != null) return;
+    final generator = const DailyCardGenerator();
+    final core = generator.coreQuests(
       today: today,
       difficulty: difficulty,
       lowImpact: profile?['lowImpact'] == true,
       reduction: reduction,
-      compliance: compliance(7),
+      completionRate: compliance(7),
       daysUsingApp: _daysUsingApp,
     );
-    _data['days'][today] = {
-      ...?days[today] as Map?,
-      'dailyDrawCards': list,
-      'quests': <JsonMap>[],
-      'difficulty': difficulty,
-      'cardDraw': {
-        'startedAt': now.toIso8601String(),
-        'selectedCardId': null,
-        'passedCardIds': <String>[],
-        'deckStartIndex': Random().nextInt(list.length),
-      },
-    };
-    _save();
-  }
-
-  /// Reveals a card but does not lock it yet. The user may return to the deck
-  /// before committing, which makes an accidental choice easy to reverse.
-  bool selectDailyCard(String id) {
-    if (hasCommittedDailyCard ||
-        isDailyCardPassed(id) ||
-        !dailyDrawCards.any(
-            (card) => card['id'] == id && _cardStatus(card) == 'available')) {
-      return false;
-    }
-    final existing = dailyCardDraw ?? const <String, dynamic>{};
-    _data['days'][today] = {
-      ...?days[today] as Map?,
-      'cardDraw': {
-        ...existing,
-        'selectedCardId': id,
-        'revealedAt': now.toIso8601String(),
-      },
-    };
-    _save();
-    return true;
-  }
-
-  /// Gives two safe changes-of-mind without turning the draw into a way to
-  /// inspect every card. A third reveal is the final card choice.
-  bool chooseAnotherDailyCard() {
-    if (!canChooseAnotherDailyCard || selectedDailyCardId == null) return false;
-    final existing = dailyCardDraw ?? const <String, dynamic>{};
-    final passed = [...passedDailyCardIds, selectedDailyCardId!];
-    final nextIndex = dailyDrawCards.indexWhere(
-      (card) =>
-          card['id'] != selectedDailyCardId &&
-          !passed.contains(card['id'].toString()),
+    final bonus = generator.bonusCards(
+      today: today,
+      difficulty: difficulty,
+      lowImpact: profile?['lowImpact'] == true,
+      reduction: reduction,
+      excludedTitles: core.map((task) => task['title'].toString()).toSet(),
     );
     _data['days'][today] = {
-      ...?days[today] as Map?,
+      'quests': core,
+      'bonusCards': bonus,
+      'water': 0,
       'cardDraw': {
-        ...existing,
         'selectedCardId': null,
-        'passedCardIds': passed,
-        'deckStartIndex': nextIndex < 0 ? 0 : nextIndex,
-        'changedAt': now.toIso8601String(),
+        'passedCardIds': <String>[],
+        'deckStartIndex': Random().nextInt(bonus.length),
       },
     };
     _save();
+  }
+
+  /// Kept as a semantic entry point for both existing web and mobile UI.
+  void drawDailyCards() => prepareToday();
+
+  bool selectDailyCard(String id) {
+    if (hasCommittedDailyCard ||
+        passedDailyCardIds.contains(id) ||
+        !dailyDrawCards.any((card) => card['id'] == id)) {
+      return false;
+    }
+    _writeDraw({...?dailyCardDraw, 'selectedCardId': id});
     return true;
   }
 
-  /// Commits every task inside the selected card package. Individual tasks
-  /// then move through committed → completed as usual.
-  bool commitDailyCardPack() {
-    final selected = selectedDailyCard;
-    if (selected == null || _cardStatus(selected) != 'available') return false;
-    final tasks = ((selected['tasks'] ?? []) as List)
-        .map((task) => Map<String, dynamic>.from(task))
+  bool chooseAnotherDailyCard() {
+    if (!canChooseAnotherDailyCard) return false;
+    final passed = [...passedDailyCardIds, selectedDailyCardId!];
+    final choices = dailyDrawCards
+        .where((card) => !passed.contains(card['id']))
         .toList();
-    if (tasks.isEmpty) return false;
-    final packs = dailyDrawCards;
-    final packIndex = packs.indexWhere((pack) => pack['id'] == selected['id']);
-    if (packIndex < 0) return false;
-    final committedAt = now.toIso8601String();
-    packs[packIndex]['status'] = 'committed';
-    packs[packIndex]['committedAt'] = committedAt;
-    _data['days'][today] = {
-      ...?days[today] as Map?,
-      'dailyDrawCards': packs,
-      'quests': tasks
-          .map((task) => {
-                ...task,
-                'status': 'committed',
-                'committedAt': committedAt,
-                'done': false,
-              })
-          .toList(),
+    _writeDraw({
+      ...?dailyCardDraw,
+      'selectedCardId': null,
+      'passedCardIds': passed,
+      'deckStartIndex': choices.isEmpty
+          ? 0
+          : dailyDrawCards.indexWhere(
+              (card) => card['id'] == choices.first['id'],
+            ),
+    });
+    return true;
+  }
+
+  bool commitDailyCardPack() {
+    final card = selectedDailyCard;
+    if (card == null || hasCommittedDailyCard) return false;
+    final tasks = [
+      ...quests,
+      {...card, 'status': 'committed', 'done': false},
+    ];
+    _data['days'][today]['quests'] = tasks;
+    _data['days'][today]['cardDraw'] = {
+      ...?dailyCardDraw,
+      'committedCardId': card['id'],
     };
     _save();
     return true;
   }
 
-  bool commitCard(String id) {
-    final list = dailyCards;
-    final i = list.indexWhere((q) => q['id'] == id);
-    final draw = dailyCardDraw;
-    final usesTaskPacks = days[today]?['dailyDrawCards'] is List;
-    if (i < 0 ||
-        _cardStatus(list[i]) != 'available' ||
-        (draw != null && !usesTaskPacks && selectedDailyCardId != id)) {
-      return false;
-    }
-    list[i]['status'] = 'committed';
-    list[i]['committedAt'] = now.toIso8601String();
-    _data['days'][today]['quests'] = list;
+  void _writeDraw(JsonMap draw) {
+    _data['days'][today]['cardDraw'] = draw;
     _save();
-    return true;
   }
 
   bool completeCard(String id) {
-    final list = dailyCards;
-    final i = list.indexWhere((q) => q['id'] == id);
-    if (i < 0 || _cardStatus(list[i]) != 'committed') return false;
-    list[i]['status'] = 'completed';
-    list[i]['done'] = true;
-    _data['days'][today]['quests'] = list;
+    final tasks = quests;
+    final index = tasks.indexWhere((task) => task['id'] == id);
+    if (index < 0 || tasks[index]['status'] == 'completed') return false;
+    tasks[index] = {...tasks[index], 'status': 'completed', 'done': true};
+    _data['days'][today]['quests'] = tasks;
     _save();
     return true;
   }
 
-  String _cardStatus(JsonMap card) =>
-      card['status']?.toString() ??
-      (card['done'] == true ? 'completed' : 'available');
-
-  int get _daysUsingApp {
-    final started = DateTime.tryParse(profile?['started']?.toString() ?? '');
-    return started == null ? 1 : now.difference(started).inDays.abs() + 1;
-  }
-
-  bool freeze() {
-    final yesterday = dayKey(now.subtract(const Duration(days: 1)));
-    final before = dayKey(now.subtract(const Duration(days: 2)));
-    if (tokens == 0 ||
-        completedDays.contains(yesterday) ||
-        (_data['frozen'] as List).contains(yesterday) ||
-        !({
-          ...completedDays,
-          ...(_data['frozen'] as List).cast<String>(),
-        }.contains(before))) {
-      return false;
-    }
-    (_data['frozen'] as List).add(yesterday);
+  void addWater() {
+    prepareToday();
+    _data['days'][today]['water'] = (water + 250).clamp(0, 4000);
     _save();
-    return true;
   }
+
+  void checkInEnergy(String energy, {List<String> tags = const []}) =>
+      _add('energyCheckIns', {'energy': energy, 'tags': tags});
+
+  void recordFocusSession(JsonMap value) => _add('focusSessions', value);
+  void recordHabitDelay({int minutes = 5}) =>
+      _add('habitDelays', {'minutes': minutes});
 
   void _add(String key, JsonMap value) {
     (_data[key] as List).add({
       ...value,
-      'id': '${now.microsecondsSinceEpoch}-${Random().nextInt(99999)}',
+      'id': '${now.microsecondsSinceEpoch}-${Random().nextInt(9999)}',
       'day': today,
       'time': now.toIso8601String(),
     });
     _save();
   }
 
-  void _remove(String key, String id) {
-    (_data[key] as List).removeWhere((r) => r['id'] == id);
+  void switchPath(bool enabled) {
+    _data['profile']['path'] = enabled ? 'reduction' : 'wellness';
     _save();
   }
 
-  void addWater() {
-    _data['days'][today] = {
-      ...?days[today] as Map?,
-      'water': water + 250,
-      'quests': quests,
-    };
+  void setLowImpact(bool enabled) {
+    _data['profile']['lowImpact'] = enabled;
     _save();
   }
 
-  void react(String id) {
-    final reactions = _data['reactions'] as List;
-    reactions.contains(id) ? reactions.remove(id) : reactions.add(id);
-    _save();
-  }
-
-  void updatePost(String id, String status, String note) {
-    for (final post in _data['posts'] as List) {
-      if (post['id'] == id) {
-        post['status'] = status;
-        post['note'] = note;
-      }
-    }
-    _save();
+  int get _daysUsingApp {
+    final started = DateTime.tryParse(profile?['started']?.toString() ?? '');
+    return started == null ? 1 : now.difference(started).inDays.abs() + 1;
   }
 
   String export() => const JsonEncoder.withIndent('  ').convert(_data);
   Future<void> reset() async {
     _data = createEmptyWellnessState();
     await _save();
-  }
-
-  // Feature commands: all writes pass through this controller and persistence queue.
-  List<JsonMap> get meals => _rows('meals');
-  void addMeal(JsonMap value) => _add('meals', value);
-  void deleteMeal(String id) => _remove('meals', id);
-  List<JsonMap> get activities => _rows('activities');
-  void logActivity(JsonMap value) => _add('activities', value);
-  void deleteActivity(String id) => _remove('activities', id);
-  List<JsonMap> get moods => _rows('moods');
-  void checkInMood(JsonMap value) => _add('moods', value);
-  void deleteMood(String id) => _remove('moods', id);
-  List<JsonMap> get cravings => _rows('cravings');
-  void recordCraving(JsonMap value) => _add('cravings', value);
-  void deleteCraving(String id) => _remove('cravings', id);
-  List<JsonMap> get focusSessions => _rows('focusSessions');
-  void recordFocusSession(JsonMap value) => _add('focusSessions', value);
-  List<JsonMap> get posts => _rows('posts');
-  void submitPost(JsonMap value) => _add('posts', value);
-  void deletePost(String id) => _remove('posts', id);
-  List<JsonMap> get reports => _rows('reports');
-  void reportContent(JsonMap value) => _add('reports', value);
-  void resolveReport(String id) => _remove('reports', id);
-
-  void switchPath(bool reduction) {
-    _data['profile']['path'] = reduction ? 'reduction' : 'wellness';
-    _data['buddy'] = null;
-    _save();
-  }
-
-  void setLowImpact(bool enabled) {
-    _data['profile']['lowImpact'] = enabled;
-    if (enabled) {
-      for (final quest in _data['days'][today]?['quests'] ?? []) {
-        if (quest['category'] == 'Physical' && quest['status'] == 'available') {
-          quest['title'] = 'Gentle Stretch Break';
-          quest['description'] =
-              'Move and stretch gently for five minutes at your own pace.';
-          quest['difficulty'] = 1;
-          quest['xp'] = 20;
-        }
-      }
-    }
-    _save();
-  }
-
-  void updateNutritionTargets(Map<String, int> targets) {
-    _data['profile'].addAll(targets);
-    _save();
-  }
-
-  void joinSquad() {
-    _data['squad'] = true;
-    _data['squadJoined'] = today;
-    _save();
-  }
-
-  void leaveSquad() {
-    _data['squad'] = false;
-    _save();
-  }
-
-  bool get canRestreak {
-    final yesterday = dayKey(now.subtract(const Duration(days: 1)));
-    final before = dayKey(now.subtract(const Duration(days: 2)));
-    return !completedDays.contains(yesterday) &&
-        !frozenDays.contains(yesterday) &&
-        completedDays.contains(before);
-  }
-
-  bool restreak() {
-    if (!canRestreak) return false;
-    final yesterday = dayKey(now.subtract(const Duration(days: 1)));
-    (_data['frozen'] as List).add(yesterday);
-    _save();
-    return true;
-  }
-
-  void matchBuddy() {
-    final candidates = reduction
-        ? ['pelanpelan', 'jeda_sore', 'ruangbaru']
-        : ['daunpagi', 'mori_kecil', 'awanbiru'];
-    _data['buddy'] = {
-      'alias': (candidates..shuffle()).first,
-      'path': profile!['path'],
-      'streak': 3,
-    };
-    _save();
-  }
-
-  void endBuddy() {
-    _data['buddy'] = null;
-    _save();
-  }
-
-  void advancePreviewDays(int count) {
-    if (count < 1) {
-      throw ArgumentError.value(count, 'count', 'Must be positive');
-    }
-    _data['dayOffset'] = dayOffset + count;
-    _save();
   }
 }

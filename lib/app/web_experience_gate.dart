@@ -39,9 +39,9 @@ class WebDesktopFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xff0d0e11),
-        child: SizedBox.expand(child: child),
-      );
+    color: const Color(0xff0d0e11),
+    child: SizedBox.expand(child: child),
+  );
 }
 
 class _MobileWorkspacePrompt extends StatelessWidget {
@@ -53,8 +53,9 @@ class _MobileWorkspacePrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final isApple = defaultTargetPlatform == TargetPlatform.iOS;
     final storeName = isApple ? 'App Store' : 'Google Play';
-    final storeUrl =
-        isApple ? AppEnvironment.appStoreUrl : AppEnvironment.playStoreUrl;
+    final storeUrl = isApple
+        ? AppEnvironment.appStoreUrl
+        : AppEnvironment.playStoreUrl;
 
     return Scaffold(
       backgroundColor: const Color(0xffeef2e9),

@@ -14,5 +14,5 @@ env_file="${YOUWELL_ENV_FILE:-config/env/development.json}"
 if [ ! -f "$env_file" ]; then
   env_file="config/env/development.example.json"
 fi
-"$flutter_bin" build web --release --no-web-resources-cdn --pwa-strategy=none --dart-define-from-file="$env_file"
+"$flutter_bin" build web --release --no-web-resources-cdn --dart-define-from-file="$env_file"
 node scripts/serve.mjs

@@ -14,7 +14,7 @@ class PublicRecapPage extends StatelessWidget {
     final compliance = profile == null
         ? 74
         : (controller.compliance(7) * 100).round();
-    final streak = profile == null ? 6 : controller.streak;
+    final activeDays = profile == null ? 4 : controller.activeDaysIn(7);
     final level = profile == null ? 3 : controller.level;
     return Scaffold(
       backgroundColor: const Color(0xffeef2e9),
@@ -102,8 +102,8 @@ class PublicRecapPage extends StatelessWidget {
                                 label: 'compliance',
                               ),
                               _RecapStat(
-                                value: '$streak',
-                                label: 'hari beruntun',
+                                value: '$activeDays',
+                                label: 'hari aktif',
                               ),
                               _RecapStat(
                                 value: 'Lv $level',
@@ -133,7 +133,7 @@ class PublicRecapPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Ada hari yang produktif, ada pula hari yang hanya cukup untuk bernapas. Keduanya tetap bagian dari perjalanan.',
+                    'Setiap langkah kecil membantu membangun ritme yang lebih baik.',
                     style: TextStyle(color: muted, fontSize: 16, height: 1.65),
                   ),
                   const SizedBox(height: 30),
@@ -163,11 +163,11 @@ class PublicRecapPage extends StatelessWidget {
                         _RecapLine(
                           icon: Icons.check_circle_outline_rounded,
                           text:
-                              'Kembali ke kebiasaan kecil setelah hari yang berat.',
+                              'Kembali ke kebiasaan kecil dengan ritme sendiri.',
                         ),
                         _RecapLine(
                           icon: Icons.favorite_outline_rounded,
-                          text: 'Menerima dukungan dari komunitas dengan aman.',
+                          text: 'Menjaga energi lewat langkah yang realistis.',
                         ),
                       ],
                     ),

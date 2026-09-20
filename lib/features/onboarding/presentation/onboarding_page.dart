@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/shared/widgets/ui_helpers.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -12,16 +11,17 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  int slide = 0, step = -1, fitness = 1;
-  String path = 'wellness', companion = 'plant';
-  bool low = false;
-  final alias = TextEditingController(),
-      cost = TextEditingController(text: '2500');
-  String? error;
+  int _step = 0;
+  int _pace = 1;
+  String _path = 'wellness';
+  String _companion = 'plant';
+  bool _lowImpact = false;
+  String? _error;
+  final _alias = TextEditingController();
+
   @override
   void dispose() {
-    alias.dispose();
-    cost.dispose();
+    _alias.dispose();
     super.dispose();
   }
 
@@ -30,257 +30,198 @@ class _OnboardingPageState extends State<OnboardingPage> {
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.spa_rounded, color: appAccent),
-                    const SizedBox(width: 8),
-                    title('youwell.', size: 26),
-                    const Spacer(),
-                    tag('YOUWELL ACCOUNT'),
-                  ],
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ListView(
+            padding: const EdgeInsets.all(28),
+            children: [
+              const Text(
+                'youwell.',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 24),
+              LinearProgressIndicator(
+                value: (_step + 1) / 3,
+                color: appAccent,
+                backgroundColor: appRaised,
+              ),
+              const SizedBox(height: 28),
+              if (_step == 0) ...[
+                const Text(
+                  'Apa yang ingin kamu bangun?',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                 ),
-                gap(34),
-                if (step == -1) ...[
-                  Center(child: WellnessCompanion(kind: 'plant', level: 1)),
-                  gap(24),
-                  title(
-                    [
-                      'Little steps.\nBetter days.',
-                      'Perasaanmu punya\ntempat di sini.',
-                      'Tumbuh bareng,\ntanpa menghakimi.',
-                    ][slide],
-                    size: 42,
+                const SizedBox(height: 8),
+                const Text(
+                  'Pilih arah awal. Bisa diubah kapan saja.',
+                  style: TextStyle(color: appMuted),
+                ),
+                const SizedBox(height: 22),
+                _Choice(
+                  title: 'Better daily rhythm',
+                  detail: 'Energi, gerak, fokus, dan kebiasaan kecil.',
+                  value: 'wellness',
+                  selected: _path,
+                  onTap: (value) => setState(() => _path = value),
+                ),
+                _Choice(
+                  title: 'Kurangi rokok / vape',
+                  detail: 'Bangun jeda dan habit swap tanpa menghakimi.',
+                  value: 'reduction',
+                  selected: _path,
+                  onTap: (value) => setState(() => _path = value),
+                ),
+              ] else if (_step == 1) ...[
+                const Text(
+                  'Atur ritmemu',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Kami mulai ringan dan menyesuaikan dari progresmu.',
+                  style: TextStyle(color: appMuted),
+                ),
+                const SizedBox(height: 22),
+                _Choice(
+                  title: 'Pelan dulu',
+                  detail: 'Tugas sangat ringan dan singkat.',
+                  value: '1',
+                  selected: '$_pace',
+                  onTap: (value) => setState(() => _pace = int.parse(value)),
+                ),
+                _Choice(
+                  title: 'Seimbang',
+                  detail: 'Tantangan ringan dengan sedikit variasi.',
+                  value: '2',
+                  selected: '$_pace',
+                  onTap: (value) => setState(() => _pace = int.parse(value)),
+                ),
+                _Choice(
+                  title: 'Lebih aktif',
+                  detail: 'Progressive challenge sesuai konsistensi.',
+                  value: '3',
+                  selected: '$_pace',
+                  onTap: (value) => setState(() => _pace = int.parse(value)),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mode low-impact'),
+                  subtitle: const Text('Utamakan gerakan lembut.'),
+                  value: _lowImpact,
+                  onChanged: (value) => setState(() => _lowImpact = value),
+                ),
+              ] else ...[
+                Center(
+                  child: WellnessCompanion(
+                    kind: _companion,
+                    level: 1,
+                    size: 210,
                   ),
-                  gap(),
-                  Text(
-                    [
-                      'Mulai dari hal kecil yang bikin hari terasa lebih baik. Satu misi, satu napas, satu langkah.',
-                      'Check-in singkat, jeda yang tenang, dan teman tumbuh untuk perjalananmu.',
-                      'Rayakan progres dengan dukungan teman. Kamu boleh berjalan dengan ritmemu sendiri.',
-                    ][slide],
+                ),
+                const Text(
+                  'Pilih teman tumbuh',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _alias,
+                  maxLength: 20,
+                  decoration: const InputDecoration(
+                    labelText: 'Alias',
+                    hintText: 'misalnya: daunpagi',
                   ),
-                  gap(24),
-                  Row(
-                    children: List.generate(
-                      3,
-                      (i) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InkWell(
-                          onTap: () => setState(() => slide = i),
-                          child: Container(
-                            width: slide == i ? 32 : 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: slide == i
-                                  ? appAccent
-                                  : appAccent.withValues(alpha: .15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  gap(30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => setState(() => step = 0),
-                      child: const Text('Mulai perjalanan'),
-                    ),
-                  ),
-                  gap(8),
-                ] else ...[
-                  LinearProgressIndicator(
-                    value: (step + 1) / 3,
-                    color: appAccent,
-                    backgroundColor: appRaised,
-                  ),
-                  gap(24),
-                  title(
-                    [
-                      'Gaya hidupmu sekarang?',
-                      'Cari ritme yang nyaman.',
-                      'Kenalan dengan teman tumbuh.',
-                    ][step],
-                    size: 30,
-                  ),
-                  gap(),
-                  if (step == 0) ...[
-                    caption(
-                      'Pilih jalur awal. Kamu bisa menggantinya kapan saja.',
-                    ),
-                    gap(),
-                    choice(
-                      'wellness',
-                      'Bangun kebiasaan baik',
-                      'Gerak, makan, dan pikiran yang lebih seimbang.',
-                      path,
-                      (v) => setState(() => path = v),
-                    ),
-                    choice(
-                      'reduction',
-                      'Kurangi rokok / vape',
-                      'Jeda kecil dan habit swap tanpa penghakiman.',
-                      path,
-                      (v) => setState(() => path = v),
-                    ),
-                    if (path == 'reduction')
-                      TextField(
-                        controller: cost,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Estimasi biaya per pemakaian (Rp)',
-                        ),
-                      ),
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'plant', label: Text('Mori')),
+                    ButtonSegment(value: 'cat', label: Text('Milo')),
+                    ButtonSegment(value: 'cloud', label: Text('Awan')),
                   ],
-                  if (step == 1) ...[
-                    ...[1, 2, 3].map(
-                      (n) => choice(
-                        '$n',
-                        [
-                          'Baru mulai',
-                          'Kadang bergerak',
-                          'Sudah cukup aktif',
-                        ][n - 1],
-                        [
-                          'Mulai dari misi paling ringan.',
-                          'Sedikit tantangan, tetap santai.',
-                          'Progresif sesuai kemampuanmu.',
-                        ][n - 1],
-                        '$fitness',
-                        (v) => setState(() => fitness = int.parse(v)),
-                      ),
+                  selected: {_companion},
+                  onSelectionChanged: (value) =>
+                      setState(() => _companion = value.first),
+                ),
+              ],
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+              ],
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  if (_step > 0)
+                    TextButton(
+                      onPressed: () => setState(() => _step--),
+                      child: const Text('Kembali'),
                     ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: low,
-                      onChanged: (v) => setState(() => low = v),
-                      title: const Text('Sedang sakit / cedera'),
-                      subtitle: const Text(
-                        'Prioritaskan istirahat dan misi low-impact.',
-                      ),
-                    ),
-                  ],
-                  if (step == 2) ...[
-                    TextField(
-                      controller: alias,
-                      maxLength: 20,
-                      decoration: const InputDecoration(
-                        labelText: 'Alias pilihanmu',
-                        hintText: 'misalnya: daunpagi',
-                        helperText:
-                            '3–20 huruf/angka/underscore. Hindari nama asli.',
-                      ),
-                    ),
-                    gap(),
-                    Wrap(
-                      spacing: 12,
-                      children: ['plant', 'cat', 'cloud']
-                          .map(
-                            (c) => ChoiceChip(
-                              label: Text(
-                                '${{'plant': '🌱', 'cat': '🐱', 'cloud': '☁️'}[c]}  ${{'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[c]}',
-                              ),
-                              selected: companion == c,
-                              onSelected: (_) => setState(() => companion = c),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    gap(),
-                    caption(
-                      'Profil dan progres disimpan pada browser ini selama fase preview web.',
-                    ),
-                  ],
-                  if (error != null)
-                    Text(error!, style: const TextStyle(color: Colors.red)),
-                  gap(24),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => setState(() => step--),
-                        child: const Text('Kembali'),
-                      ),
-                      const Spacer(),
-                      FilledButton(
-                        onPressed: () async {
-                          if (step == 0 &&
-                              path == 'reduction' &&
-                              (double.tryParse(cost.text) == null ||
-                                  !double.parse(cost.text).isFinite ||
-                                  double.parse(cost.text) < 0 ||
-                                  double.parse(cost.text) > 1000000)) {
-                            setState(() => error = 'Isi biaya 0–1.000.000.');
-                            return;
-                          }
-                          if (step < 2) {
-                            setState(() {
-                              step++;
-                              error = null;
-                            });
-                            return;
-                          }
-                          try {
-                            await widget.controller.setup({
-                              'alias': alias.text,
-                              'path': path,
-                              'fitness': fitness,
-                              'lowImpact': low,
-                              'companion': companion,
-                              'cost': double.tryParse(cost.text) ?? 0,
-                              'waterGoal': 2000,
-                              'kcalGoal': 2000,
-                              'proteinGoal': 60,
-                            });
-                          } catch (_) {
-                            setState(
-                              () => error =
-                                  'Alias harus 3–20 karakter, diawali huruf.',
-                            );
-                          }
-                        },
-                        child: Text(step == 2 ? 'Masuk ke YouWell' : 'Lanjut'),
-                      ),
-                    ],
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () async {
+                      if (_step < 2) {
+                        setState(() => _step++);
+                        return;
+                      }
+                      try {
+                        await widget.controller.setup({
+                          'alias': _alias.text,
+                          'path': _path,
+                          'pace': _pace,
+                          'lowImpact': _lowImpact,
+                          'companion': _companion,
+                          'waterGoal': 2000,
+                        });
+                      } catch (_) {
+                        setState(
+                          () => _error =
+                              'Alias harus 3–20 karakter dan diawali huruf.',
+                        );
+                      }
+                    },
+                    child: Text(_step == 2 ? 'Mulai' : 'Lanjut'),
                   ),
                 ],
-                gap(28),
-                caption('Ruang kecil untuk merawat diri. Bukan layanan medis.'),
-              ],
-            ),
+              ),
+              const SizedBox(height: 22),
+              const Text(
+                'Data masih disimpan lokal selama fase pengembangan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: appMuted, fontSize: 12),
+              ),
+            ],
           ),
         ),
       ),
     ),
   );
-  Widget choice(
-    String value,
-    String name,
-    String sub,
-    String selected,
-    ValueChanged<String> onTap,
-  ) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Material(
-      color: selected == value ? const Color(0xffe5eddf) : Colors.white,
+}
+
+class _Choice extends StatelessWidget {
+  const _Choice({
+    required this.title,
+    required this.detail,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+  final String title, detail, value, selected;
+  final ValueChanged<String> onTap;
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: selected == value ? const Color(0xff203a32) : appRaised,
       borderRadius: BorderRadius.circular(18),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(sub),
-        trailing: Icon(
-          selected == value ? Icons.check_circle : Icons.circle_outlined,
-          color: appAccent,
-        ),
-        onTap: () => onTap(value),
+      border: Border.all(color: selected == value ? appAccent : appBorder),
+    ),
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(detail),
+      trailing: Icon(
+        selected == value ? Icons.check_circle_rounded : Icons.circle_outlined,
+        color: appAccent,
       ),
+      onTap: () => onTap(value),
     ),
   );
 }

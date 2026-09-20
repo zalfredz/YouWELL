@@ -1,3055 +1,480 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:youwell/app/web_experience_gate.dart';
 import 'package:youwell/application/wellness_controller.dart';
-import 'package:youwell/core/platform/platform.dart' as platform;
-import 'package:youwell/core/utils/date_key.dart';
+import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
-import 'package:youwell/features/web/presentation/community_hub_page.dart';
-import 'package:youwell/features/web/presentation/developer_page.dart';
+import 'package:youwell/features/profile/presentation/profile_page.dart';
 import 'package:youwell/features/web/presentation/pomodoro_page.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
-const _bg = Color(0xff0d0e11);
-const _panel = Color(0xff16181d);
-const _raised = Color(0xff1c1f25);
-const _line = Color(0xff2a2d34);
-const _text = Color(0xfff1f3f5);
-const _muted = Color(0xff9298a3);
-const _green = Color(0xff78e3b1);
-const _cyan = Color(0xff77d7e5);
-const _amber = Color(0xffffc875);
-
-/// Desktop dashboard with the same data controller as mobile, tuned for focus.
 class WebWorkspacePage extends StatefulWidget {
-  const WebWorkspacePage({
-    super.key,
-    required this.controller,
-    this.isAdmin = false,
-  });
+  const WebWorkspacePage({super.key, required this.controller});
   final WellnessController controller;
-  final bool isAdmin;
-
   @override
   State<WebWorkspacePage> createState() => _WebWorkspacePageState();
 }
 
 class _WebWorkspacePageState extends State<WebWorkspacePage> {
   int _tab = 0;
-  bool _isPresentingDailyDraw = false;
-  bool _sidebarExpanded = true;
+  bool _drawing = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _presentDailyDraw());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.prepareToday();
+    });
   }
 
-  Future<void> _presentDailyDraw() async {
-    if (!mounted ||
-        _isPresentingDailyDraw ||
-        !widget.controller.needsDailyCardDraw) {
-      return;
-    }
-    _isPresentingDailyDraw = true;
-    await showDialog<bool>(
+  Future<void> _draw() async {
+    if (_drawing || !widget.controller.needsDailyCardDraw) return;
+    _drawing = true;
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => DailyCardDrawDialog(controller: widget.controller),
     );
-    _isPresentingDailyDraw = false;
+    _drawing = false;
   }
 
-  Future<void> _openProfile() => showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: _bg,
-          insetPadding: const EdgeInsets.all(32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 620),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: _SettingsPage(controller: widget.controller),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: IconButton(
-                    tooltip: 'Tutup profile',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: _muted),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+  void _profile() => showDialog<void>(
+    context: context,
+    builder: (_) => Dialog(
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640, maxHeight: 760),
+        child: ProfilePage(controller: widget.controller),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: widget.controller,
-        builder: (context, _) => WebWorkspaceGate(
-          onReturnToLanding: () =>
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
-          child: _Dashboard(
-            controller: widget.controller,
-            isAdmin: widget.isAdmin,
-            tab: _tab,
-            onTab: (value) => setState(() => _tab = value),
-            onOpenDailyDraw: _presentDailyDraw,
-            onOpenProfile: _openProfile,
-            sidebarExpanded: _sidebarExpanded,
-            onToggleSidebar: () =>
-                setState(() => _sidebarExpanded = !_sidebarExpanded),
+    animation: widget.controller,
+    builder: (context, _) => WebWorkspaceGate(
+      onReturnToLanding: () =>
+          Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false),
+      child: Theme(
+        data: ThemeData.dark(useMaterial3: true).copyWith(
+          scaffoldBackgroundColor: appCanvas,
+          colorScheme: const ColorScheme.dark(
+            primary: appAccent,
+            secondary: appAccentCyan,
+            surface: appSurface,
           ),
         ),
-      );
-}
-
-class _Dashboard extends StatelessWidget {
-  const _Dashboard({
-    required this.controller,
-    required this.isAdmin,
-    required this.tab,
-    required this.onTab,
-    required this.onOpenDailyDraw,
-    required this.onOpenProfile,
-    required this.sidebarExpanded,
-    required this.onToggleSidebar,
-  });
-  final WellnessController controller;
-  final bool isAdmin;
-  final int tab;
-  final ValueChanged<int> onTab;
-  final Future<void> Function() onOpenDailyDraw;
-  final Future<void> Function() onOpenProfile;
-  final bool sidebarExpanded;
-  final VoidCallback onToggleSidebar;
-
-  @override
-  Widget build(BuildContext context) {
-    final nav = <_NavItem>[
-      const _NavItem('Home', Icons.home_outlined),
-      const _NavItem('Focus & Craving', Icons.timer_outlined),
-      const _NavItem('Squad & Community', Icons.groups_2_outlined),
-      const _NavItem('Developer', Icons.developer_mode_rounded),
-      if (isAdmin)
-        const _NavItem('Community Admin', Icons.admin_panel_settings_outlined),
-    ];
-    final pages = <Widget>[
-      _TodayPage(
-        controller: controller,
-        onTab: onTab,
-        onOpenDailyDraw: onOpenDailyDraw,
-      ),
-      WebPomodoroPage(controller: controller),
-      WebCommunityHubPage(controller: controller),
-      DeveloperPage(controller: controller, onOpenHome: () => onTab(0)),
-      if (isAdmin) _AdminPage(controller: controller),
-    ];
-    final safeTab = tab.clamp(0, nav.length - 1);
-    final alias = controller.profile?['alias']?.toString() ?? 'Y';
-    return Theme(
-      data: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: _bg,
-        colorScheme: const ColorScheme.dark(primary: _green, secondary: _cyan),
-        dividerColor: _line,
-      ),
-      child: Scaffold(
-        body: Row(
-          children: [
-            _Sidebar(
-              nav: nav,
-              current: safeTab,
-              onTab: onTab,
-              admin: isAdmin,
-              expanded: sidebarExpanded,
-              onToggle: onToggleSidebar,
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  _Header(
-                    section: nav[safeTab].label,
-                    alias: alias,
-                    onSettings: onOpenProfile,
-                  ),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: KeyedSubtree(
-                        key: ValueKey(safeTab),
-                        child: pages[safeTab],
-                      ),
-                    ),
-                  ),
-                ],
+        child: Scaffold(
+          body: Row(
+            children: [
+              _Sidebar(
+                tab: _tab,
+                onTab: (value) => setState(() => _tab = value),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem {
-  const _NavItem(this.label, this.icon);
-  final String label;
-  final IconData icon;
-}
-
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({
-    required this.nav,
-    required this.current,
-    required this.onTab,
-    required this.admin,
-    required this.expanded,
-    required this.onToggle,
-  });
-  final List<_NavItem> nav;
-  final int current;
-  final ValueChanged<int> onTab;
-  final bool admin;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        width: expanded ? 244 : 70,
-        decoration: const BoxDecoration(
-          color: Color(0xff101216),
-          border: Border(right: BorderSide(color: _line)),
-        ),
-        padding:
-            EdgeInsets.fromLTRB(expanded ? 14 : 12, 18, expanded ? 14 : 12, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: onToggle,
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: expanded ? 8 : 5, vertical: 3),
-                child: Row(
+              Expanded(
+                child: Column(
                   children: [
-                    const _Mark(),
-                    if (expanded) ...[
-                      const SizedBox(width: 9),
-                      const Expanded(
-                          child: Text(
-                        'YouWell.MD',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _text,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      )),
-                      const Icon(Icons.chevron_left_rounded,
-                          color: _muted, size: 19),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            if (expanded)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(11, 8, 11, 28),
-                child: Text(
-                  admin ? 'ADMIN WORKSPACE' : 'PERSONAL WORKSPACE',
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-            if (expanded)
-              ...List.generate(nav.length, (index) {
-                final selected = index == current;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => onTab(index),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? const Color(0xff20242a)
-                            : Colors.transparent,
-                        border: selected
-                            ? Border.all(color: const Color(0xff323741))
-                            : null,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+                    _Header(
+                      section: const [
+                        'Home',
+                        'Focus Station',
+                        'Progress',
+                      ][_tab],
+                      alias: widget.controller.profile!['alias'].toString(),
+                      onProfile: _profile,
+                    ),
+                    Expanded(
+                      child: IndexedStack(
+                        index: _tab,
                         children: [
-                          Icon(
-                            nav[index].icon,
-                            size: 18,
-                            color: selected ? _green : _muted,
+                          _WebHome(
+                            controller: widget.controller,
+                            onDraw: _draw,
                           ),
-                          const SizedBox(width: 11),
-                          Expanded(
-                            child: Text(
-                              nav[index].label,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: selected ? _text : _muted,
-                                fontSize: 13,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ),
+                          WebPomodoroPage(controller: widget.controller),
+                          _WebProgress(controller: widget.controller),
                         ],
                       ),
                     ),
-                  ),
-                );
-              }),
-            const Spacer(),
-          ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      );
+      ),
+    ),
+  );
+}
+
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({required this.tab, required this.onTab});
+  final int tab;
+  final ValueChanged<int> onTab;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 240,
+    padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
+    decoration: const BoxDecoration(
+      color: Color(0xff111317),
+      border: Border(right: BorderSide(color: appBorder)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'youwell.',
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'BETTER LIFE WORKSPACE',
+          style: TextStyle(color: appMuted, fontSize: 10, letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 34),
+        ...const [
+          ('Home', Icons.home_outlined),
+          ('Focus Station', Icons.timer_outlined),
+          ('Progress', Icons.insights_outlined),
+        ].indexed.map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              selected: tab == entry.$1,
+              selectedTileColor: appRaised,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              leading: Icon(
+                entry.$2.$2,
+                color: tab == entry.$1 ? appAccent : appMuted,
+              ),
+              title: Text(entry.$2.$1),
+              onTap: () => onTab(entry.$1),
+            ),
+          ),
+        ),
+        const Spacer(),
+        const Text(
+          'Local development\nAuth & sync belum aktif',
+          style: TextStyle(color: appMuted, fontSize: 12, height: 1.5),
+        ),
+      ],
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {
   const _Header({
     required this.section,
     required this.alias,
-    required this.onSettings,
+    required this.onProfile,
   });
-  final String section;
-  final String alias;
-  final VoidCallback onSettings;
-
+  final String section, alias;
+  final VoidCallback onProfile;
   @override
   Widget build(BuildContext context) => Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        decoration: const BoxDecoration(
-          color: Color(0xff101216),
-          border: Border(bottom: BorderSide(color: _line)),
+    height: 72,
+    padding: const EdgeInsets.symmetric(horizontal: 30),
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: appBorder)),
+    ),
+    child: Row(
+      children: [
+        Text(section, style: const TextStyle(fontWeight: FontWeight.w800)),
+        const Spacer(),
+        const Text(
+          'LOCAL',
+          style: TextStyle(
+            color: appAccent,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        child: Row(
-          children: [
-            Text(
-              section,
-              style: const TextStyle(
-                color: _text,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+        const SizedBox(width: 14),
+        InkWell(
+          onTap: onProfile,
+          borderRadius: BorderRadius.circular(40),
+          child: CircleAvatar(
+            backgroundColor: appRaised,
+            child: Text(
+              alias[0].toUpperCase(),
+              style: const TextStyle(color: appAccent),
             ),
-            const Spacer(),
-            Tooltip(
-              message: 'Buka profile dan settings',
-              child: InkWell(
-                onTap: onSettings,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(5, 5, 14, 5),
-                  decoration: BoxDecoration(
-                    color: _raised,
-                    border: Border.all(color: _line),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(children: [
-                    CircleAvatar(
-                      radius: 15,
-                      backgroundColor: const Color(0xff233a35),
-                      foregroundColor: _green,
-                      child: Text(
-                        alias.isEmpty
-                            ? 'Y'
-                            : alias.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    const Text('Your Profile',
-                        style: TextStyle(
-                            color: _text,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700)),
-                  ]),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
-class _Scroll extends StatelessWidget {
-  const _Scroll({required this.child});
-  final Widget child;
-  @override
-  Widget build(BuildContext context) => Scrollbar(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 56),
-          child: child,
-        ),
-      );
-}
-
-class _TodayPage extends StatelessWidget {
-  const _TodayPage({
-    required this.controller,
-    required this.onTab,
-    required this.onOpenDailyDraw,
-  });
+class _WebHome extends StatelessWidget {
+  const _WebHome({required this.controller, required this.onDraw});
   final WellnessController controller;
-  final ValueChanged<int> onTab;
-  final Future<void> Function() onOpenDailyDraw;
-
+  final VoidCallback onDraw;
   @override
   Widget build(BuildContext context) {
-    final alias = controller.profile?['alias']?.toString() ?? 'teman';
-    return _Scroll(
+    final kind = controller.profile!['companion'].toString();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Good ${_greeting()}, $alias.',
-            style: const TextStyle(
-              color: _text,
-              fontSize: 31,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -.9,
-            ),
+            'Good day, ${controller.profile!['alias']}.',
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 8),
           const Text(
-            'Satu langkah kecil cukup untuk mengubah arah hari ini.',
-            style: TextStyle(color: _muted, fontSize: 14),
+            'Tiga langkah utama dan satu bonus untuk hari ini.',
+            style: TextStyle(color: appMuted),
           ),
           const SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, box) {
-              final tasks = _DailyCardSystem(
-                controller: controller,
-                onOpenDailyDraw: onOpenDailyDraw,
-              );
-              final companion = _CompanionShowcase(controller: controller);
-              final complianceAndRewards = _ComplianceRewardsCard(
-                controller: controller,
-              );
-              final squad = _SquadHubWidget(
-                controller: controller,
-                onOpenSquad: () => onTab(2),
-              );
-              final desk = _Card(
-                padding: 24,
-                child: _QuickDeskHabits(controller: controller),
-              );
-              if (box.maxWidth < 1040) {
-                return Column(children: [
-                  companion,
-                  const SizedBox(height: 18),
-                  tasks,
-                  const SizedBox(height: 18),
-                  desk,
-                  const SizedBox(height: 18),
-                  complianceAndRewards,
-                  const SizedBox(height: 18),
-                  squad,
-                ]);
-              }
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 7, child: companion),
-                    const SizedBox(width: 22),
-                    Expanded(
-                      flex: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 7,
+                child: _WebPanel(
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${const {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Mori'}, your companion',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      WellnessCompanion(
+                        kind: kind,
+                        level: controller.level,
+                        size: 310,
+                      ),
+                      Text(
+                        'Level ${controller.level}  •  ${controller.xp} XP',
+                        style: const TextStyle(
+                          color: appAccent,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const Spacer(),
+                      LinearProgressIndicator(
+                        value: (controller.xp % 100) / 100,
+                        color: appAccent,
+                        backgroundColor: appRaised,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 5,
+                child: _WebPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          tasks,
-                          const SizedBox(height: 14),
-                          desk,
-                          const SizedBox(height: 14),
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(child: complianceAndRewards),
-                                const SizedBox(width: 14),
-                                Expanded(child: squad),
-                              ],
+                          const Expanded(
+                            child: Text(
+                              "Today's steps",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
+                          if (controller.needsDailyCardDraw)
+                            TextButton.icon(
+                              onPressed: onDraw,
+                              icon: const Icon(Icons.auto_awesome_rounded),
+                              label: const Text('Bonus card'),
+                            ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      ...controller.quests.map(
+                        (task) => _WebTask(
+                          task: task,
+                          onDone: () =>
+                              controller.completeCard(task['id'].toString()),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  String _greeting() => DateTime.now().hour < 11
-      ? 'morning'
-      : DateTime.now().hour < 17
-          ? 'afternoon'
-          : 'evening';
-}
-
-class _DailyCardSystem extends StatelessWidget {
-  const _DailyCardSystem({
-    required this.controller,
-    required this.onOpenDailyDraw,
-  });
-  final WellnessController controller;
-  final Future<void> Function() onOpenDailyDraw;
-
-  @override
-  Widget build(BuildContext context) {
-    final drawCards = controller.dailyDrawCards;
-    final committed = controller.committedCards;
-    final completed = controller.completedCards;
-    final selected = controller.selectedDailyCard;
-    return _Card(
-      padding: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          const SizedBox(height: 20),
           Row(
             children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Daily Card Draw',
-                      style: TextStyle(
-                        color: _text,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Pilih kartu yang terasa realistis, lalu commit untuk menguncinya hari ini.',
-                      style: TextStyle(color: _muted, fontSize: 12),
-                    ),
-                  ],
+              Expanded(
+                child: _WebMetric(
+                  title: 'Weekly progress',
+                  value: '${(controller.compliance(7) * 100).round()}%',
+                  detail: '${controller.activeDaysIn(7)} active days',
                 ),
               ),
-              _Pill('${drawCards.length} cards', _cyan),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _WebMetric(
+                  title: 'Quick hydration',
+                  value: '${controller.water.toInt()} ml',
+                  detail: 'Goal ${controller.profile?['waterGoal'] ?? 2000} ml',
+                  action: controller.addWater,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 18),
-          if (drawCards.isEmpty)
-            _EmptyDailyDraw(onOpenDailyDraw: onOpenDailyDraw)
-          else ...[
-            if (selected != null && !controller.hasCommittedDailyCard)
-              _DailyCard(
-                controller: controller,
-                card: selected,
-              )
-            else if (!controller.hasCommittedDailyCard)
-              _EmptyDailyDraw(onOpenDailyDraw: onOpenDailyDraw),
-            if (committed.isNotEmpty || completed.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Today’s Progress',
-                      style: TextStyle(
-                        color: _text,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  _Pill(
-                    '${completed.length} / ${committed.length + completed.length} complete',
-                    _green,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: controller.dailyProgress,
-                minHeight: 7,
-                color: _green,
-                backgroundColor: _raised,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              const SizedBox(height: 12),
-              ...[...committed, ...completed].map(
-                (card) => _CommittedCard(controller: controller, card: card),
-              ),
-            ],
-          ],
         ],
       ),
     );
   }
 }
 
-class _EmptyDailyDraw extends StatelessWidget {
-  const _EmptyDailyDraw({required this.onOpenDailyDraw});
-
-  final Future<void> Function() onOpenDailyDraw;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 25),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.style_outlined, color: _cyan, size: 31),
-              const SizedBox(height: 10),
-              const Text(
-                'Kartu harianmu belum dipilih.',
-                style: TextStyle(color: _text, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Swipe lima kartu tertutup; satu kartu berisi 3–5 task hari ini.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _muted, fontSize: 12),
-              ),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: onOpenDailyDraw,
-                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
-                label: const Text('Open Daily Draw'),
-                style: _greenButton,
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _DailyCard extends StatelessWidget {
-  const _DailyCard({
-    required this.controller,
-    required this.card,
-  });
-  final WellnessController controller;
-  final Map<String, dynamic> card;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xff191c21),
-          border: Border.all(color: _line),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _Pill('${card['taskCount']} tasks', _cyan),
-                const Spacer(),
-                Text(
-                  '+${card['xp']} XP total',
-                  style: const TextStyle(
-                    color: _green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              card['title'].toString(),
-              style: const TextStyle(
-                color: _text,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              card['description'].toString(),
-              style: const TextStyle(color: _muted, fontSize: 12, height: 1.4),
-            ),
-            const SizedBox(height: 15),
-            Row(
-              children: [
-                const Text('Satu paket untuk progres hari ini.',
-                    style: TextStyle(color: _muted, fontSize: 12)),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _commit,
-                  style: _greenButton,
-                  child: const Text('Commit pack'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-
-  void _commit() => controller.commitDailyCardPack();
-}
-
-class _CommittedCard extends StatelessWidget {
-  const _CommittedCard({required this.controller, required this.card});
-  final WellnessController controller;
-  final Map<String, dynamic> card;
-
+class _WebTask extends StatelessWidget {
+  const _WebTask({required this.task, required this.onDone});
+  final Map<String, dynamic> task;
+  final VoidCallback onDone;
   @override
   Widget build(BuildContext context) {
-    final completed = card['status'] == 'completed';
+    final done = task['status'] == 'completed';
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: completed ? const Color(0xff17241f) : _raised,
-        border: Border.all(color: completed ? const Color(0xff2c4a3c) : _line),
-        borderRadius: BorderRadius.circular(10),
+        color: appRaised,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
-            completed ? Icons.check_circle_rounded : Icons.lock_outline_rounded,
-            color: completed ? _green : _amber,
-            size: 21,
+            done ? Icons.check_circle : Icons.circle_outlined,
+            color: appAccent,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  card['title'].toString(),
-                  style: TextStyle(
-                    color: completed ? _muted : _text,
-                    fontWeight: FontWeight.w700,
-                    decoration: completed ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  completed
-                      ? '+${card['xp']} XP earned'
-                      : 'Committed • locked for today',
-                  style: const TextStyle(color: _muted, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          if (completed)
-            const _Pill('Completed', _green)
-          else
-            FilledButton(
-              onPressed: _complete,
-              style: _greenButton,
-              child: const Text('Complete'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _complete() => controller.completeCard(card['id'].toString());
-}
-
-class _ComplianceRewardsCard extends StatelessWidget {
-  const _ComplianceRewardsCard({required this.controller});
-  final WellnessController controller;
-
-  @override
-  Widget build(BuildContext context) => _Card(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text(
-            'Weekly Compliance & Rewards',
-            style: TextStyle(
-              color: _text,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '${(controller.compliance(7) * 100).round()}%',
-            style: const TextStyle(
-              color: _green,
-              fontSize: 42,
-              height: .9,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            '7 hari terakhir',
-            style: TextStyle(color: _muted, fontSize: 11),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 98,
-            child: _Bars(controller: controller),
-          ),
-          const SizedBox(height: 20),
-          const Divider(color: _line, height: 1),
-          const SizedBox(height: 15),
-          Row(children: [
-            const Icon(Icons.auto_awesome_rounded, color: _amber, size: 21),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Today’s rewards',
-                      style:
-                          TextStyle(color: _text, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 3),
-                  Text('${controller.dailyXp} XP earned',
-                      style: const TextStyle(color: _muted, fontSize: 12)),
-                ],
-              ),
-            ),
-            _Pill('${controller.streak} day streak', _green),
-          ]),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
             child: Text(
-                '${controller.completedCards.length} task selesai hari ini',
-                style: const TextStyle(color: _muted, fontSize: 11)),
-          ),
-        ]),
-      );
-}
-
-class _SquadHubWidget extends StatelessWidget {
-  const _SquadHubWidget({
-    required this.controller,
-    required this.onOpenSquad,
-  });
-  final WellnessController controller;
-  final VoidCallback onOpenSquad;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!controller.hasSquad) {
-      return _Card(
-        tint: const Color(0xff151f1d),
-        padding: 20,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.groups_rounded, color: _cyan, size: 27),
-          const SizedBox(height: 15),
-          const Text('Squad Progress',
-              style: TextStyle(
-                  color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          const Text(
-            'Saling jaga habit bareng 3–5 teman. Capai target mingguan bersama!',
-            style: TextStyle(color: _muted, fontSize: 12, height: 1.45),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onOpenSquad,
-            icon: const Icon(Icons.add_rounded, size: 17),
-            label: const Text('Cari / Buat Squad'),
-            style: _greenButton,
-          ),
-        ]),
-      );
-    }
-
-    return _Card(
-      tint: const Color(0xff152420),
-      padding: 20,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Expanded(
-            child: Text('September reset',
-                style: TextStyle(
-                    color: _text, fontSize: 17, fontWeight: FontWeight.w800)),
-          ),
-          const _Pill('Active', _green),
-        ]),
-        const SizedBox(height: 7),
-        const Text('Weekly group quest',
-            style: TextStyle(color: _muted, fontSize: 12)),
-        const SizedBox(height: 24),
-        const Text('24 / 50 Tasks Completed',
-            style: TextStyle(
-                color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: const LinearProgressIndicator(
-            value: .48,
-            minHeight: 8,
-            color: _green,
-            backgroundColor: Color(0xff2a4039),
-          ),
-        ),
-        const SizedBox(height: 17),
-        const _AvatarStack(),
-        const SizedBox(height: 24),
-        TextButton(
-          onPressed: onOpenSquad,
-          child: const Text('Buka Squad Hub →'),
-        ),
-      ]),
-    );
-  }
-}
-
-class _AvatarStack extends StatelessWidget {
-  const _AvatarStack();
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: 32,
-        child: Stack(
-          children: const [
-            _SquadAvatar(alias: 'D', color: Color(0xff2e7d68), left: 0),
-            _SquadAvatar(alias: 'J', color: Color(0xff407a9d), left: 22),
-            _SquadAvatar(alias: 'M', color: Color(0xff856cbb), left: 44),
-            _SquadAvatar(alias: 'A', color: Color(0xffa6784f), left: 66),
-            Positioned(
-              left: 100,
-              top: 8,
-              child: Text('daunpagi, jeda_sore +2',
-                  style: TextStyle(color: _muted, fontSize: 11)),
+              task['title'].toString(),
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-          ],
-        ),
-      );
-}
-
-class _SquadAvatar extends StatelessWidget {
-  const _SquadAvatar({
-    required this.alias,
-    required this.color,
-    required this.left,
-  });
-
-  final String alias;
-  final Color color;
-  final double left;
-
-  @override
-  Widget build(BuildContext context) => Positioned(
-        left: left,
-        child: CircleAvatar(
-          radius: 16,
-          backgroundColor: const Color(0xff0d0e11),
-          child: CircleAvatar(
-            radius: 13,
-            backgroundColor: color,
-            child: Text(alias,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800)),
           ),
-        ),
-      );
-}
-
-class _QuickDeskHabits extends StatelessWidget {
-  const _QuickDeskHabits({required this.controller});
-
-  final WellnessController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    const target = 2000;
-    final water = controller.water.round().clamp(0, target);
-    final mealsToday = controller.meals
-        .where((meal) => meal['day'] == controller.today)
-        .length;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xff1a2421),
-        border: Border.all(color: const Color(0xff2c443a)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Food & Hydration',
-            style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 4),
-        Text('$mealsToday meal check-in • $water / $target ml water',
-            style: const TextStyle(color: _muted, fontSize: 11)),
-        const SizedBox(height: 13),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          FilledButton.tonalIcon(
-            onPressed: () {
-              controller.addWater();
-            },
-            icon: const Icon(Icons.water_drop_outlined, size: 16),
-            label: const Text('+250 ml Water'),
-          ),
-          OutlinedButton.icon(
-            onPressed: () => controller.addMeal({
-              'meal': 'Meal check-in',
-              'note': 'Logged from web dashboard',
-            }),
-            icon: const Icon(Icons.restaurant_outlined, size: 16),
-            label: const Text('Meal done'),
-          ),
-        ]),
-        const SizedBox(height: 15),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: water / target,
-            minHeight: 7,
-            color: _cyan,
-            backgroundColor: _raised,
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-class _CompanionShowcase extends StatefulWidget {
-  const _CompanionShowcase({required this.controller});
-
-  final WellnessController controller;
-
-  @override
-  State<_CompanionShowcase> createState() => _CompanionShowcaseState();
-}
-
-class _CompanionShowcaseState extends State<_CompanionShowcase>
-    with TickerProviderStateMixin {
-  late final AnimationController _idleController;
-  late final AnimationController _interactionController;
-  var _showSparkles = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _idleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-    _interactionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 620),
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed && mounted) {
-          setState(() => _showSparkles = false);
-        }
-      });
-  }
-
-  @override
-  void dispose() {
-    _idleController.dispose();
-    _interactionController.dispose();
-    super.dispose();
-  }
-
-  void _interact() {
-    setState(() {
-      _showSparkles = true;
-    });
-    _interactionController.forward(from: 0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = widget.controller;
-    final kind = controller.profile?['companion']?.toString() ?? 'plant';
-    final name =
-        {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Companion';
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0, -.18),
-          radius: .9,
-          colors: [Color(0xff244b3c), Color(0xff172421), Color(0xff121815)],
-          stops: [0, .52, 1],
-        ),
-        border: Border.all(color: const Color(0xff315043)),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 28,
-            offset: Offset(0, 12),
+          TextButton(
+            onPressed: done ? null : onDone,
+            child: Text(done ? 'Done' : 'Complete'),
           ),
         ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(
-            child: Text('$name, your companion',
-                style: const TextStyle(
-                    color: _text, fontSize: 20, fontWeight: FontWeight.w800)),
-          ),
-          _Pill('LV ${controller.level}', _green),
-        ]),
-        const SizedBox(height: 4),
-        const Text('Your daily wellbeing companion',
-            style: TextStyle(color: _muted, fontSize: 12)),
-        const SizedBox(height: 12),
-        LayoutBuilder(builder: (context, box) {
-          final avatarSize =
-              (box.maxWidth * .92).clamp(300.0, 500.0).toDouble();
-          final stageHeight = (avatarSize + 60).clamp(430.0, 560.0).toDouble();
-          final characterScale = avatarSize / 180;
-          return SizedBox(
-            height: stageHeight,
-            child: Stack(children: [
-              AnimatedBuilder(
-                animation: Listenable.merge([
-                  _idleController,
-                  _interactionController,
-                ]),
-                builder: (context, child) {
-                  final idleOffset = -9 *
-                      Curves.easeInOut.transform(
-                        _idleController.value,
-                      );
-                  final pulse = TweenSequence<double>([
-                    TweenSequenceItem(
-                      tween: Tween(begin: 1.0, end: 1.07)
-                          .chain(CurveTween(curve: Curves.easeOut)),
-                      weight: 45,
-                    ),
-                    TweenSequenceItem(
-                      tween: Tween(begin: 1.07, end: 1.0)
-                          .chain(CurveTween(curve: Curves.easeIn)),
-                      weight: 55,
-                    ),
-                  ]).transform(_interactionController.value);
-                  return Center(
-                    child: Transform.translate(
-                      offset: Offset(0, idleOffset),
-                      child: Transform.scale(scale: pulse, child: child),
-                    ),
-                  );
-                },
-                child: Semantics(
-                  button: true,
-                  label: 'Sapa $name',
-                  child: GestureDetector(
-                    onTap: _interact,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Container(
-                        width: avatarSize,
-                        height: avatarSize,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(colors: [
-                            Color(0x6634d399),
-                            Color(0x1e22c55e),
-                            Colors.transparent,
-                          ]),
-                        ),
-                        child: Center(
-                          child: Transform.scale(
-                            scale: characterScale,
-                            child: WellnessCompanion(
-                              kind: kind,
-                              level: controller.level,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (_showSparkles)
-                AnimatedBuilder(
-                  animation: _interactionController,
-                  builder: (context, _) => IgnorePointer(
-                    child: Transform.translate(
-                      offset: Offset(0, -26 * _interactionController.value),
-                      child: Opacity(
-                        opacity: 1 - _interactionController.value,
-                        child: const _CompanionSparkles(),
-                      ),
-                    ),
-                  ),
-                ),
-            ]),
-          );
-        }),
-        const SizedBox(height: 6),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _Pill('${controller.streak} day streak', _green),
-          if (controller.canRestreak)
-            ActionChip(
-              avatar:
-                  const Icon(Icons.restore_rounded, size: 15, color: _amber),
-              label: const Text('Restreak'),
-              onPressed: controller.restreak,
-              backgroundColor: const Color(0xff2c2419),
-              side: const BorderSide(color: Color(0xff5a4828)),
-              labelStyle: const TextStyle(color: _amber, fontSize: 11),
-            ),
-        ]),
-        const SizedBox(height: 18),
-        Row(children: [
-          const Text('Level progress',
-              style: TextStyle(color: _muted, fontSize: 11)),
-          const Spacer(),
-          Text('${controller.xp % 100} / 100 XP',
-              style: const TextStyle(color: _green, fontSize: 11)),
-        ]),
-        const SizedBox(height: 7),
-        LinearProgressIndicator(
-          value: (controller.xp % 100) / 100,
-          minHeight: 8,
-          color: _green,
-          backgroundColor: _raised,
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ]),
     );
   }
 }
 
-class _CompanionSparkles extends StatelessWidget {
-  const _CompanionSparkles();
-
-  @override
-  Widget build(BuildContext context) => const Stack(children: [
-        Positioned(
-          top: 74,
-          left: 76,
-          child: Icon(Icons.auto_awesome_rounded, color: _amber, size: 25),
-        ),
-        Positioned(
-          top: 118,
-          right: 70,
-          child: Icon(Icons.star_rounded, color: _cyan, size: 19),
-        ),
-        Positioned(
-          bottom: 65,
-          left: 112,
-          child: Icon(Icons.star_rounded, color: _green, size: 16),
-        ),
-        Positioned(
-          bottom: 92,
-          right: 108,
-          child: Icon(Icons.auto_awesome_rounded, color: _amber, size: 17),
-        ),
-      ]);
-}
-
-class _AnalyticsPage extends StatefulWidget {
-  const _AnalyticsPage({required this.controller});
-  final WellnessController controller;
-
-  @override
-  State<_AnalyticsPage> createState() => _AnalyticsPageState();
-}
-
-enum _FocusMode { sun, star, moon }
-
-class _AnalyticsPageState extends State<_AnalyticsPage> {
-  final _goal = TextEditingController();
-  final _vent = TextEditingController();
-  final _trackLink = TextEditingController();
-  Timer? _focusTimer;
-  Timer? _delayTimer;
-  _FocusMode _mode = _FocusMode.sun;
-  var _remaining = 25 * 60;
-  var _delayRemaining = 0;
-  var _focusMinutes = 0;
-  var _ventReleased = false;
-  var _sound = 'Rain';
-  var _trackName = 'Rain ambience';
-  var _soundPlaying = false;
-  var _volume = .35;
-  String? _customSource;
-
-  int get _duration => switch (_mode) {
-        _FocusMode.sun => 25 * 60,
-        _FocusMode.star => 5 * 60,
-        _FocusMode.moon => 15 * 60,
-      };
-  bool get _focusRunning => _focusTimer != null;
-
-  @override
-  void dispose() {
-    _focusTimer?.cancel();
-    _delayTimer?.cancel();
-    _goal.dispose();
-    _vent.dispose();
-    _trackLink.dispose();
-    platform.sound('stop');
-    super.dispose();
-  }
-
-  void _selectMode(_FocusMode mode) => setState(() {
-        _focusTimer?.cancel();
-        _focusTimer = null;
-        _mode = mode;
-        _remaining = _duration;
-      });
-
-  void _toggleFocus() {
-    if (_focusRunning) {
-      _focusTimer?.cancel();
-      setState(() => _focusTimer = null);
-      return;
-    }
-    _focusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (_remaining <= 1) {
-        _focusTimer?.cancel();
-        setState(() {
-          _focusTimer = null;
-          _focusMinutes += _duration ~/ 60;
-          _remaining = _duration;
-        });
-      } else {
-        setState(() => _remaining--);
-      }
-    });
-    setState(() {});
-  }
-
-  void _resetFocus() {
-    _focusTimer?.cancel();
-    setState(() {
-      _focusTimer = null;
-      _remaining = _duration;
-    });
-  }
-
-  void _startDelay() {
-    _delayTimer?.cancel();
-    setState(() => _delayRemaining = 5 * 60);
-    _delayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (_delayRemaining <= 1) {
-        _delayTimer?.cancel();
-        widget.controller.recordCraving({
-          'trigger': 'Focus station delay',
-          'seconds': 300,
-          'success': true,
-          'avoided': false,
-          'cost': 0,
-        });
-        setState(() {
-          _delayTimer = null;
-          _delayRemaining = 0;
-        });
-      } else {
-        setState(() => _delayRemaining--);
-      }
-    });
-  }
-
-  void _toggleSound(String name) {
-    final key = switch (name) {
-      'Rain' => 'rain',
-      'Forest' => 'forest',
-      'Fireplace' => 'fireplace',
-      _ => 'ambient',
-    };
-    if (_soundPlaying && _sound == name) {
-      platform.sound('stop');
-      setState(() => _soundPlaying = false);
-      return;
-    }
-    platform.sound(key);
-    setState(() {
-      _customSource = null;
-      _sound = name;
-      _trackName = '$name ambience';
-      _soundPlaying = true;
-    });
-  }
-
-  void _toggleTrack() {
-    if (_soundPlaying) {
-      if (_customSource != null) {
-        platform.pauseCustomAudio();
-      } else {
-        platform.sound('stop');
-      }
-      setState(() => _soundPlaying = false);
-      return;
-    }
-    if (_customSource != null) {
-      platform.playCustomAudio(_customSource!);
-      platform.setSoundVolume(_volume);
-      setState(() => _soundPlaying = true);
-      return;
-    }
-    _toggleSound(_sound);
-  }
-
-  void _applyTrackLink() {
-    final link = _trackLink.text.trim();
-    if (link.isEmpty) return;
-    final directAudio =
-        RegExp(r'\.(mp3|m4a|wav|ogg)(\?.*)?$', caseSensitive: false)
-            .hasMatch(link);
-    if (!directAudio) {
-      platform.openLink(link);
-      setState(() {
-        _trackName = 'Opened in YouTube / Spotify';
-        _soundPlaying = false;
-      });
-      return;
-    }
-    platform.playCustomAudio(link);
-    platform.setSoundVolume(_volume);
-    setState(() {
-      _customSource = link;
-      _trackName = 'Custom audio link';
-      _soundPlaying = true;
-    });
-  }
-
-  Future<void> _uploadTrack() async {
-    final raw = await platform.pickAudio();
-    if (!mounted || raw == null) return;
-    final file = jsonDecode(raw) as Map<String, dynamic>;
-    final source = file['url']?.toString();
-    if (source == null || source.isEmpty) return;
-    platform.playCustomAudio(source);
-    platform.setSoundVolume(_volume);
-    setState(() {
-      _customSource = source;
-      _trackName = file['name']?.toString() ?? 'Local MP3';
-      _soundPlaying = true;
-    });
-  }
-
-  void _releaseVent() {
-    if (_vent.text.trim().isEmpty) return;
-    platform.sound('release');
-    setState(() {
-      _vent.clear();
-      _ventReleased = true;
-    });
-    Future<void>.delayed(const Duration(milliseconds: 650), () {
-      if (mounted) setState(() => _ventReleased = false);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) => _Scroll(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Focus & Craving',
-              style: TextStyle(
-                  color: _text,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -.9)),
-          const SizedBox(height: 7),
-          const Text(
-              'Stasiun aktif untuk fokus, melepas stres, dan memberi craving waktu untuk lewat.',
-              style: TextStyle(color: _muted)),
-          const SizedBox(height: 24),
-          LayoutBuilder(builder: (context, box) {
-            final focusHub = _FocusHub(
-              mode: _mode,
-              remaining: _remaining,
-              duration: _duration,
-              running: _focusRunning,
-              goal: _goal,
-              sound: _sound,
-              soundPlaying: _soundPlaying,
-              volume: _volume,
-              trackName: _trackName,
-              trackLink: _trackLink,
-              onMode: _selectMode,
-              onToggle: _toggleFocus,
-              onReset: _resetFocus,
-              onSound: _toggleSound,
-              onVolume: (value) {
-                platform.setSoundVolume(value);
-                setState(() => _volume = value);
-              },
-              onApplyLink: _applyTrackLink,
-              onUpload: _uploadTrack,
-              onToggleTrack: _toggleTrack,
-            );
-            final relief = _ReliefHub(
-              delayRemaining: _delayRemaining,
-              vent: _vent,
-              ventReleased: _ventReleased,
-              focusMinutes: _focusMinutes,
-              cravingAttempts: widget.controller.cravings.length,
-              onDelay: _startDelay,
-              onVent: _releaseVent,
-            );
-            return box.maxWidth < 930
-                ? Column(
-                    children: [focusHub, const SizedBox(height: 20), relief])
-                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(flex: 6, child: focusHub),
-                    const SizedBox(width: 20),
-                    Expanded(flex: 4, child: relief),
-                  ]);
-          }),
-        ]),
-      );
-}
-
-class _FocusHub extends StatelessWidget {
-  const _FocusHub({
-    required this.mode,
-    required this.remaining,
-    required this.duration,
-    required this.running,
-    required this.goal,
-    required this.sound,
-    required this.soundPlaying,
-    required this.volume,
-    required this.trackName,
-    required this.trackLink,
-    required this.onMode,
-    required this.onToggle,
-    required this.onReset,
-    required this.onSound,
-    required this.onVolume,
-    required this.onApplyLink,
-    required this.onUpload,
-    required this.onToggleTrack,
-  });
-  final _FocusMode mode;
-  final int remaining, duration;
-  final bool running, soundPlaying;
-  final TextEditingController goal, trackLink;
-  final String sound, trackName;
-  final double volume;
-  final ValueChanged<_FocusMode> onMode;
-  final VoidCallback onToggle, onReset, onApplyLink, onUpload, onToggleTrack;
-  final ValueChanged<String> onSound;
-  final ValueChanged<double> onVolume;
-
-  String get time =>
-      '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) => Column(children: [
-        _Card(
-          padding: 24,
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Focus timer',
-                style: TextStyle(
-                    color: _text, fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            const Text('Pilih ritme yang paling cocok untuk sesi ini.',
-                style: TextStyle(color: _muted, fontSize: 13)),
-            const SizedBox(height: 18),
-            Wrap(spacing: 9, runSpacing: 9, children: [
-              _ModeButton(
-                  label: '☀️ Matahari · 25m Focus',
-                  selected: mode == _FocusMode.sun,
-                  onTap: () => onMode(_FocusMode.sun)),
-              _ModeButton(
-                  label: '⭐ Bintang · 5m Break',
-                  selected: mode == _FocusMode.star,
-                  onTap: () => onMode(_FocusMode.star)),
-              _ModeButton(
-                  label: '🌙 Bulan · 15m Break',
-                  selected: mode == _FocusMode.moon,
-                  onTap: () => onMode(_FocusMode.moon)),
-            ]),
-            const SizedBox(height: 24),
-            Center(
-                child: _FocusRing(
-                    mode: mode, progress: remaining / duration, time: time)),
-            const SizedBox(height: 22),
-            Center(
-                child: Wrap(spacing: 10, children: [
-              FilledButton.icon(
-                  onPressed: onToggle,
-                  style: _greenButton,
-                  icon: Icon(
-                      running ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                  label: Text(running ? 'Pause' : 'Start')),
-              OutlinedButton.icon(
-                  onPressed: onReset,
-                  icon: const Icon(Icons.restart_alt_rounded),
-                  label: const Text('Reset')),
-            ])),
-            const SizedBox(height: 20),
-            TextField(
-              controller: goal,
-              style: const TextStyle(color: _text),
-              decoration: const InputDecoration(
-                labelText: 'Apa target fokusmu sesi ini?',
-                labelStyle: TextStyle(color: _muted),
-                prefixIcon: Icon(Icons.flag_outlined, color: _cyan),
-              ),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 20),
-        _Card(
-          padding: 24,
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Audio Soundscape',
-                style: TextStyle(
-                    color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            const Text('Pilih ambience atau putar musikmu sendiri.',
-                style: TextStyle(color: _muted, fontSize: 12)),
-            const SizedBox(height: 15),
-            Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ['Rain', 'Forest', 'Fireplace', 'Preset Lo-Fi Beats']
-                    .map((item) => FilterChip(
-                          selected: soundPlaying && sound == item,
-                          showCheckmark: false,
-                          label: Text(item == 'Rain'
-                              ? '🌧️ Rain'
-                              : item == 'Forest'
-                                  ? '🌲 Forest'
-                                  : item == 'Fireplace'
-                                      ? '🔥 Fireplace'
-                                      : '🎵 Preset Lo-Fi Beats'),
-                          onSelected: (_) => onSound(item),
-                          selectedColor: const Color(0xff25453a),
-                          backgroundColor: _raised,
-                          side: const BorderSide(color: _line),
-                          labelStyle: const TextStyle(color: _text),
-                        ))
-                    .toList()),
-            const SizedBox(height: 18),
-            const Text('Request / Putar Lagu Sendiri',
-                style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 9),
-            Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: trackLink,
-                      style: const TextStyle(color: _text),
-                      decoration: const InputDecoration(
-                          hintText: 'Paste link YouTube / Spotify / audio URL',
-                          isDense: true))),
-              const SizedBox(width: 9),
-              FilledButton(
-                  onPressed: onApplyLink,
-                  style: _greenButton,
-                  child: const Text('Apply')),
-            ]),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-                onPressed: onUpload,
-                icon: const Icon(Icons.upload_file_rounded),
-                label: const Text('Upload MP3')),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                  color: _raised,
-                  border: Border.all(color: _line),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                Icon(
-                    soundPlaying
-                        ? Icons.graphic_eq_rounded
-                        : Icons.music_note_rounded,
-                    color: _cyan),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text(trackName,
-                          style: const TextStyle(
-                              color: _text, fontWeight: FontWeight.w700)),
-                      Text(soundPlaying ? 'Playing' : 'Paused',
-                          style: const TextStyle(color: _muted, fontSize: 11)),
-                    ])),
-                IconButton(
-                    onPressed: onToggleTrack,
-                    icon: Icon(
-                        soundPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        color: _green)),
-              ]),
-            ),
-            Row(children: [
-              const Icon(Icons.volume_down_rounded, color: _muted),
-              Expanded(
-                  child: Slider(
-                      value: volume, onChanged: onVolume, activeColor: _green)),
-              const Icon(Icons.volume_up_rounded, color: _muted),
-            ]),
-          ]),
-        ),
-      ]);
-}
-
-class _ModeButton extends StatelessWidget {
-  const _ModeButton(
-      {required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
-        selectedColor: const Color(0xff28443a),
-        backgroundColor: _raised,
-        side: const BorderSide(color: _line),
-        labelStyle: const TextStyle(color: _text),
-      );
-}
-
-class _FocusRing extends StatelessWidget {
-  const _FocusRing(
-      {required this.mode, required this.progress, required this.time});
-  final _FocusMode mode;
-  final double progress;
-  final String time;
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 290,
-        height: 290,
-        child: Stack(alignment: Alignment.center, children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(end: progress),
-            duration: const Duration(seconds: 1),
-            curve: Curves.linear,
-            builder: (context, value, _) => CustomPaint(
-                size: const Size.square(290),
-                painter: _FocusRingPainter(mode, value)),
-          ),
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(time,
-                style: const TextStyle(
-                    color: _text,
-                    fontSize: 43,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.5)),
-            Text(
-                switch (mode) {
-                  _FocusMode.sun => 'FOCUS',
-                  _FocusMode.star => 'SHORT BREAK',
-                  _FocusMode.moon => 'LONG BREAK'
-                },
-                style: const TextStyle(
-                    color: _muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1)),
-          ]),
-        ]),
-      );
-}
-
-class _FocusRingPainter extends CustomPainter {
-  const _FocusRingPainter(this.mode, this.progress);
-  final _FocusMode mode;
-  final double progress;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final rect = Rect.fromCircle(center: center, radius: 105);
-    final color = switch (mode) {
-      _FocusMode.sun => const Color(0xfff59e0b),
-      _FocusMode.star => const Color(0xfffbbf24),
-      _FocusMode.moon => const Color(0xffe0f2fe)
-    };
-    final base = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: .18);
-    final active = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round
-      ..color = color
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-    if (mode == _FocusMode.star) {
-      final path = Path();
-      for (var i = 0; i < 5; i++) {
-        final angle = -math.pi / 2 + i * math.pi * 4 / 5;
-        final point = Offset(center.dx + 112 * math.cos(angle),
-            center.dy + 112 * math.sin(angle));
-        i == 0
-            ? path.moveTo(point.dx, point.dy)
-            : path.lineTo(point.dx, point.dy);
-      }
-      path.close();
-      canvas.drawPath(path, base);
-      final metric = path.computeMetrics().first;
-      canvas.drawPath(metric.extractPath(0, metric.length * progress), active);
-    } else {
-      canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false, base);
-      canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * progress, false, active);
-      if (mode == _FocusMode.sun) {
-        final ray = Paint()
-          ..color = color
-          ..strokeWidth = 4
-          ..strokeCap = StrokeCap.round;
-        for (var i = 0; i < 12; i++) {
-          final a = i * math.pi / 6;
-          canvas.drawLine(center + Offset(math.cos(a) * 122, math.sin(a) * 122),
-              center + Offset(math.cos(a) * 136, math.sin(a) * 136), ray);
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _FocusRingPainter old) =>
-      old.mode != mode || old.progress != progress;
-}
-
-class _ReliefHub extends StatelessWidget {
-  const _ReliefHub(
-      {required this.delayRemaining,
-      required this.vent,
-      required this.ventReleased,
-      required this.focusMinutes,
-      required this.cravingAttempts,
-      required this.onDelay,
-      required this.onVent});
-  final int delayRemaining, focusMinutes, cravingAttempts;
-  final TextEditingController vent;
-  final bool ventReleased;
-  final VoidCallback onDelay, onVent;
-  @override
-  Widget build(BuildContext context) => Column(children: [
-        _Card(
-            tint: const Color(0xff2a2018),
-            padding: 22,
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Craving & Stress Relief',
-                  style: TextStyle(
-                      color: _text, fontSize: 19, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                  onPressed: onDelay,
-                  style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xffe6814f),
-                      foregroundColor: const Color(0xff18120e),
-                      minimumSize: const Size.fromHeight(48)),
-                  icon: const Icon(Icons.emergency_rounded),
-                  label: const Text('Lagi Craving / Kebelet Vape?')),
-              const SizedBox(height: 16),
-              if (delayRemaining > 0)
-                _BreathingGuide(remaining: delayRemaining)
-              else
-                const Text(
-                    'Tekan tombol untuk mengaktifkan Delay Timer 5 menit dan panduan napas.',
-                    style:
-                        TextStyle(color: _muted, fontSize: 12, height: 1.45)),
-            ])),
-        const SizedBox(height: 18),
-        _Card(
-            padding: 22,
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Micro-Vent',
-                  style: TextStyle(
-                      color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 5),
-              const Text('Tumpahkan sebentar. Tidak disimpan atau dibagikan.',
-                  style: TextStyle(color: _muted, fontSize: 12)),
-              const SizedBox(height: 12),
-              AnimatedOpacity(
-                  opacity: ventReleased ? .18 : 1,
-                  duration: const Duration(milliseconds: 300),
-                  child: TextField(
-                      controller: vent,
-                      maxLines: 5,
-                      style: const TextStyle(color: _text),
-                      decoration: const InputDecoration(
-                          hintText: 'Tulis yang membuatmu sesak atau kesal…'))),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                  onPressed: onVent,
-                  style: _greenButton,
-                  icon: const Icon(Icons.delete_sweep_rounded),
-                  label: const Text('Hancurkan / Remas')),
-            ])),
-        const SizedBox(height: 18),
-        Row(children: [
-          Expanded(
-              child: _SummaryBadge(
-                  icon: Icons.timer_outlined,
-                  label: 'Focus Time Today',
-                  value: '$focusMinutes mins',
-                  color: _cyan)),
-          const SizedBox(width: 12),
-          Expanded(
-              child: _SummaryBadge(
-                  icon: Icons.shield_outlined,
-                  label: 'Craving Delayed',
-                  value: '$cravingAttempts attempts',
-                  color: _amber))
-        ]),
-      ]);
-}
-
-class _BreathingGuide extends StatefulWidget {
-  const _BreathingGuide({required this.remaining});
-  final int remaining;
-  @override
-  State<_BreathingGuide> createState() => _BreathingGuideState();
-}
-
-class _BreathingGuideState extends State<_BreathingGuide>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 4))
-          ..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final inhale = _controller.value < .5;
-        return Row(children: [
-          Transform.scale(
-            scale: .72 + _controller.value * .28,
-            child: Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _cyan.withValues(alpha: .22),
-                    border: Border.all(color: _cyan))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(inhale ? 'Tarik napas perlahan' : 'Lepaskan pelan',
-                    style: const TextStyle(
-                        color: _text, fontWeight: FontWeight.w800)),
-                Text(
-                    '${widget.remaining ~/ 60}:${(widget.remaining % 60).toString().padLeft(2, '0')} tersisa',
-                    style: const TextStyle(color: _muted, fontSize: 11))
-              ]))
-        ]);
-      });
-}
-
-class _SummaryBadge extends StatelessWidget {
-  const _SummaryBadge(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      required this.color});
-  final IconData icon;
-  final String label, value;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => _Card(
-      padding: 14,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: color, size: 19),
-        const SizedBox(height: 10),
-        Text(label, style: const TextStyle(color: _muted, fontSize: 11)),
-        const SizedBox(height: 3),
-        Text(value,
-            style: const TextStyle(color: _text, fontWeight: FontWeight.w800))
-      ]));
-}
-
-class _Bars extends StatelessWidget {
-  const _Bars({required this.controller});
+class _WebProgress extends StatelessWidget {
+  const _WebProgress({required this.controller});
   final WellnessController controller;
   @override
-  Widget build(BuildContext context) {
-    final days = List.generate(
-      7,
-      (i) => dayKey(controller.now.subtract(Duration(days: 6 - i))),
-    );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: days.map((day) {
-        final quests = (controller.days[day]?['quests'] ?? []) as List;
-        final completed = quests.where((item) => item['done'] == true).length;
-        final rate = quests.isEmpty ? .08 : completed / quests.length;
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: FractionallySizedBox(
-                      heightFactor: rate.clamp(.08, 1),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: day == controller.today
-                              ? _green
-                              : const Color(0xff3b414b),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  day.substring(8),
-                  style: const TextStyle(color: _muted, fontSize: 10),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-/// A compact desktop hub: shared progress on the left, lightweight reactions
-/// on the right. Posting remains intentionally mobile-first.
-// Kept temporarily for local-state migration previews.
-// ignore: unused_element
-class _CommunityHubPage extends StatelessWidget {
-  const _CommunityHubPage({required this.controller});
-
-  final WellnessController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final stored = controller.posts
-        .where((post) => post['status'] == 'approved')
-        .take(2)
-        .toList();
-    final posts = stored.isEmpty
-        ? const [
-            {
-              'id': 'wall-a',
-              'alias': 'daunpagi',
-              'body':
-                  'Hari ini cuma sempat minum air dan tarik napas. Ternyata itu sudah cukup.',
-            },
-            {
-              'id': 'wall-b',
-              'alias': 'jeda_sore',
-              'body':
-                  'Semangat buat yang sedang menunda satu craving. Kita lewati pelan-pelan.',
-            },
-          ]
-        : stored;
-    return _Scroll(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Squad & Community',
-            style: TextStyle(
-                color: _text,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -.9)),
-        const SizedBox(height: 7),
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.all(30),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         const Text(
-            'Pantau langkah bersama, beri reaksi singkat, lalu kembali fokus.',
-            style: TextStyle(color: _muted)),
+          'Progress',
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+        ),
         const SizedBox(height: 24),
-        LayoutBuilder(builder: (context, box) {
-          final squad = controller.hasSquad
-              ? _Card(
-                  tint: const Color(0xff152420),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(children: [
-                          _Mark(size: 35),
-                          SizedBox(width: 12),
-                          Expanded(
-                              child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                Text('September reset',
-                                    style: TextStyle(
-                                        color: _text,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800)),
-                                SizedBox(height: 3),
-                                Text('Squad momentum minggu ini',
-                                    style:
-                                        TextStyle(color: _muted, fontSize: 12)),
-                              ])),
-                          _Pill('Active', _green),
-                        ]),
-                        const SizedBox(height: 26),
-                        const Text('183 / 250 acts of care',
-                            style: TextStyle(
-                                color: _text,
-                                fontSize: 25,
-                                fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 11),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: const LinearProgressIndicator(
-                              value: .732,
-                              minHeight: 11,
-                              color: _green,
-                              backgroundColor: Color(0xff2a4039)),
-                        ),
-                        const SizedBox(height: 14),
-                        const Text(
-                            'Task yang kamu selesaikan dan focus time squad sama-sama menambah progres.',
-                            style: TextStyle(
-                                color: _muted, fontSize: 12, height: 1.45)),
-                      ]),
-                )
-              : _Card(
-                  tint: const Color(0xff151f1d),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.groups_rounded, color: _cyan, size: 31),
-                      const SizedBox(height: 16),
-                      const Text('Belum punya squad',
-                          style: TextStyle(
-                              color: _text,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Mulai preview squad untuk melihat target mingguan dan progress bersama.',
-                        style: TextStyle(
-                            color: _muted, fontSize: 12, height: 1.45),
-                      ),
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: () {
-                          controller.joinSquad();
-                        },
-                        icon: const Icon(Icons.add_rounded, size: 17),
-                        label: const Text('Gabung preview squad'),
-                        style: _greenButton,
-                      ),
-                    ],
-                  ),
-                );
-          final wall =
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 10),
-              child: Text('Encouragement Wall',
-                  style: TextStyle(
-                      color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-            ),
-            ...posts.map((raw) => _WallCard(
-                controller: controller, post: Map<String, dynamic>.from(raw))),
-          ]);
-          return box.maxWidth < 920
-              ? Column(children: [squad, const SizedBox(height: 20), wall])
-              : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(flex: 8, child: squad),
-                  const SizedBox(width: 18),
-                  Expanded(flex: 9, child: wall),
-                ]);
-        }),
-      ]),
-    );
-  }
-}
-
-class _WallCard extends StatelessWidget {
-  const _WallCard({required this.controller, required this.post});
-  final WellnessController controller;
-  final Map<String, dynamic> post;
-  @override
-  Widget build(BuildContext context) {
-    final alias = post['alias'].toString();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: _Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xff243a34),
-                  foregroundColor: _green,
-                  child: Text(
-                    alias.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '@$alias',
-                  style: const TextStyle(
-                    color: _text,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                const Text(
-                  'Wall',
-                  style: TextStyle(color: _muted, fontSize: 11),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Text(
-              post['body'].toString(),
-              style: const TextStyle(color: _text, height: 1.5),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 7,
-              children: ['👏', '💛', '🌿'].map((emoji) {
-                final id = '${post['id']}-$emoji';
-                return FilterChip(
-                  showCheckmark: false,
-                  label: Text(emoji),
-                  selected: controller.hasReaction(id),
-                  selectedColor: const Color(0xff263e35),
-                  backgroundColor: _raised,
-                  side: const BorderSide(color: _line),
-                  onSelected: (_) => controller.react(id),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsPage extends StatelessWidget {
-  const _SettingsPage({required this.controller});
-  final WellnessController controller;
-  @override
-  Widget build(BuildContext context) {
-    final profile = controller.profile!;
-    final alias = profile['alias'].toString();
-    return _Scroll(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Settings',
-            style: TextStyle(
-              color: _text,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Profil dan preferensi preview lokal.',
-            style: TextStyle(color: _muted),
-          ),
-          const SizedBox(height: 24),
-          _Card(
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 29,
-                  backgroundColor: const Color(0xff243a34),
-                  foregroundColor: _green,
-                  child: Text(
-                    alias.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '@$alias',
-                        style: const TextStyle(
-                          color: _text,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Tersimpan pada browser ini',
-                        style: TextStyle(color: _muted, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const _Pill('Local', _green),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Your journey',
-                  style: TextStyle(color: _text, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 16),
-                _Setting(
-                  'Path',
-                  profile['path'] == 'reduction'
-                      ? 'Kurangi rokok / vape'
-                      : 'Bangun kebiasaan baik',
-                ),
-                _Setting(
-                  'Movement rhythm',
-                  profile['lowImpact'] == true ? 'Low-impact' : 'Fleksibel',
-                ),
-                _Setting(
-                  'Companion',
-                  {
-                        'plant': 'Mori',
-                        'cat': 'Milo',
-                        'cloud': 'Awan',
-                      }[profile['companion']] ??
-                      'YouWell companion',
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Setting extends StatelessWidget {
-  const _Setting(this.label, this.value);
-  final String label, value;
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 145,
-              child: Text(
-                label,
-                style: const TextStyle(color: _muted, fontSize: 12),
-              ),
-            ),
             Expanded(
-              child: Text(
-                value,
-                style:
-                    const TextStyle(color: _text, fontWeight: FontWeight.w600),
+              child: _WebMetric(
+                title: 'Total XP',
+                value: '${controller.xp}',
+                detail: 'Level ${controller.level}',
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: _WebMetric(
+                title: 'Weekly completion',
+                value: '${(controller.compliance(7) * 100).round()}%',
+                detail: '${controller.activeDaysIn(7)} active days',
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: _WebMetric(
+                title: 'Focus today',
+                value: '${controller.focusMinutesToday}m',
+                detail: 'Across web and mobile',
               ),
             ),
           ],
         ),
-      );
-}
-
-class _AdminPage extends StatelessWidget {
-  const _AdminPage({required this.controller});
-  final WellnessController controller;
-  @override
-  Widget build(BuildContext context) {
-    final pending =
-        controller.posts.where((post) => post['status'] == 'pending').toList();
-    return _Scroll(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Community Admin',
-            style: TextStyle(
-              color: _text,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Keputusan publikasi selalu dibuat manusia.',
-            style: TextStyle(color: _muted),
-          ),
-          const SizedBox(height: 24),
-          _Card(
-            tint: const Color(0xff252018),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.person_search_outlined,
-                  color: _amber,
-                  size: 28,
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Text(
-                    '${pending.length} post menunggu keputusan manual. AI hanya memberi sinyal, bukan menentukan hasil.',
-                    style: const TextStyle(color: _text, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (pending.isEmpty)
-            const _Card(
-              child: _Empty(
-                Icons.inbox_outlined,
-                'Antrean aman untuk saat ini. Post mobile akan muncul di sini saat sinkronisasi komunitas ditambahkan.',
-              ),
-            ),
-          ...pending.map(
-            (post) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _Card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const _Pill('Pending review', _amber),
-                        const Spacer(),
-                        Text(
-                          '@${post['alias']}',
-                          style: const TextStyle(color: _muted, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 13),
-                    Text(
-                      post['body'].toString(),
-                      style: const TextStyle(color: _text, height: 1.5),
-                    ),
-                    if (post['photo']?.toString().isNotEmpty == true) ...[
-                      const SizedBox(height: 13),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.memory(
-                          base64Decode(
-                            post['photo'].toString().split(',').last,
-                          ),
-                          width: double.infinity,
-                          height: 280,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        FilledButton(
-                          onPressed: () => controller.updatePost(
-                            post['id'].toString(),
-                            'approved',
-                            'Approved by admin.',
-                          ),
-                          style: _greenButton,
-                          child: const Text('Approve'),
-                        ),
-                        const SizedBox(width: 9),
-                        OutlinedButton(
-                          onPressed: () => controller.updatePost(
-                            post['id'].toString(),
-                            'rejected',
-                            'Rejected by admin.',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xffffa6a6),
-                            side: const BorderSide(color: Color(0xff5a3437)),
-                          ),
-                          child: const Text('Reject'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Companion extends StatefulWidget {
-  const _Companion({
-    required this.controller,
-    required this.minimized,
-    required this.onMinimize,
-    required this.onExpand,
-    required this.onClose,
-  });
-  final WellnessController controller;
-  final bool minimized;
-  final VoidCallback onMinimize, onExpand, onClose;
-  @override
-  State<_Companion> createState() => _CompanionState();
-}
-
-class _CompanionState extends State<_Companion> {
-  final input = TextEditingController();
-  final messages = <_Message>[
-    const _Message(
-      'Companion',
-      'Aku di sini. Mau cerita singkat, atau kita beri craving ini waktu 5 menit?',
-      false,
+      ],
     ),
-  ];
-  Timer? timer;
-  int remaining = 0, duration = 300;
-  String sound = 'rain';
-  bool get running => timer != null;
-  @override
-  void dispose() {
-    timer?.cancel();
-    input.dispose();
-    platform.sound('stop');
-    super.dispose();
-  }
-
-  void start([int seconds = 300]) {
-    timer?.cancel();
-    platform.sound(sound);
-    setState(() {
-      duration = seconds;
-      remaining = seconds;
-    });
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (remaining <= 1) {
-        finish();
-      } else {
-        setState(() => remaining--);
-      }
-    });
-  }
-
-  void stop() {
-    timer?.cancel();
-    timer = null;
-    platform.sound('stop');
-    setState(() => remaining = 0);
-  }
-
-  void finish() {
-    timer?.cancel();
-    timer = null;
-    platform.sound('stop');
-    widget.controller.recordCraving({
-      'trigger': 'Web Companion',
-      'seconds': duration,
-      'success': true,
-      'avoided': false,
-      'cost': 0,
-    });
-    setState(() {
-      remaining = 0;
-      messages.add(
-        const _Message(
-          'Companion',
-          'Kamu berhasil memberi dirimu jeda. Itu sudah berarti.',
-          false,
-        ),
-      );
-    });
-  }
-
-  void send() {
-    final text = input.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      messages.add(_Message('You', text, true));
-      messages.add(
-        const _Message(
-          'Companion',
-          'Terima kasih sudah mengatakannya. Kita tidak perlu menyelesaikan semuanya sekarang—coba tarik napas sekali lagi.',
-          false,
-        ),
-      );
-      input.clear();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.minimized) {
-      return InkWell(
-        onTap: widget.onExpand,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(12),
-          decoration: _floating,
-          child: const Row(
-            children: [
-              _Dot(),
-              SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  'YouWell Companion',
-                  style: TextStyle(color: _text, fontWeight: FontWeight.w800),
-                ),
-              ),
-              Icon(Icons.expand_less_rounded, color: _muted),
-            ],
-          ),
-        ),
-      );
-    }
-    final time =
-        '${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}';
-    return Container(
-      width: 390,
-      height: 510,
-      decoration: _floating,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 13, 7, 11),
-            child: Row(
-              children: [
-                const _Mark(size: 29),
-                const SizedBox(width: 9),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'YouWell Companion',
-                        style: TextStyle(
-                          color: _text,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Row(
-                        children: [
-                          _Dot(),
-                          SizedBox(width: 5),
-                          Text(
-                            'Active & private',
-                            style: TextStyle(color: _muted, fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Minimize',
-                  onPressed: widget.onMinimize,
-                  icon: const Icon(
-                    Icons.minimize_rounded,
-                    color: _muted,
-                    size: 19,
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Close',
-                  onPressed: widget.onClose,
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: _muted,
-                    size: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(14),
-              children: [
-                if (running) _Timer(time: time, sound: sound, onStop: stop),
-                if (running) const SizedBox(height: 10),
-                ...messages.map((message) => _Bubble(message)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Quick reset',
-                  style: TextStyle(
-                    color: _muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 7,
-                  children: [
-                    _Action(
-                      Icons.timer_outlined,
-                      'Delay 5 min',
-                      () => start(300),
-                    ),
-                    _Action(
-                      Icons.self_improvement_outlined,
-                      'Breathe 10 min',
-                      () => start(600),
-                    ),
-                    _Action(Icons.graphic_eq_rounded, 'Soundscape', pickSound),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(11, 9, 9, 10),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: 'Attachment segera hadir',
-                  onPressed: null,
-                  icon: const Icon(
-                    Icons.add_circle_outline_rounded,
-                    color: _muted,
-                    size: 19,
-                  ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: input,
-                    onSubmitted: (_) => send(),
-                    style: const TextStyle(color: _text, fontSize: 13),
-                    decoration: const InputDecoration(
-                      hintText: 'Tulis micro-vent…',
-                      hintStyle: TextStyle(color: _muted),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Kirim',
-                  onPressed: send,
-                  icon: const Icon(
-                    Icons.arrow_upward_rounded,
-                    color: _green,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void pickSound() => showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: _raised,
-        builder: (context) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pilih soundscape',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...{
-                  'rain': 'Hujan',
-                  'ambient': 'Ambient',
-                  'breathing': 'Napas',
-                }.entries.map(
-                      (item) => ListTile(
-                        leading: Icon(
-                          item.key == sound
-                              ? Icons.check_circle_rounded
-                              : Icons.graphic_eq_rounded,
-                          color: item.key == sound ? _green : _muted,
-                        ),
-                        title: Text(item.value,
-                            style: const TextStyle(color: _text)),
-                        onTap: () {
-                          setState(() => sound = item.key);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-              ],
-            ),
-          ),
-        ),
-      );
+  );
 }
 
-class _Message {
-  const _Message(this.sender, this.text, this.mine);
-  final String sender, text;
-  final bool mine;
+class _WebPanel extends StatelessWidget {
+  const _WebPanel({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 590,
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: appSurface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: appBorder),
+    ),
+    child: child,
+  );
 }
 
-class _Bubble extends StatelessWidget {
-  const _Bubble(this.message);
-  final _Message message;
+class _WebMetric extends StatelessWidget {
+  const _WebMetric({
+    required this.title,
+    required this.value,
+    required this.detail,
+    this.action,
+  });
+  final String title, value, detail;
+  final VoidCallback? action;
   @override
-  Widget build(BuildContext context) => Align(
-        alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 9),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-          constraints: const BoxConstraints(maxWidth: 295),
-          decoration: BoxDecoration(
-            color: message.mine ? const Color(0xff204438) : _raised,
-            border: Border.all(
-              color: message.mine ? const Color(0xff356451) : _line,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      color: appSurface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: appBorder),
+    ),
+    child: Row(
+      children: [
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
               Text(
-                message.sender,
-                style: TextStyle(
-                  color: message.mine ? _green : _cyan,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                value,
+                style: const TextStyle(
+                  fontSize: 32,
+                  color: appAccent,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                message.text,
-                style:
-                    const TextStyle(color: _text, fontSize: 12, height: 1.35),
-              ),
+              Text(detail, style: const TextStyle(color: appMuted)),
             ],
           ),
         ),
-      );
+        if (action != null)
+          FilledButton(onPressed: action, child: const Text('+250 ml')),
+      ],
+    ),
+  );
 }
-
-class _Timer extends StatelessWidget {
-  const _Timer({required this.time, required this.sound, required this.onStop});
-  final String time, sound;
-  final VoidCallback onStop;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xff19342d),
-          border: Border.all(color: const Color(0xff315545)),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.self_improvement_rounded, color: _green),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Delay in progress · $time',
-                    style: const TextStyle(
-                      color: _text,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    'Soundscape: $sound',
-                    style: const TextStyle(color: _muted, fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(onPressed: onStop, child: const Text('Stop')),
-          ],
-        ),
-      );
-}
-
-class _Action extends StatelessWidget {
-  const _Action(this.icon, this.label, this.onTap);
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => ActionChip(
-        avatar: Icon(icon, size: 15, color: _cyan),
-        label: Text(label),
-        onPressed: onTap,
-        backgroundColor: _raised,
-        side: const BorderSide(color: _line),
-        labelStyle: const TextStyle(color: _text, fontSize: 11),
-      );
-}
-
-class _Card extends StatelessWidget {
-  const _Card({required this.child, this.tint, this.padding = 20});
-  final Widget child;
-  final Color? tint;
-  final double padding;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.all(padding),
-        decoration: BoxDecoration(
-          color: tint ?? _panel,
-          border: Border.all(color: _line),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33000000),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: child,
-      );
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill(this.label, this.color);
-  final String label;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .13),
-          border: Border.all(color: color.withValues(alpha: .35)),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-              color: color, fontSize: 10, fontWeight: FontWeight.w700),
-        ),
-      );
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty(this.icon, this.message);
-  final IconData icon;
-  final String message;
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        child: Row(
-          children: [
-            Icon(icon, color: _muted),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: _muted, height: 1.4),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _Mark extends StatelessWidget {
-  const _Mark({this.size = 28});
-  final double size;
-  @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: const Color(0xff1e3931),
-          borderRadius: BorderRadius.circular(size * .32),
-          border: Border.all(color: const Color(0xff345d4f)),
-        ),
-        child: Icon(Icons.spa_rounded, size: size * .6, color: _green),
-      );
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot();
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 7,
-        height: 7,
-        decoration: const BoxDecoration(
-          color: _green,
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Color(0xaa78e3b1), blurRadius: 8)],
-        ),
-      );
-}
-
-final _greenButton = FilledButton.styleFrom(
-  backgroundColor: _green,
-  foregroundColor: const Color(0xff10231b),
-  textStyle: const TextStyle(fontWeight: FontWeight.w800),
-);
-final _floating = BoxDecoration(
-  color: const Color(0xff131519),
-  border: Border.all(color: const Color(0xff343840)),
-  borderRadius: BorderRadius.circular(14),
-  boxShadow: const [
-    BoxShadow(color: Color(0x99000000), blurRadius: 34, offset: Offset(0, 14)),
-    BoxShadow(color: Color(0x1f78e3b1), blurRadius: 22, spreadRadius: -4),
-  ],
-);
