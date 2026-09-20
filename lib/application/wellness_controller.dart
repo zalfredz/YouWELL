@@ -217,15 +217,16 @@ class WellnessController extends ChangeNotifier {
     final choices = dailyDrawCards
         .where((card) => !passed.contains(card['id']))
         .toList();
+    final next = choices.isEmpty
+        ? null
+        : choices[Random().nextInt(choices.length)];
     _writeDraw({
       ...?dailyCardDraw,
       'selectedCardId': null,
       'passedCardIds': passed,
-      'deckStartIndex': choices.isEmpty
+      'deckStartIndex': next == null
           ? 0
-          : dailyDrawCards.indexWhere(
-              (card) => card['id'] == choices.first['id'],
-            ),
+          : dailyDrawCards.indexWhere((card) => card['id'] == next['id']),
     });
     return true;
   }
