@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/features/activity/data/meal_photo_store.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key, required this.controller});
@@ -119,6 +120,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                   );
                   if (confirmed == true) {
+                    await MealPhotoStore.clear();
                     await controller.reset();
                     if (context.mounted) Navigator.pop(context);
                   }

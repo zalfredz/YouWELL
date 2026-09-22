@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key, required this.controller});
@@ -14,15 +15,41 @@ class ProgressPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
         const Text(
-          'Progress',
+          'Perjalanan',
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
         const Text(
-          'Lihat pola baik, bukan mengejar kesempurnaan.',
+          'Semua langkah kecil tetap dihitung.',
           style: TextStyle(color: appMuted),
         ),
         const SizedBox(height: 22),
+        _Panel(
+          title: 'Companion-mu tumbuh',
+          child: Column(
+            children: [
+              WellnessCompanion(
+                kind: controller.profile?['companion']?.toString() ?? 'plant',
+                level: controller.level,
+                size: 180,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Level ${controller.level} • ${controller.xp % 100} / 100 XP ke level berikutnya',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: appMuted),
+              ),
+              const SizedBox(height: 14),
+              LinearProgressIndicator(
+                value: (controller.xp % 100) / 100,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(99),
+                color: appAccent,
+                backgroundColor: appRaised,
+              ),
+            ],
+          ),
+        ),
         Row(
           children: [
             Expanded(
@@ -101,6 +128,21 @@ class ProgressPage extends StatelessWidget {
               ),
               const Spacer(),
               const Text('hari ini', style: TextStyle(color: appMuted)),
+            ],
+          ),
+        ),
+        _Panel(
+          title: 'Jejak aktivitas',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${controller.workoutSessions.length} sesi jalan/lari'),
+              const SizedBox(height: 6),
+              Text('${controller.mealCheckIns.length} meal snap'),
+              const SizedBox(height: 6),
+              Text(
+                '${controller.completedCards.length} quest selesai hari ini',
+              ),
             ],
           ),
         ),

@@ -10,10 +10,14 @@ class HomePage extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onOpenDraw,
+    required this.onOpenReset,
+    required this.onOpenActivity,
   });
 
   final WellnessController controller;
   final VoidCallback onOpenDraw;
+  final VoidCallback onOpenReset;
+  final VoidCallback onOpenActivity;
 
   @override
   Widget build(BuildContext context) {
@@ -92,10 +96,18 @@ class HomePage extends StatelessWidget {
           ...controller.quests.map(
             (task) => _TaskTile(
               task: task,
-              onComplete: () => controller.completeCard(task['id'].toString()),
+              onComplete: task['activityKind'] == null
+                  ? () => controller.completeCard(task['id'].toString())
+                  : onOpenActivity,
             ),
           ),
         const SizedBox(height: 18),
+        FilledButton.tonalIcon(
+          onPressed: onOpenReset,
+          icon: const Icon(Icons.self_improvement_rounded),
+          label: const Text('Ambil jeda'),
+        ),
+        const SizedBox(height: 12),
         _QuickCheckIn(controller: controller),
       ],
     );
@@ -244,10 +256,18 @@ class _TaskTile extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: done ? 'Selesai' : 'Tandai selesai',
+            tooltip: done
+                ? 'Selesai'
+                : task['activityKind'] == null
+                ? 'Tandai selesai'
+                : 'Buka Aktivitas untuk menyelesaikan',
             onPressed: done ? null : onComplete,
             icon: Icon(
-              done ? Icons.check_circle_rounded : Icons.circle_outlined,
+              done
+                  ? Icons.check_circle_rounded
+                  : task['activityKind'] == null
+                  ? Icons.circle_outlined
+                  : Icons.arrow_forward_rounded,
               color: appAccent,
             ),
           ),

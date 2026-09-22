@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:youwell/core/types/json_map.dart';
 
 /// Local-only product state while the experience is being validated.
-/// Version 3 drops earlier social, moderation, nutrition, and clinical demos.
+/// Version 3 remains backward-compatible with new local activity collections.
 JsonMap createEmptyWellnessState() => {
   'version': 3,
   'dayOffset': 0,
@@ -12,6 +12,8 @@ JsonMap createEmptyWellnessState() => {
   'energyCheckIns': <dynamic>[],
   'focusSessions': <dynamic>[],
   'habitDelays': <dynamic>[],
+  'workoutSessions': <dynamic>[],
+  'mealCheckIns': <dynamic>[],
   'communityPosts': <dynamic>[],
   'communityReactions': <dynamic>[],
   'communityReports': <dynamic>[],

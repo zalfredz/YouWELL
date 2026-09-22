@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/features/activity/presentation/activity_page.dart';
 import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
@@ -46,19 +47,42 @@ class _AppShellState extends State<AppShell> {
     ),
   );
 
+  void _openReset({bool delay = false}) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => AnimatedBuilder(
+        animation: widget.controller,
+        builder: (_, _) => Scaffold(
+          appBar: AppBar(title: const Text('Ambil jeda')),
+          body: ResetPage(
+            controller: widget.controller,
+            initialMode: delay ? 'delay' : 'reset',
+          ),
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomePage(controller: widget.controller, onOpenDraw: _openDailyDraw),
-      ResetPage(controller: widget.controller),
+      HomePage(
+        controller: widget.controller,
+        onOpenDraw: _openDailyDraw,
+        onOpenReset: () => _openReset(),
+        onOpenActivity: () => setState(() => _tab = 1),
+      ),
+      ActivityPage(
+        controller: widget.controller,
+        onOpenReset: () => _openReset(),
+      ),
       ProgressPage(controller: widget.controller),
       CommunityPage(controller: widget.controller),
     ];
-    const labels = ['Hari ini', 'Reset', 'Progress', 'Komunitas'];
+    const labels = ['Hari ini', 'Aktivitas', 'Perjalanan', 'Komunitas'];
     const icons = [
       Icons.home_rounded,
-      Icons.bolt_rounded,
-      Icons.insights_rounded,
+      Icons.directions_run_rounded,
+      Icons.route_rounded,
       Icons.people_alt_outlined,
     ];
     final alias = widget.controller.profile!['alias'].toString();

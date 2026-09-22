@@ -115,6 +115,8 @@ class WellnessController extends ChangeNotifier {
   List<JsonMap> get energyCheckIns => _rows('energyCheckIns');
   List<JsonMap> get focusSessions => _rows('focusSessions');
   List<JsonMap> get habitDelays => _rows('habitDelays');
+  List<JsonMap> get workoutSessions => _rows('workoutSessions');
+  List<JsonMap> get mealCheckIns => _rows('mealCheckIns');
   List<JsonMap> get communityPosts => [
     ..._seedCommunityPosts,
     ..._rows('communityPosts'),
@@ -293,6 +295,40 @@ class WellnessController extends ChangeNotifier {
     _save();
   }
 
+  void recordWorkout({
+    required String kind,
+    required int seconds,
+    required int meters,
+  }) {
+    if (seconds < 1) return;
+    _add('workoutSessions', {
+      'kind': kind,
+      'seconds': seconds,
+      'meters': meters,
+    });
+    final completedMinutes = seconds ~/ 60;
+    for (final task in quests) {
+      if (task['status'] == 'completed') continue;
+      final activity = task['activityKind'];
+      if ((activity == 'walk' && (kind == 'walk' || kind == 'run') ||
+              activity == 'run' && kind == 'run') &&
+          completedMinutes >=
+              ((task['durationMinutes'] as num?)?.toInt() ?? 0)) {
+        completeCard(task['id'].toString());
+      }
+    }
+  }
+
+  void recordMeal({required String photoPath}) {
+    _add('mealCheckIns', {'photoPath': photoPath});
+    for (final task in quests) {
+      if (task['activityKind'] == 'meal_snap' &&
+          task['status'] != 'completed') {
+        completeCard(task['id'].toString());
+      }
+    }
+  }
+
   void checkInEnergy(String energy, {List<String> tags = const []}) =>
       _add('energyCheckIns', {'energy': energy, 'tags': tags});
 
@@ -410,7 +446,14 @@ class WellnessController extends ChangeNotifier {
     return started == null ? 1 : now.difference(started).inDays.abs() + 1;
   }
 
-  String export() => const JsonEncoder.withIndent('  ').convert(_data);
+  String export() {
+    final copy = jsonDecode(jsonEncode(_data)) as JsonMap;
+    for (final row in copy['mealCheckIns'] as List) {
+      if (row is Map) row.remove('photoPath');
+    }
+    return const JsonEncoder.withIndent('  ').convert(copy);
+  }
+
   Future<void> reset() async {
     _data = createEmptyWellnessState();
     await _save();

@@ -29,7 +29,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>YouWell menggunakan kamera untuk mencatat progres wellness yang kamu pilih.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>YouWell menggunakan foto yang kamu pilih untuk log privat dan posting komunitas.</string>
+	<string>YouWell menggunakan foto yang kamu pilih untuk jurnal makan pribadi.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>YouWell memakai lokasi saat sesi jalan atau lari aktif untuk menghitung jarak. Rute tidak disimpan.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

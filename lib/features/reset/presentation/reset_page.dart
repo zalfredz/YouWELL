@@ -5,8 +5,13 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 
 class ResetPage extends StatefulWidget {
-  const ResetPage({super.key, required this.controller});
+  const ResetPage({
+    super.key,
+    required this.controller,
+    this.initialMode = 'reset',
+  });
   final WellnessController controller;
+  final String initialMode;
   @override
   State<ResetPage> createState() => _ResetPageState();
 }
@@ -17,7 +22,45 @@ class _ResetPageState extends State<ResetPage> {
   int _remaining = 5 * 60;
   String _mode = 'focus';
 
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.initialMode;
+    _duration = _mode == 'delay' ? 300 : 60;
+    _remaining = _duration;
+  }
+
   bool get _running => _timer != null;
+
+  void _showStretch() => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 26),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Stretch ringan',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '1. Putar bahu perlahan 5 kali.\n2. Miringkan kepala ke kanan dan kiri.\n3. Berdiri dan regangkan punggung senyamanmu.',
+              style: TextStyle(height: 1.6),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: const Text('Selesai'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -72,7 +115,7 @@ class _ResetPageState extends State<ResetPage> {
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
         const Text(
-          'Reset',
+          'Ambil jeda',
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
@@ -93,7 +136,11 @@ class _ResetPageState extends State<ResetPage> {
           child: Column(
             children: [
               Text(
-                _mode == 'delay' ? 'Habit delay' : 'Quick focus',
+                _mode == 'delay'
+                    ? 'Tunda kebiasaan'
+                    : _mode == 'reset'
+                    ? 'Jeda singkat'
+                    : 'Quick focus',
                 style: const TextStyle(
                   color: appAccent,
                   fontWeight: FontWeight.w800,
@@ -183,11 +230,12 @@ class _ResetPageState extends State<ResetPage> {
                   .clamp(0, 1)
                   .toDouble(),
         ),
-        const _ActionCard(
+        _ActionCard(
           icon: Icons.accessibility_new_rounded,
           title: 'Stretch ringan',
           detail: 'Leher, bahu, dan punggung',
           action: 'Lihat gerakan',
+          onTap: _showStretch,
         ),
         const SizedBox(height: 18),
         const Text(

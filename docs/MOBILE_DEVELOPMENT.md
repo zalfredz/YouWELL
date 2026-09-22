@@ -10,6 +10,14 @@ capability iOS, archive, dan distribusi.
 - Minimum iOS deployment target: iOS 15.
 - iPhone menggunakan orientasi portrait.
 - Penyimpanan masih local-first melalui `SharedPreferences`.
+- Tab mobile: **Hari ini**, **Aktivitas**, **Perjalanan**, **Komunitas**. Jeda cepat
+  dibuka dari Hari ini atau Aktivitas; Profil melalui avatar di kanan atas.
+- Aktivitas memiliki Meal Snap (foto lokal di penyimpanan aplikasi) dan
+  jalan/lari dengan timer serta perkiraan jarak GPS hanya saat layar sesi aktif.
+  Aplikasi tidak menghitung kalori, tidak menyimpan koordinat/rute, dan belum
+  mendukung tracking saat aplikasi berjalan di background.
+- Foto Meal Snap tidak ikut dalam ekspor JSON. Menghapus data lokal dari Profil
+  juga menghapus foto-foto Meal Snap pada perangkat tersebut.
 - Ekspor data dan buka tautan sudah memakai API native.
 - Supabase, Google Sign-In, push notification, dan production signing belum
   diaktifkan. Tambahkan setelah alur mobile stabil.

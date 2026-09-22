@@ -35,6 +35,7 @@ Salin dari `config/env/development.example.json` setelah clone.
 | Kebutuhan | File |
 | --- | --- |
 | Navigasi mobile | `lib/app/app_shell.dart` |
+| Aktivitas, Meal Snap, dan jalan/lari mobile | `lib/features/activity/` |
 | Home + companion | `lib/features/home/presentation/home_page.dart` |
 | Daily Card popup | `lib/features/home/presentation/daily_card_draw_dialog.dart` |
 | Aturan quest adaptif | `lib/features/home/domain/daily_card_generator.dart` |

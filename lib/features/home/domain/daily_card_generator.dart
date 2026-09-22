@@ -89,6 +89,7 @@ class DailyCardGenerator {
     'source': 'card',
     'status': 'available',
     'done': false,
+    if (task.activityKind != null) 'activityKind': task.activityKind,
   };
 
   int _score(String value, String salt) {
@@ -111,10 +112,12 @@ class _TaskDefinition {
     required this.xp,
     this.lowImpact = true,
     this.reductionOnly = false,
+    this.activityKind,
   });
   final String id, title, description, category;
   final int difficulty, durationMinutes, xp;
   final bool lowImpact, reductionOnly;
+  final String? activityKind;
 }
 
 const _catalog = [
@@ -154,6 +157,7 @@ const _catalog = [
     durationMinutes: 10,
     xp: 30,
     lowImpact: false,
+    activityKind: 'walk',
   ),
   _TaskDefinition(
     id: 'walk-long',
@@ -164,6 +168,28 @@ const _catalog = [
     durationMinutes: 20,
     xp: 45,
     lowImpact: false,
+    activityKind: 'walk',
+  ),
+  _TaskDefinition(
+    id: 'meal-snap',
+    title: 'Catat satu momen makan',
+    description: 'Foto untuk jurnal makan pribadimu.',
+    category: 'Lifestyle',
+    difficulty: 1,
+    durationMinutes: 1,
+    xp: 15,
+    activityKind: 'meal_snap',
+  ),
+  _TaskDefinition(
+    id: 'easy-run',
+    title: 'Lari ringan 10 menit',
+    description: 'Mulai pelan dan pilih rute yang aman.',
+    category: 'Body',
+    difficulty: 3,
+    durationMinutes: 10,
+    xp: 40,
+    lowImpact: false,
+    activityKind: 'run',
   ),
   _TaskDefinition(
     id: 'sunlight',
