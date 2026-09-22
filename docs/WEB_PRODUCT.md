@@ -9,7 +9,7 @@ Web adalah companion untuk aktivitas di depan laptop, bukan salinan mobile.
 | `/#/admin` | Workspace dengan tambahan antrean Community Admin |
 | `/#/recap` | Ringkasan progress yang aman dibagikan |
 
-Home memakai data core quest yang sama dengan mobile. Focus Station tetap
+Home memakai paket Daily Card dan progres yang sama dengan mobile. Focus Station tetap
 menjadi tempat Pomodoro/sesi panjang; mobile hanya menyediakan quick focus.
 Profile dibuka dari avatar kanan atas.
 

@@ -6,7 +6,7 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/types/json_map.dart';
 
-/// Shared mobile/web draw ritual: spin, swipe, reveal, then commit one bonus.
+/// Shared mobile/web draw ritual: spin, swipe, reveal, then commit one pack.
 class DailyCardDrawDialog extends StatefulWidget {
   const DailyCardDrawDialog({super.key, required this.controller});
   final WellnessController controller;
@@ -88,7 +88,7 @@ class _DrawStage extends StatelessWidget {
             children: [
               const Expanded(
                 child: Text(
-                  'Bonus Card',
+                  'Daily Card Draw',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 ),
               ),
@@ -102,7 +102,7 @@ class _DrawStage extends StatelessWidget {
             ],
           ),
           const Text(
-            'Swipe deck, lalu buka kartu di tengah.',
+            'Satu kartu, 3–5 quest. Swipe lalu buka.',
             style: TextStyle(color: appMuted),
           ),
           const SizedBox(height: 12),
@@ -547,83 +547,151 @@ class _CardFront extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _paletteFor(card);
+    final tasks = card['tasks'] is List
+        ? (card['tasks'] as List)
+              .whereType<Map>()
+              .map((task) => Map<String, dynamic>.from(task))
+              .toList()
+        : [card];
+    final difficulty = (card['difficulty'] as num?)?.toInt() ?? 1;
+    final difficultyLabel = switch (difficulty) {
+      2 => 'Seimbang',
+      3 => 'Lebih aktif',
+      _ => 'Ringan',
+    };
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [palette.dark.withValues(alpha: .5), appSurface],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: palette.light.withValues(alpha: .75)),
-            boxShadow: [
-              BoxShadow(
-                color: palette.dark.withValues(alpha: .32),
-                blurRadius: 30,
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [palette.dark.withValues(alpha: .5), appSurface],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 34,
-                backgroundColor: palette.light,
-                child: Icon(
-                  _categoryIcon(card['category'].toString()),
-                  color: palette.ink,
-                  size: 34,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                card['title'].toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 27,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                card['description'].toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: appMuted, height: 1.5),
-              ),
-              const SizedBox(height: 18),
-              _Pill(
-                label: '${card['durationMinutes']} MIN  •  +${card['xp']} XP',
-                color: palette.light,
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onCommit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.light,
-                    foregroundColor: palette.ink,
-                  ),
-                  icon: const Icon(Icons.lock_rounded),
-                  label: const Text('Ambil bonus card'),
-                ),
-              ),
-              if (canChange) ...[
-                const SizedBox(height: 6),
-                TextButton(
-                  onPressed: onChange,
-                  child: Text('Pilih kartu lain ($changesLeft tersisa)'),
-                ),
-              ] else ...[
-                const SizedBox(height: 10),
-                const Text(
-                  'Kesempatan ganti habis. Ambil kartu ini.',
-                  style: TextStyle(color: appMuted, fontSize: 12),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: palette.light.withValues(alpha: .75)),
+              boxShadow: [
+                BoxShadow(
+                  color: palette.dark.withValues(alpha: .32),
+                  blurRadius: 30,
                 ),
               ],
-            ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: palette.light,
+                  child: Icon(
+                    Icons.style_rounded,
+                    color: palette.ink,
+                    size: 29,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  card['title'].toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: appText,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${tasks.length} quest  •  $difficultyLabel',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: appMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (final task in tasks) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: appCanvas.withValues(alpha: .75),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: palette.light.withValues(alpha: .35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _categoryIcon(task['category'].toString()),
+                          color: palette.light,
+                          size: 19,
+                        ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            task['title'].toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: appText,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '+${task['xp']} XP',
+                          style: TextStyle(
+                            color: palette.light,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                const SizedBox(height: 8),
+                _Pill(
+                  label:
+                      '${card['durationMinutes']} MIN TOTAL  •  +${card['xp']} XP',
+                  color: palette.light,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onCommit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: palette.light,
+                      foregroundColor: palette.ink,
+                    ),
+                    icon: const Icon(Icons.lock_rounded),
+                    label: Text('Ambil ${tasks.length} quest'),
+                  ),
+                ),
+                if (canChange) ...[
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: onChange,
+                    child: Text('Pilih kartu lain ($changesLeft tersisa)'),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Kesempatan ganti habis. Ambil kartu ini.',
+                    style: TextStyle(color: appMuted, fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

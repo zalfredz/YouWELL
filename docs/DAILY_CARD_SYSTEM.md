@@ -1,23 +1,27 @@
 # Daily Card System
 
-Daily Card sekarang adalah bonus ritual, bukan sumber seluruh rencana harian.
+Daily Card adalah pintu masuk rencana harian. Satu kartu berisi satu paket quest.
 
 ```text
-3 core quests dibuat otomatis
-        +
-swipe 5 bonus cards → reveal 1 → maksimal 2 kali ganti → commit
+5 paket kartu tersaring sesuai path, pace, dan progres
         ↓
-4 langkah hari ini → complete → XP → companion tumbuh
+spin acak → swipe/reveal 1 kartu → maksimal 1 kali ganti → commit
+        ↓
+3–5 quest hari ini → complete → XP → companion tumbuh
 ```
 
-Core quest selalu mencakup Body, Energy, dan Lifestyle. Untuk path reduction,
-Lifestyle diganti Reduction/Habit Swap. Generator menyaring difficulty,
-low-impact, penggunaan awal, dan completion rate tujuh hari dengan aturan yang
-dapat dijelaskan; belum ada machine learning.
+Setiap paket mencakup setidaknya satu quest Body, Energy, dan Lifestyle. Untuk
+path reduction, Lifestyle diganti Reduction/Habit Swap. Level ringan berisi 3
+quest, seimbang 4, dan lebih aktif 5. Pengguna baru atau dengan compliance rendah
+dimulai dari level ringan. Low-impact dan path menyaring pool sebelum lima paket
+dibentuk. Personalisasi masih rule-based dan dapat dijelaskan; belum ada machine
+learning.
 
-Satu bonus card berisi tepat satu task. Kartu yang dilewati menjadi nonaktif,
-dan card yang telah di-commit tidak dapat diganti. Progress menghitung semua
-quest hari itu tanpa streak reset atau freeze token.
+Kartu yang dilewati menjadi abu-abu dan nonaktif. Paket yang telah di-commit
+tidak dapat diganti. Progress menghitung quest dalam paket terpilih tanpa streak
+reset atau freeze token. Draft lama tanpa quest selesai dimigrasikan tanpa
+menghapus air atau pilihan yang sudah dilewati; hari lama yang sudah dimainkan
+tetap dipertahankan.
 
 File utama:
 

@@ -1,11 +1,10 @@
 import 'package:youwell/core/types/json_map.dart';
 
-/// Explainable, rule-based personalization for the local prototype.
-/// Three core quests are prepared automatically; the draw adds one bonus.
+/// Explainable, rule-based daily packs. Each card becomes the day's plan.
 class DailyCardGenerator {
   const DailyCardGenerator();
 
-  List<JsonMap> coreQuests({
+  List<JsonMap> cardPacks({
     required String today,
     required int difficulty,
     required bool lowImpact,
@@ -13,65 +12,73 @@ class DailyCardGenerator {
     required double completionRate,
     required int daysUsingApp,
   }) {
-    final easyDay = daysUsingApp <= 2 || completionRate < .4;
-    final maxDifficulty = easyDay ? 1 : difficulty;
+    final level = daysUsingApp <= 2 || completionRate < .4
+        ? 1
+        : difficulty.clamp(1, 3);
+    final questCount = level + 2;
     final eligible = _catalog.where((task) {
-      if (task.bonusOnly || (task.reductionOnly && !reduction)) return false;
-      if (task.difficulty > maxDifficulty) return false;
+      if (task.reductionOnly && !reduction) return false;
+      if (task.difficulty > level) return false;
       if (lowImpact && task.category == 'Body' && !task.lowImpact) return false;
       return true;
     }).toList();
     final categories = reduction
         ? const ['Body', 'Energy', 'Reduction']
         : const ['Body', 'Energy', 'Lifestyle'];
-    return categories.indexed.map((entry) {
-      final candidates =
-          eligible.where((task) => task.category == entry.$2).toList()..sort(
+    const names = [
+      'Tunas Baru',
+      'Langkah Segar',
+      'Cahaya Hari',
+      'Ritme Ceria',
+      'Arah Baru',
+    ];
+    return List.generate(names.length, (index) {
+      final picked = <_TaskDefinition>[];
+      var stride = 1;
+      for (final category in categories) {
+        final choices =
+            eligible.where((task) => task.category == category).toList()..sort(
+              (a, b) => _score(a.id, today).compareTo(_score(b.id, today)),
+            );
+        picked.add(choices[(index + index ~/ stride) % choices.length]);
+        stride *= choices.length;
+      }
+      final remaining =
+          eligible.where((task) => !picked.contains(task)).toList()..sort(
             (a, b) => _score(
               a.id,
-              '$today:${entry.$1}',
-            ).compareTo(_score(b.id, '$today:${entry.$1}')),
+              '$today:$index',
+            ).compareTo(_score(b.id, '$today:$index')),
           );
-      return _toMap(candidates.first, today, 'core-${entry.$1}', 'core');
-    }).toList();
-  }
-
-  List<JsonMap> bonusCards({
-    required String today,
-    required int difficulty,
-    required bool lowImpact,
-    required bool reduction,
-    required Set<String> excludedTitles,
-  }) {
-    final eligible =
-        _catalog.where((task) {
-          if (task.reductionOnly && !reduction) return false;
-          if (task.difficulty > (difficulty + 1).clamp(1, 3)) return false;
-          if (lowImpact && task.category == 'Body' && !task.lowImpact) {
-            return false;
-          }
-          return !excludedTitles.contains(task.title);
-        }).toList()..sort(
-          (a, b) => _score(
-            a.id,
-            '$today:bonus',
-          ).compareTo(_score(b.id, '$today:bonus')),
+      if (level > 1 && picked.length < questCount) {
+        final challenge = remaining.firstWhere(
+          (task) => task.difficulty == level,
+          orElse: () => remaining.first,
         );
-    return List.generate(5, (index) {
-      final task = eligible[index % eligible.length];
+        picked.add(challenge);
+        remaining.remove(challenge);
+      }
+      picked.addAll(remaining.take(questCount - picked.length));
+      final tasks = [
+        for (final (taskIndex, task) in picked.indexed)
+          _toMap(task, today, 'card-$index-task-$taskIndex'),
+      ];
       return {
-        ..._toMap(task, today, 'bonus-$index', 'bonus'),
+        'id': '$today-card-$index',
+        'title': names[index],
         'cardStyle': index,
+        'difficulty': level,
+        'tasks': tasks,
+        'xp': tasks.fold<int>(0, (sum, task) => sum + (task['xp'] as int)),
+        'durationMinutes': tasks.fold<int>(
+          0,
+          (sum, task) => sum + (task['durationMinutes'] as int),
+        ),
       };
     });
   }
 
-  JsonMap _toMap(
-    _TaskDefinition task,
-    String today,
-    String suffix,
-    String source,
-  ) => {
+  JsonMap _toMap(_TaskDefinition task, String today, String suffix) => {
     'id': '$today-$suffix-${task.id}',
     'title': task.title,
     'description': task.description,
@@ -79,8 +86,8 @@ class DailyCardGenerator {
     'difficulty': task.difficulty,
     'durationMinutes': task.durationMinutes,
     'xp': task.xp,
-    'source': source,
-    'status': source == 'core' ? 'committed' : 'available',
+    'source': 'card',
+    'status': 'available',
     'done': false,
   };
 
@@ -104,11 +111,10 @@ class _TaskDefinition {
     required this.xp,
     this.lowImpact = true,
     this.reductionOnly = false,
-    this.bonusOnly = false,
   });
   final String id, title, description, category;
   final int difficulty, durationMinutes, xp;
-  final bool lowImpact, reductionOnly, bonusOnly;
+  final bool lowImpact, reductionOnly;
 }
 
 const _catalog = [
@@ -150,6 +156,16 @@ const _catalog = [
     lowImpact: false,
   ),
   _TaskDefinition(
+    id: 'walk-long',
+    title: 'Jalan 20 menit',
+    description: 'Nikmati rute yang aman dengan ritmemu.',
+    category: 'Body',
+    difficulty: 3,
+    durationMinutes: 20,
+    xp: 45,
+    lowImpact: false,
+  ),
+  _TaskDefinition(
     id: 'sunlight',
     title: 'Cari cahaya pagi',
     description: 'Keluar atau duduk dekat jendela.',
@@ -177,6 +193,15 @@ const _catalog = [
     xp: 30,
   ),
   _TaskDefinition(
+    id: 'focus-deep',
+    title: 'Fokus 20 menit',
+    description: 'Pilih satu hal dan beri perhatian penuh.',
+    category: 'Energy',
+    difficulty: 3,
+    durationMinutes: 20,
+    xp: 45,
+  ),
+  _TaskDefinition(
     id: 'tidy',
     title: 'Rapikan satu sudut',
     description: 'Cukup satu area kecil di dekatmu.',
@@ -202,6 +227,15 @@ const _catalog = [
     difficulty: 1,
     durationMinutes: 2,
     xp: 20,
+  ),
+  _TaskDefinition(
+    id: 'routine-plan',
+    title: 'Rancang rutinitas kecil',
+    description: 'Pilih tiga langkah realistis untuk besok.',
+    category: 'Lifestyle',
+    difficulty: 3,
+    durationMinutes: 10,
+    xp: 40,
   ),
   _TaskDefinition(
     id: 'delay',
@@ -234,6 +268,16 @@ const _catalog = [
     reductionOnly: true,
   ),
   _TaskDefinition(
+    id: 'swap-plan',
+    title: 'Rencana habit swap',
+    description: 'Siapkan dua pengganti untuk momen craving.',
+    category: 'Reduction',
+    difficulty: 3,
+    durationMinutes: 8,
+    xp: 40,
+    reductionOnly: true,
+  ),
+  _TaskDefinition(
     id: 'fresh-air',
     title: 'Cari udara segar',
     description: 'Keluar sebentar dan ubah suasana.',
@@ -241,7 +285,6 @@ const _catalog = [
     difficulty: 1,
     durationMinutes: 5,
     xp: 25,
-    bonusOnly: true,
   ),
   _TaskDefinition(
     id: 'music',
@@ -251,6 +294,5 @@ const _catalog = [
     difficulty: 1,
     durationMinutes: 4,
     xp: 20,
-    bonusOnly: true,
   ),
 ];

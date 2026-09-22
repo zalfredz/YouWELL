@@ -9,7 +9,8 @@ data cloud.
 
 - Mobile: Home, Reset, Progress, Community, dan Profile dari avatar.
 - Web: landing, Home, Focus Station, Progress, Community, Admin, dan recap.
-- Core loop: 3 quest adaptif + 1 bonus Daily Card, completion, XP, companion.
+- Core loop: pilih 1 dari 5 Daily Card berisi 3–5 quest adaptif, selesaikan,
+  dapatkan XP, dan tumbuhkan companion.
 - Path reduction opsional untuk habit swap rokok/vape; bukan identitas utama.
 
 ## Menjalankan

@@ -48,7 +48,8 @@ class WellnessController extends ChangeNotifier {
       .map((task) => Map<String, dynamic>.from(task))
       .toList();
   List<JsonMap> get dailyDrawCards =>
-      ((days[today]?['bonusCards'] ?? const []) as List)
+      ((days[today]?['cardPacks'] ?? days[today]?['bonusCards'] ?? const [])
+              as List)
           .whereType<Map>()
           .map((card) => Map<String, dynamic>.from(card))
           .toList();
@@ -168,9 +169,17 @@ class WellnessController extends ChangeNotifier {
   }
 
   void prepareToday() {
-    if (profile == null || days[today] != null) return;
+    if (profile == null) return;
     final generator = const DailyCardGenerator();
-    final core = generator.coreQuests(
+    final existing = days[today];
+    if (existing != null &&
+        (existing['cardPacks'] != null ||
+            hasCommittedDailyCard ||
+            completedCards.isNotEmpty)) {
+      return;
+    }
+    final oldCards = existing == null ? <JsonMap>[] : dailyDrawCards;
+    final packs = generator.cardPacks(
       today: today,
       difficulty: difficulty,
       lowImpact: profile?['lowImpact'] == true,
@@ -178,21 +187,29 @@ class WellnessController extends ChangeNotifier {
       completionRate: compliance(7),
       daysUsingApp: _daysUsingApp,
     );
-    final bonus = generator.bonusCards(
-      today: today,
-      difficulty: difficulty,
-      lowImpact: profile?['lowImpact'] == true,
-      reduction: reduction,
-      excludedTitles: core.map((task) => task['title'].toString()).toSet(),
-    );
+    if (existing != null) {
+      // Upgrade an untouched draft without wiping water or rejected choices.
+      for (
+        var index = 0;
+        index < packs.length && index < oldCards.length;
+        index++
+      ) {
+        packs[index]['id'] = oldCards[index]['id'];
+      }
+      _data['days'][today]['quests'] = <JsonMap>[];
+      _data['days'][today]['cardPacks'] = packs;
+      _data['days'][today].remove('bonusCards');
+      _save();
+      return;
+    }
     _data['days'][today] = {
-      'quests': core,
-      'bonusCards': bonus,
+      'quests': <JsonMap>[],
+      'cardPacks': packs,
       'water': 0,
       'cardDraw': {
         'selectedCardId': null,
         'passedCardIds': <String>[],
-        'deckStartIndex': Random().nextInt(bonus.length),
+        'deckStartIndex': Random().nextInt(packs.length),
       },
     };
     _save();
@@ -234,9 +251,17 @@ class WellnessController extends ChangeNotifier {
   bool commitDailyCardPack() {
     final card = selectedDailyCard;
     if (card == null || hasCommittedDailyCard) return false;
+    final packTasks = card['tasks'] is List
+        ? (card['tasks'] as List)
+              .whereType<Map>()
+              .map((task) => Map<String, dynamic>.from(task))
+              .toList()
+        : [card]; // A committed legacy draft may still contain one task.
+    if (packTasks.isEmpty) return false;
     final tasks = [
       ...quests,
-      {...card, 'status': 'committed', 'done': false},
+      for (final task in packTasks)
+        {...task, 'status': 'committed', 'done': false},
     ];
     _data['days'][today]['quests'] = tasks;
     _data['days'][today]['cardDraw'] = {

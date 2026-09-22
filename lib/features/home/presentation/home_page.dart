@@ -57,20 +57,44 @@ class HomePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        ...controller.quests.map(
-          (task) => _TaskTile(
-            task: task,
-            onComplete: () => controller.completeCard(task['id'].toString()),
+        if (controller.quests.isEmpty && controller.needsDailyCardDraw)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: appSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: appBorder),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.style_rounded, color: appAccent, size: 36),
+                const SizedBox(height: 10),
+                const Text(
+                  'Quest-mu menunggu',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Buka satu kartu untuk 3–5 quest hari ini.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: appMuted),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: onOpenDraw,
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  label: const Text('Draw a card'),
+                ),
+              ],
+            ),
+          )
+        else
+          ...controller.quests.map(
+            (task) => _TaskTile(
+              task: task,
+              onComplete: () => controller.completeCard(task['id'].toString()),
+            ),
           ),
-        ),
-        if (controller.needsDailyCardDraw) ...[
-          const SizedBox(height: 4),
-          OutlinedButton.icon(
-            onPressed: onOpenDraw,
-            icon: const Icon(Icons.auto_awesome_rounded, color: appAccent),
-            label: const Text('Ambil bonus card'),
-          ),
-        ],
         const SizedBox(height: 18),
         _QuickCheckIn(controller: controller),
       ],
@@ -180,7 +204,6 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = task['status'] == 'completed';
-    final bonus = task['source'] == 'bonus';
     final icon = switch (task['category']) {
       'Body' => Icons.directions_walk_rounded,
       'Energy' => Icons.bolt_rounded,
@@ -199,7 +222,7 @@ class _TaskTile extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor: appSurface,
-            child: Icon(icon, color: bonus ? appAccentAmber : appAccent),
+            child: Icon(icon, color: appAccent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -214,7 +237,7 @@ class _TaskTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${task['durationMinutes']} min  •  +${task['xp']} XP${bonus ? '  •  Bonus' : ''}',
+                  '${task['durationMinutes']} min  •  +${task['xp']} XP  •  Level ${task['difficulty']}',
                   style: const TextStyle(color: appMuted, fontSize: 12),
                 ),
               ],

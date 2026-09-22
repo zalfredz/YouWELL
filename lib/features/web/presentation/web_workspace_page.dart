@@ -247,7 +247,7 @@ class _WebHome extends StatelessWidget {
             style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
           ),
           const Text(
-            'Tiga langkah utama dan satu bonus untuk hari ini.',
+            'Pilih satu kartu untuk 3–5 langkah hari ini.',
             style: TextStyle(color: appMuted),
           ),
           const SizedBox(height: 24),
@@ -314,11 +314,16 @@ class _WebHome extends StatelessWidget {
                             TextButton.icon(
                               onPressed: onDraw,
                               icon: const Icon(Icons.auto_awesome_rounded),
-                              label: const Text('Bonus card'),
+                              label: const Text('Daily Draw'),
                             ),
                         ],
                       ),
                       const SizedBox(height: 12),
+                      if (controller.quests.isEmpty)
+                        const Text(
+                          'Quest hari ini akan muncul setelah kamu mengambil kartu.',
+                          style: TextStyle(color: appMuted),
+                        ),
                       ...controller.quests.map(
                         (task) => _WebTask(
                           task: task,

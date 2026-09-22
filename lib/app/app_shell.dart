@@ -77,7 +77,7 @@ class _AppShellState extends State<AppShell> {
                   const Spacer(),
                   if (widget.controller.needsDailyCardDraw)
                     IconButton(
-                      tooltip: 'Ambil bonus hari ini',
+                      tooltip: 'Ambil kartu hari ini',
                       onPressed: _openDailyDraw,
                       icon: const Icon(Icons.style_rounded, color: appAccent),
                     ),
