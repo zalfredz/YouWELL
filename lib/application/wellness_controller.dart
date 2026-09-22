@@ -81,7 +81,7 @@ class WellnessController extends ChangeNotifier {
   bool get hasCommittedDailyCard => dailyCardDraw?['committedCardId'] != null;
   bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
   int get dailyCardSwitchesRemaining =>
-      (2 - passedDailyCardIds.length).clamp(0, 2);
+      (1 - passedDailyCardIds.length).clamp(0, 1);
   bool get canChooseAnotherDailyCard =>
       selectedDailyCard != null &&
       dailyCardSwitchesRemaining > 0 &&

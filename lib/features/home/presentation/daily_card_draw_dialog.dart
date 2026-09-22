@@ -153,6 +153,7 @@ class _SpinningDeck extends StatefulWidget {
 
 class _SpinningDeckState extends State<_SpinningDeck> {
   static const _basePage = 500;
+  final math.Random _random = math.Random();
   late final PageController _pages;
   late final int _startPage;
   late int _page;
@@ -170,9 +171,22 @@ class _SpinningDeckState extends State<_SpinningDeck> {
   Future<void> _spin() async {
     await Future<void>.delayed(const Duration(milliseconds: 220));
     if (!mounted || !_pages.hasClients) return;
+    final availableIndices = [
+      for (var index = 0; index < widget.cards.length; index++)
+        if (!widget.passedIds.contains(widget.cards[index]['id'])) index,
+    ];
+    if (availableIndices.isEmpty) {
+      setState(() => _spinning = false);
+      return;
+    }
+    final destination =
+        availableIndices[_random.nextInt(availableIndices.length)];
+    final deckLength = widget.cards.length;
+    final fullTurns = 2 + _random.nextInt(2);
+    final offset = (destination - (_startPage % deckLength)) % deckLength;
     await _pages.animateToPage(
-      _startPage + widget.cards.length,
-      duration: const Duration(milliseconds: 1250),
+      _startPage + fullTurns * deckLength + offset,
+      duration: const Duration(milliseconds: 1450),
       curve: Curves.easeInOutCubicEmphasized,
     );
     if (mounted) setState(() => _spinning = false);
@@ -279,83 +293,115 @@ class _CardBack extends StatelessWidget {
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 180),
           opacity: passed
-              ? .2
+              ? centered
+                    ? .78
+                    : .58
               : centered
               ? 1
               : .5,
           child: GestureDetector(
             onTap: centered && !passed ? onTap : null,
-            child: Container(
-              width: compact ? 190 : 220,
-              height: compact ? 310 : 350,
-              decoration: _cardDecoration(palette, centered),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: -38,
-                    top: 58,
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .2),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    top: 16,
-                    child: Text(
-                      'YOUWELL',
-                      style: TextStyle(
-                        color: palette.ink,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 16,
-                    top: 16,
-                    child: Text(
-                      '0${index + 1}',
-                      style: TextStyle(
-                        color: palette.ink.withValues(alpha: .6),
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  Center(child: _CardMascot(palette: palette)),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 18,
-                    child: Column(
-                      children: [
-                        Text(
-                          passed ? 'PASSED' : 'MYSTERY',
-                          style: TextStyle(
-                            color: palette.ink,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                          ),
+            child: ColorFiltered(
+              colorFilter: passed
+                  ? const ColorFilter.matrix([
+                      .2126,
+                      .7152,
+                      .0722,
+                      0,
+                      0,
+                      .2126,
+                      .7152,
+                      .0722,
+                      0,
+                      0,
+                      .2126,
+                      .7152,
+                      .0722,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0,
+                    ])
+                  : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+              child: Container(
+                width: compact ? 190 : 220,
+                height: compact ? 310 : 350,
+                decoration: _cardDecoration(palette, centered),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: -38,
+                      top: 58,
+                      child: Container(
+                        width: 130,
+                        height: 130,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .2),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          centered ? 'TAP TO REVEAL' : 'SWIPE DECK',
-                          style: TextStyle(
-                            color: palette.ink.withValues(alpha: .7),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      left: 16,
+                      top: 16,
+                      child: Text(
+                        'YOUWELL',
+                        style: TextStyle(
+                          color: palette.ink,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 16,
+                      top: 16,
+                      child: Text(
+                        '0${index + 1}',
+                        style: TextStyle(
+                          color: palette.ink.withValues(alpha: .6),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Center(child: _CardMascot(palette: palette)),
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 18,
+                      child: Column(
+                        children: [
+                          Text(
+                            passed ? 'SUDAH DILEWATI' : 'MYSTERY',
+                            style: TextStyle(
+                              color: palette.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            passed
+                                ? 'TIDAK BISA DIPILIH'
+                                : centered
+                                ? 'TAP TO REVEAL'
+                                : 'SWIPE DECK',
+                            style: TextStyle(
+                              color: palette.ink.withValues(alpha: .7),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -573,7 +619,7 @@ class _CardFront extends StatelessWidget {
               ] else ...[
                 const SizedBox(height: 10),
                 const Text(
-                  'Pilihan ketiga adalah pilihan final.',
+                  'Kesempatan ganti habis. Ambil kartu ini.',
                   style: TextStyle(color: appMuted, fontSize: 12),
                 ),
               ],
