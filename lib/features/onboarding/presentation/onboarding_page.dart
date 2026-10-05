@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -34,15 +35,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: ListView(
             padding: const EdgeInsets.all(28),
             children: [
-              const Text(
-                'youwell.',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+              const Row(
+                children: [
+                  Text(
+                    'youwell',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                  ),
+                  Spacer(),
+                  ThemeModeButton(),
+                ],
               ),
               const SizedBox(height: 24),
               LinearProgressIndicator(
                 value: (_step + 1) / 3,
-                color: appAccent,
-                backgroundColor: appRaised,
+                color: context.colors.accent,
+                backgroundColor: context.colors.raised,
               ),
               const SizedBox(height: 28),
               if (_step == 0) ...[
@@ -51,9 +58,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Pilih arah awal. Bisa diubah kapan saja.',
-                  style: TextStyle(color: appMuted),
+                  style: TextStyle(color: context.colors.muted),
                 ),
                 const SizedBox(height: 22),
                 _Choice(
@@ -76,9 +83,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Kami mulai ringan dan menyesuaikan dari progresmu.',
-                  style: TextStyle(color: appMuted),
+                  style: TextStyle(color: context.colors.muted),
                 ),
                 const SizedBox(height: 22),
                 _Choice(
@@ -182,10 +189,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ],
               ),
               const SizedBox(height: 22),
-              const Text(
+              Text(
                 'Data masih disimpan lokal selama fase pengembangan.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: appMuted, fontSize: 12),
+                style: TextStyle(color: context.colors.muted, fontSize: 12),
               ),
             ],
           ),
@@ -206,22 +213,33 @@ class _Choice extends StatelessWidget {
   final String title, detail, value, selected;
   final ValueChanged<String> onTap;
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: selected == value ? const Color(0xff203a32) : appRaised,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: selected == value ? appAccent : appBorder),
-    ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(detail),
-      trailing: Icon(
-        selected == value ? Icons.check_circle_rounded : Icons.circle_outlined,
-        color: appAccent,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Material(
+      color: selected == value
+          ? context.colors.selected
+          : context.colors.raised,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: selected == value
+              ? context.colors.accent
+              : context.colors.border,
+        ),
       ),
-      onTap: () => onTap(value),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(detail),
+        trailing: Icon(
+          selected == value
+              ? Icons.check_circle_rounded
+              : Icons.circle_outlined,
+          color: context.colors.accent,
+        ),
+        onTap: () => onTap(value),
+      ),
     ),
   );
 }

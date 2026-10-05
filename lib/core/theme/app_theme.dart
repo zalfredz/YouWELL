@@ -1,97 +1,98 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Typography, form fields, buttons and global Material styling.
 abstract final class AppTheme {
-  /// Native app theme, aligned with the dark web workspace palette.
-  static ThemeData get mobile => ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: const ColorScheme.dark(
-      primary: appAccent,
-      onPrimary: appCanvas,
-      secondary: appAccentCyan,
-      onSecondary: appCanvas,
-      surface: appSurface,
-      onSurface: appText,
-      error: Color(0xffffa6a6),
-    ),
-    scaffoldBackgroundColor: appCanvas,
-    fontFamily: 'Arial',
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: appText, height: 1.5),
-      bodyMedium: TextStyle(color: appText, height: 1.5),
-      bodySmall: TextStyle(color: appMuted, height: 1.4),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: appRaised,
-      labelStyle: const TextStyle(color: appMuted),
-      hintStyle: const TextStyle(color: appMuted),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: appBorder),
+  static ThemeData get light => _build(Brightness.light, AppColors.light);
+  static ThemeData get dark => _build(Brightness.dark, AppColors.dark);
+  static ThemeData _build(Brightness brightness, AppColors c) {
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: brandBlue,
+          brightness: brightness,
+        ).copyWith(
+          primary: brandOrange,
+          onPrimary: const Color(0xff291407),
+          primaryContainer: c.selected,
+          onPrimaryContainer: c.text,
+          secondary: c.accent,
+          onSecondary: c.canvas,
+          secondaryContainer: c.selected,
+          onSecondaryContainer: c.text,
+          tertiary: c.amber,
+          surface: c.surface,
+          onSurface: c.text,
+          onSurfaceVariant: c.muted,
+          outline: c.border,
+          surfaceContainerHighest: c.raised,
+        );
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: c.canvas,
+      fontFamily: 'Arial',
+    );
+    return base.copyWith(
+      textTheme: base.textTheme.apply(bodyColor: c.text, displayColor: c.text),
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.canvas,
+        foregroundColor: c.text,
+        surfaceTintColor: Colors.transparent,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: appBorder),
+      dividerColor: c.border,
+      iconTheme: IconThemeData(color: c.accent),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: c.raised,
+        labelStyle: TextStyle(color: c.muted),
+        hintStyle: TextStyle(color: c.muted),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.accent, width: 2),
+        ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: appAccent, width: 1.5),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: brandOrange,
+          foregroundColor: scheme.onPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
       ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: appAccent,
-        foregroundColor: appCanvas,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: c.accent),
       ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: appText,
-        side: const BorderSide(color: appBorder),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.text,
+          side: BorderSide(color: c.border),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
       ),
-    ),
-    navigationBarTheme: const NavigationBarThemeData(
-      backgroundColor: appSurface,
-      indicatorColor: Color(0xff243a34),
-      labelTextStyle: WidgetStatePropertyAll(
-        TextStyle(fontWeight: FontWeight.w600),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: c.surface,
+        indicatorColor: c.selected,
+        iconTheme: WidgetStatePropertyAll(IconThemeData(color: c.accent)),
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(color: c.text, fontWeight: FontWeight.w600),
+        ),
       ),
-    ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: appSurface,
-      modalBackgroundColor: appSurface,
-    ),
-    dialogTheme: const DialogThemeData(backgroundColor: appSurface),
-  );
-
-  static ThemeData get light => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: green, surface: Colors.white),
-    scaffoldBackgroundColor: cream,
-    fontFamily: 'Arial',
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: ink, height: 1.5),
-      bodyLarge: TextStyle(color: ink),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: cream,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.surface,
+        modalBackgroundColor: c.surface,
       ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      dialogTheme: DialogThemeData(backgroundColor: c.surface),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.accent,
+        linearTrackColor: c.raised,
       ),
-    ),
-  );
+    );
+  }
 }

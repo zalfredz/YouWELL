@@ -15,6 +15,12 @@ data cloud.
 
 ## Menjalankan
 
+Tema memakai [palet Color Hunt](https://colorhunt.co/palette/576a8fb7bdf7fff8deff7444):
+biru `#576A8F`, lavender `#B7BDF7`, krem `#FFF8DE`, dan oranye `#FF7444`.
+Tekan ikon bulan/matahari untuk mengganti light/dark mode. Pilihan **Sistem**,
+**Terang**, dan **Gelap** tersedia di **Profil & Settings > Tampilan** dan
+tersimpan lokal. Tema berlaku pada mobile, preview iPhone, dan web.
+
 ```bash
 # Web preview
 bash scripts/preview.sh
@@ -31,6 +37,14 @@ Konfigurasi lokal ada di `config/env/development.json` dan diabaikan Git.
 Salin dari `config/env/development.example.json` setelah clone.
 
 ## File utama
+
+Jika **Jalur kurangi rokok / vape** aktif di **Profil & Settings > Preferensi**,
+kartu **Kurangi rokok / vape** muncul di bawah companion pada **Hari ini**
+(atau **Home** di web). Tekan **Buka bantuan rokok / vape** untuk timer jeda 5 menit dan ide
+aktivitas pengganti. Tombol yang sama juga tersedia langsung di Preferensi.
+Sesi jeda yang selesai tercatat di **Perjalanan > Jeda rokok / vape**.
+Mengganti preferensi tidak mengubah quest yang sudah dipilih hari ini;
+quest pada kartu harian berikutnya mengikuti jalur yang aktif.
 
 | Kebutuhan | File |
 | --- | --- |

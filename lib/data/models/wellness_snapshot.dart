@@ -7,6 +7,7 @@ import 'package:youwell/core/types/json_map.dart';
 JsonMap createEmptyWellnessState() => {
   'version': 3,
   'dayOffset': 0,
+  'themeMode': 'system',
   'profile': null,
   'days': <String, dynamic>{},
   'energyCheckIns': <dynamic>[],

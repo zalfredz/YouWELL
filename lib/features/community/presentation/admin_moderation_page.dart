@@ -18,9 +18,9 @@ class AdminModerationPage extends StatelessWidget {
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Prototype lokal. Role dan audit log server ditambahkan bersama Auth.',
-          style: TextStyle(color: appMuted),
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 24),
         _Summary(pending: queue.length, reports: reports.length),
@@ -47,13 +47,13 @@ class AdminModerationPage extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: appSurface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: appBorder),
+              border: Border.all(color: context.colors.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.flag_outlined, color: appAccentAmber),
+                Icon(Icons.flag_outlined, color: context.colors.amber),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -100,22 +100,22 @@ class _Number extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: appAccent,
+          style: TextStyle(
+            color: context.colors.accent,
             fontSize: 32,
             fontWeight: FontWeight.w900,
           ),
         ),
-        Text(label, style: const TextStyle(color: appMuted)),
+        Text(label, style: TextStyle(color: context.colors.muted)),
       ],
     ),
   );
@@ -130,16 +130,19 @@ class _ModerationCard extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '@${post['alias']}',
-          style: const TextStyle(color: appAccent, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: context.colors.accent,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 10),
         Text(post['text'].toString(), style: const TextStyle(height: 1.5)),
@@ -178,10 +181,10 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
-    child: Text(message, style: const TextStyle(color: appMuted)),
+    child: Text(message, style: TextStyle(color: context.colors.muted)),
   );
 }

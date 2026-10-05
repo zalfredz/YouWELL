@@ -40,8 +40,8 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: appCanvas,
-              border: Border.all(color: appBorder),
+              color: context.colors.canvas,
+              border: Border.all(color: context.colors.border),
               borderRadius: BorderRadius.circular(24),
               boxShadow: const [
                 BoxShadow(
@@ -97,13 +97,13 @@ class _DrawStage extends StatelessWidget {
               IconButton(
                 tooltip: 'Nanti saja',
                 onPressed: onClose,
-                icon: const Icon(Icons.close_rounded, color: appMuted),
+                icon: Icon(Icons.close_rounded, color: context.colors.muted),
               ),
             ],
           ),
-          const Text(
+          Text(
             'Satu kartu, 3–5 quest. Swipe lalu buka.',
-            style: TextStyle(color: appMuted),
+            style: TextStyle(color: context.colors.muted),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -260,7 +260,7 @@ class _SpinningDeckState extends State<_SpinningDeck> {
                 : '${_page % widget.cards.length + 1} / ${widget.cards.length}  •  Tap kartu tengah',
             key: ValueKey(_spinning),
             style: TextStyle(
-              color: _spinning ? appAccent : appMuted,
+              color: _spinning ? context.colors.accent : context.colors.muted,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -448,7 +448,7 @@ class _CardMascot extends StatelessWidget {
 
 class _Eye extends StatelessWidget {
   const _Eye({required this.color});
-  final Color color;
+  final Color? color;
   @override
   Widget build(BuildContext context) => Container(
     width: 12,
@@ -567,7 +567,7 @@ class _CardFront extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [palette.dark.withValues(alpha: .5), appSurface],
+                colors: [context.colors.selected, context.colors.surface],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: palette.light.withValues(alpha: .75)),
@@ -594,8 +594,8 @@ class _CardFront extends StatelessWidget {
                 Text(
                   card['title'].toString(),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: appText,
+                  style: TextStyle(
+                    color: context.colors.text,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
@@ -604,8 +604,8 @@ class _CardFront extends StatelessWidget {
                 Text(
                   '${tasks.length} quest  •  $difficultyLabel',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: appMuted,
+                  style: TextStyle(
+                    color: context.colors.muted,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -618,7 +618,7 @@ class _CardFront extends StatelessWidget {
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: appCanvas.withValues(alpha: .75),
+                      color: context.colors.canvas.withValues(alpha: .75),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: palette.light.withValues(alpha: .35),
@@ -628,7 +628,7 @@ class _CardFront extends StatelessWidget {
                       children: [
                         Icon(
                           _categoryIcon(task['category'].toString()),
-                          color: palette.light,
+                          color: context.colors.accent,
                           size: 19,
                         ),
                         const SizedBox(width: 9),
@@ -637,8 +637,8 @@ class _CardFront extends StatelessWidget {
                             task['title'].toString(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: appText,
+                            style: TextStyle(
+                              color: context.colors.text,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -648,7 +648,7 @@ class _CardFront extends StatelessWidget {
                         Text(
                           '+${task['xp']} XP',
                           style: TextStyle(
-                            color: palette.light,
+                            color: context.colors.accent,
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                           ),
@@ -662,7 +662,7 @@ class _CardFront extends StatelessWidget {
                 _Pill(
                   label:
                       '${card['durationMinutes']} MIN TOTAL  •  +${card['xp']} XP',
-                  color: palette.light,
+                  color: context.colors.accent,
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -685,9 +685,9 @@ class _CardFront extends StatelessWidget {
                   ),
                 ] else ...[
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Kesempatan ganti habis. Ambil kartu ini.',
-                    style: TextStyle(color: appMuted, fontSize: 12),
+                    style: TextStyle(color: context.colors.muted, fontSize: 12),
                   ),
                 ],
               ],
@@ -700,20 +700,26 @@ class _CardFront extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, this.color = appAccent});
+  const _Pill({required this.label, this.color});
   final String label;
-  final Color color;
+  final Color? color;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: .13),
-      border: Border.all(color: color.withValues(alpha: .45)),
+      color: (color ?? context.colors.accent).withValues(alpha: .13),
+      border: Border.all(
+        color: (color ?? context.colors.accent).withValues(alpha: .45),
+      ),
       borderRadius: BorderRadius.circular(99),
     ),
     child: Text(
       label,
-      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+      style: TextStyle(
+        color: color ?? context.colors.accent,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+      ),
     ),
   );
 }
@@ -724,36 +730,11 @@ class _Palette {
 }
 
 const _palettes = [
-  _Palette(
-    Color(0xffd9ff6f),
-    Color(0xff9ee53b),
-    Color(0xff9167ed),
-    Color(0xff27351c),
-  ),
-  _Palette(
-    Color(0xff98f3ff),
-    Color(0xff4bcbe0),
-    Color(0xffff8cab),
-    Color(0xff12373e),
-  ),
-  _Palette(
-    Color(0xffffd782),
-    Color(0xffffa94b),
-    Color(0xff60bf96),
-    Color(0xff553315),
-  ),
-  _Palette(
-    Color(0xffffb6d5),
-    Color(0xffff79ad),
-    Color(0xff6d77e9),
-    Color(0xff4a1831),
-  ),
-  _Palette(
-    Color(0xffc9bdff),
-    Color(0xff9681ef),
-    Color(0xffffd76b),
-    Color(0xff28204d),
-  ),
+  _Palette(brandCream, Color(0xffeee6c9), brandOrange, Color(0xff28364f)),
+  _Palette(brandLavender, Color(0xff9ea7e3), brandOrange, Color(0xff28364f)),
+  _Palette(Color(0xffffba9e), brandOrange, brandBlue, Color(0xff28364f)),
+  _Palette(Color(0xffdce0ff), brandLavender, brandBlue, Color(0xff28364f)),
+  _Palette(brandCream, brandLavender, brandOrange, Color(0xff28364f)),
 ];
 
 _Palette _paletteFor(JsonMap card) =>

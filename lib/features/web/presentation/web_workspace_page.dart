@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:youwell/app/web_experience_gate.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/community/presentation/admin_moderation_page.dart';
 import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
+import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 import 'package:youwell/features/web/presentation/pomodoro_page.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
@@ -83,14 +85,7 @@ class _WebWorkspacePageState extends State<WebWorkspacePage> {
         onReturnToLanding: () =>
             Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false),
         child: Theme(
-          data: ThemeData.dark(useMaterial3: true).copyWith(
-            scaffoldBackgroundColor: appCanvas,
-            colorScheme: const ColorScheme.dark(
-              primary: appAccent,
-              secondary: appAccentCyan,
-              surface: appSurface,
-            ),
-          ),
+          data: Theme.of(context),
           child: Scaffold(
             body: Row(
               children: [
@@ -135,21 +130,25 @@ class _Sidebar extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: 240,
     padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
-    decoration: const BoxDecoration(
-      color: Color(0xff111317),
-      border: Border(right: BorderSide(color: appBorder)),
+    decoration: BoxDecoration(
+      color: context.colors.surface,
+      border: Border(right: BorderSide(color: context.colors.border)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'youwell.',
+          'youwell',
           style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'BETTER LIFE WORKSPACE',
-          style: TextStyle(color: appMuted, fontSize: 10, letterSpacing: 1.2),
+          style: TextStyle(
+            color: context.colors.muted,
+            fontSize: 10,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 34),
         ...[
@@ -161,25 +160,34 @@ class _Sidebar extends StatelessWidget {
         ].indexed.map(
           (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              selected: tab == entry.$1,
-              selectedTileColor: appRaised,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            child: Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                selected: tab == entry.$1,
+                selectedTileColor: context.colors.raised,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                leading: Icon(
+                  entry.$2.$2,
+                  color: tab == entry.$1
+                      ? context.colors.accent
+                      : context.colors.muted,
+                ),
+                title: Text(entry.$2.$1),
+                onTap: () => onTab(entry.$1),
               ),
-              leading: Icon(
-                entry.$2.$2,
-                color: tab == entry.$1 ? appAccent : appMuted,
-              ),
-              title: Text(entry.$2.$1),
-              onTap: () => onTab(entry.$1),
             ),
           ),
         ),
         const Spacer(),
-        const Text(
+        Text(
           'Local development\nAuth & sync belum aktif',
-          style: TextStyle(color: appMuted, fontSize: 12, height: 1.5),
+          style: TextStyle(
+            color: context.colors.muted,
+            fontSize: 12,
+            height: 1.5,
+          ),
         ),
       ],
     ),
@@ -198,17 +206,18 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 72,
     padding: const EdgeInsets.symmetric(horizontal: 30),
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: appBorder)),
+    decoration: BoxDecoration(
+      border: Border(bottom: BorderSide(color: context.colors.border)),
     ),
     child: Row(
       children: [
         Text(section, style: const TextStyle(fontWeight: FontWeight.w800)),
         const Spacer(),
-        const Text(
+        const ThemeModeButton(),
+        Text(
           'LOCAL',
           style: TextStyle(
-            color: appAccent,
+            color: context.colors.accent,
             fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
@@ -218,10 +227,10 @@ class _Header extends StatelessWidget {
           onTap: onProfile,
           borderRadius: BorderRadius.circular(40),
           child: CircleAvatar(
-            backgroundColor: appRaised,
+            backgroundColor: context.colors.raised,
             child: Text(
               alias[0].toUpperCase(),
-              style: const TextStyle(color: appAccent),
+              style: TextStyle(color: context.colors.accent),
             ),
           ),
         ),
@@ -246,98 +255,104 @@ class _WebHome extends StatelessWidget {
             'Good day, ${controller.profile!['alias']}.',
             style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
           ),
-          const Text(
+          Text(
             'Pilih satu kartu untuk 3–5 langkah hari ini.',
-            style: TextStyle(color: appMuted),
+            style: TextStyle(color: context.colors.muted),
           ),
           const SizedBox(height: 24),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 7,
-                child: _WebPanel(
-                  child: Column(
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${const {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Mori'}, your companion',
-                          style: const TextStyle(
-                            fontSize: 20,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: _WebPanel(
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${const {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Mori'}, your companion',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        WellnessCompanion(
+                          kind: kind,
+                          level: controller.level,
+                          size: 310,
+                        ),
+                        Text(
+                          'Level ${controller.level}  •  ${controller.xp} XP',
+                          style: TextStyle(
+                            color: context.colors.accent,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      WellnessCompanion(
-                        kind: kind,
-                        level: controller.level,
-                        size: 310,
-                      ),
-                      Text(
-                        'Level ${controller.level}  •  ${controller.xp} XP',
-                        style: const TextStyle(
-                          color: appAccent,
-                          fontWeight: FontWeight.w800,
+                        const Spacer(),
+                        LinearProgressIndicator(
+                          value: (controller.xp % 100) / 100,
+                          color: context.colors.accent,
+                          backgroundColor: context.colors.raised,
                         ),
-                      ),
-                      const Spacer(),
-                      LinearProgressIndicator(
-                        value: (controller.xp % 100) / 100,
-                        color: appAccent,
-                        backgroundColor: appRaised,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: _WebPanel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              "Today's steps",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                const SizedBox(width: 20),
+                Expanded(
+                  flex: 5,
+                  child: _WebPanel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                "Today's steps",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
+                            if (controller.needsDailyCardDraw)
+                              TextButton.icon(
+                                onPressed: onDraw,
+                                icon: const Icon(Icons.auto_awesome_rounded),
+                                label: const Text('Daily Draw'),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (controller.quests.isEmpty)
+                          Text(
+                            'Quest hari ini akan muncul setelah kamu mengambil kartu.',
+                            style: TextStyle(color: context.colors.muted),
                           ),
-                          if (controller.needsDailyCardDraw)
-                            TextButton.icon(
-                              onPressed: onDraw,
-                              icon: const Icon(Icons.auto_awesome_rounded),
-                              label: const Text('Daily Draw'),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (controller.quests.isEmpty)
-                        const Text(
-                          'Quest hari ini akan muncul setelah kamu mengambil kartu.',
-                          style: TextStyle(color: appMuted),
+                        ...controller.quests.map(
+                          (task) => _WebTask(
+                            task: task,
+                            onDone: () =>
+                                controller.completeCard(task['id'].toString()),
+                          ),
                         ),
-                      ...controller.quests.map(
-                        (task) => _WebTask(
-                          task: task,
-                          onDone: () =>
-                              controller.completeCard(task['id'].toString()),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 20),
+          if (controller.reduction) ...[
+            ReductionEntryCard(controller: controller),
+            const SizedBox(height: 20),
+          ],
           Row(
             children: [
               Expanded(
@@ -375,14 +390,14 @@ class _WebTask extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: appRaised,
+        color: context.colors.raised,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
             done ? Icons.check_circle : Icons.circle_outlined,
-            color: appAccent,
+            color: context.colors.accent,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -455,9 +470,9 @@ class _WebPanel extends StatelessWidget {
     height: 590,
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: child,
   );
@@ -476,9 +491,9 @@ class _WebMetric extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Row(
       children: [
@@ -490,13 +505,13 @@ class _WebMetric extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
-                  color: appAccent,
+                  color: context.colors.accent,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              Text(detail, style: const TextStyle(color: appMuted)),
+              Text(detail, style: TextStyle(color: context.colors.muted)),
             ],
           ),
         ),

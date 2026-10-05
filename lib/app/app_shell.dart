@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/activity/presentation/activity_page.dart';
 import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
@@ -95,15 +96,19 @@ class _AppShellState extends State<AppShell> {
               child: Row(
                 children: [
                   const Text(
-                    'youwell.',
+                    'youwell',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
                   ),
                   const Spacer(),
+                  const ThemeModeButton(),
                   if (widget.controller.needsDailyCardDraw)
                     IconButton(
                       tooltip: 'Ambil kartu hari ini',
                       onPressed: _openDailyDraw,
-                      icon: const Icon(Icons.style_rounded, color: appAccent),
+                      icon: Icon(
+                        Icons.style_rounded,
+                        color: context.colors.accent,
+                      ),
                     ),
                   const SizedBox(width: 4),
                   Semantics(
@@ -114,11 +119,11 @@ class _AppShellState extends State<AppShell> {
                       onTap: _openProfile,
                       child: CircleAvatar(
                         radius: 21,
-                        backgroundColor: appRaised,
+                        backgroundColor: context.colors.raised,
                         child: Text(
                           alias[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: appAccent,
+                          style: TextStyle(
+                            color: context.colors.accent,
                             fontWeight: FontWeight.w800,
                           ),
                         ),

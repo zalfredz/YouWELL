@@ -21,9 +21,9 @@ class _CommunityPageState extends State<CommunityPage> {
         style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
       ),
       const SizedBox(height: 4),
-      const Text(
+      Text(
         'Dukungan ringan dengan identitas alias.',
-        style: TextStyle(color: appMuted),
+        style: TextStyle(color: context.colors.muted),
       ),
       const SizedBox(height: 20),
       SingleChildScrollView(
@@ -64,9 +64,9 @@ class _Wall extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Post masuk ke antrean admin sebelum tampil.',
-                style: TextStyle(color: appMuted, fontSize: 12),
+                style: TextStyle(color: context.colors.muted, fontSize: 12),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -140,9 +140,9 @@ class _PostCard extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,10 +151,10 @@ class _PostCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 17,
-              backgroundColor: const Color(0xff203a32),
+              backgroundColor: context.colors.selected,
               child: Text(
                 post['alias'].toString()[0].toUpperCase(),
-                style: const TextStyle(color: appAccent),
+                style: TextStyle(color: context.colors.accent),
               ),
             ),
             const SizedBox(width: 10),
@@ -186,8 +186,12 @@ class _PostCard extends StatelessWidget {
               reaction,
             );
             return ActionChip(
-              backgroundColor: active ? const Color(0xff203a32) : appRaised,
-              side: BorderSide(color: active ? appAccent : appBorder),
+              backgroundColor: active
+                  ? context.colors.selected
+                  : context.colors.raised,
+              side: BorderSide(
+                color: active ? context.colors.accent : context.colors.border,
+              ),
               label: Text(reaction),
               onPressed: () =>
                   controller.reactToCommunityPost(post['id'], reaction),
@@ -232,8 +236,8 @@ class _Squad extends StatelessWidget {
             value: progress / goal,
             minHeight: 8,
             borderRadius: BorderRadius.circular(99),
-            color: appAccent,
-            backgroundColor: appRaised,
+            color: context.colors.accent,
+            backgroundColor: context.colors.raised,
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -265,16 +269,26 @@ class _VibeMap extends StatelessWidget {
       Container(
         height: 260,
         decoration: BoxDecoration(
-          color: const Color(0xff101d1a),
+          color: context.colors.raised,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: appBorder),
+          border: Border.all(color: context.colors.border),
         ),
-        child: const Stack(
+        child: Stack(
           children: [
-            _VibeDot(left: .15, top: .25, size: 72, color: appAccentCyan),
-            _VibeDot(left: .55, top: .18, size: 96, color: appAccent),
-            _VibeDot(left: .38, top: .60, size: 64, color: appAccentAmber),
-            _VibeDot(left: .72, top: .63, size: 54, color: Color(0xffb69cff)),
+            _VibeDot(left: .15, top: .25, size: 72, color: context.colors.cyan),
+            _VibeDot(
+              left: .55,
+              top: .18,
+              size: 96,
+              color: context.colors.accent,
+            ),
+            _VibeDot(
+              left: .38,
+              top: .60,
+              size: 64,
+              color: context.colors.amber,
+            ),
+            _VibeDot(left: .72, top: .63, size: 54, color: context.colors.cyan),
             Center(
               child: Text(
                 'Collective Vibe\nDEMO DATA',
@@ -289,9 +303,9 @@ class _VibeMap extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
-      const Text(
+      Text(
         'Agregat anonim untuk rasa kebersamaan. Lokasi presisi tidak ditampilkan.',
-        style: TextStyle(color: appMuted, height: 1.5),
+        style: TextStyle(color: context.colors.muted, height: 1.5),
       ),
     ],
   );
@@ -362,21 +376,24 @@ class _InfoCard extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: appAccent, size: 30),
+        Icon(icon, color: context.colors.accent, size: 30),
         const SizedBox(height: 14),
         Text(
           title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 6),
-        Text(detail, style: const TextStyle(color: appMuted, height: 1.5)),
+        Text(
+          detail,
+          style: TextStyle(color: context.colors.muted, height: 1.5),
+        ),
         if (action != null) ...[const SizedBox(height: 18), action!],
       ],
     ),

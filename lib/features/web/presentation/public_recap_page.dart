@@ -17,7 +17,7 @@ class PublicRecapPage extends StatelessWidget {
     final activeDays = profile == null ? 4 : controller.activeDaysIn(7);
     final level = profile == null ? 3 : controller.level;
     return Scaffold(
-      backgroundColor: const Color(0xffeef2e9),
+      backgroundColor: context.colors.canvas,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -29,12 +29,12 @@ class PublicRecapPage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.spa_rounded, color: green),
+                      Icon(Icons.spa_rounded, color: context.colors.accent),
                       const SizedBox(width: 8),
-                      const Text(
-                        'youwell.',
+                      Text(
+                        'youwell',
                         style: TextStyle(
-                          color: ink,
+                          color: context.colors.text,
                           fontSize: 27,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1,
@@ -56,18 +56,21 @@ class PublicRecapPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(34),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xff1d4438), Color(0xff42745b)],
+                      gradient: LinearGradient(
+                        colors: [
+                          context.colors.selected,
+                          context.colors.raised,
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(32),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'WEEKLY WRAPPED',
                           style: TextStyle(
-                            color: Color(0xffc6e0ba),
+                            color: context.colors.accent,
                             letterSpacing: 1.2,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -76,8 +79,8 @@ class PublicRecapPage extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           '$alias memilih\ntetap bertumbuh.',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.colors.text,
                             fontSize: 45,
                             height: 1.04,
                             letterSpacing: -1.8,
@@ -85,10 +88,10 @@ class PublicRecapPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        const Text(
+                        Text(
                           'Ringkasan ini dibagikan secara sukarela. Catatan pribadi dan detail sensitif tidak ditampilkan.',
                           style: TextStyle(
-                            color: Color(0xffd9e8d8),
+                            color: context.colors.text,
                             height: 1.55,
                           ),
                         ),
@@ -123,33 +126,37 @@ class PublicRecapPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const Text(
+                  Text(
                     'Minggu ini',
                     style: TextStyle(
-                      color: ink,
+                      color: context.colors.text,
                       fontSize: 25,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Setiap langkah kecil membantu membangun ritme yang lebih baik.',
-                    style: TextStyle(color: muted, fontSize: 16, height: 1.65),
+                    style: TextStyle(
+                      color: context.colors.muted,
+                      fontSize: 16,
+                      height: 1.65,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   Container(
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Yang dirayakan',
                           style: TextStyle(
-                            color: ink,
+                            color: context.colors.text,
                             fontWeight: FontWeight.w800,
                             fontSize: 20,
                           ),
@@ -176,10 +183,10 @@ class PublicRecapPage extends StatelessWidget {
                   Center(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Perjalananmu boleh punya ritmenya sendiri.',
                           style: TextStyle(
-                            color: ink,
+                            color: context.colors.text,
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
                           ),
@@ -218,7 +225,7 @@ class _RecapStat extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: const Color(0x22ffffff),
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(17),
       ),
       child: Column(
@@ -226,8 +233,8 @@ class _RecapStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colors.text,
               fontSize: 27,
               fontWeight: FontWeight.w800,
             ),
@@ -235,7 +242,7 @@ class _RecapStat extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             label,
-            style: const TextStyle(color: Color(0xffd8e8d8), fontSize: 12),
+            style: TextStyle(color: context.colors.muted, fontSize: 12),
           ),
         ],
       ),
@@ -254,10 +261,13 @@ class _RecapLine extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: green, size: 20),
+        Icon(icon, color: context.colors.accent, size: 20),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(text, style: const TextStyle(color: ink, height: 1.45)),
+          child: Text(
+            text,
+            style: TextStyle(color: context.colors.text, height: 1.45),
+          ),
         ),
       ],
     ),

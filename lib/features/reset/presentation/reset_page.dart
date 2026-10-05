@@ -109,40 +109,44 @@ class _ResetPageState extends State<ResetPage> {
 
   @override
   Widget build(BuildContext context) {
+    final reductionSupport =
+        widget.initialMode == 'delay' && widget.controller.reduction;
     final minutes = (_remaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remaining % 60).toString().padLeft(2, '0');
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
-        const Text(
-          'Ambil jeda',
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+        Text(
+          reductionSupport ? 'Kurangi rokok / vape' : 'Ambil jeda',
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Pilihan cepat saat kamu butuh jeda.',
-          style: TextStyle(color: appMuted),
+        Text(
+          reductionSupport
+              ? 'Saat muncul keinginan, mulai jeda 5 menit. Sesi yang selesai otomatis dicatat.'
+              : 'Pilihan cepat saat kamu butuh jeda.',
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 22),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xff19352d), appSurface],
+            gradient: LinearGradient(
+              colors: [context.colors.selected, context.colors.surface],
             ),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xff315043)),
+            border: Border.all(color: context.colors.border),
           ),
           child: Column(
             children: [
               Text(
                 _mode == 'delay'
-                    ? 'Tunda kebiasaan'
+                    ? 'Tunda rokok / vape'
                     : _mode == 'reset'
                     ? 'Jeda singkat'
                     : 'Quick focus',
-                style: const TextStyle(
-                  color: appAccent,
+                style: TextStyle(
+                  color: context.colors.accent,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -209,6 +213,41 @@ class _ResetPageState extends State<ResetPage> {
             selected: _mode == 'delay',
             onTap: () => _select('delay', 300),
           ),
+          const SizedBox(height: 18),
+          Text(
+            '${widget.controller.delayedToday} jeda selesai hari ini',
+            style: TextStyle(
+              color: context.colors.accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (_mode == 'delay' && _remaining == 0) ...[
+            const SizedBox(height: 8),
+            const Text('Jeda selesai dan sudah dicatat.'),
+          ],
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.colors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pilih aktivitas pengganti',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Minum air, tarik napas perlahan, atau alihkan perhatian ke aktivitas singkat.',
+                  style: TextStyle(color: context.colors.muted, height: 1.5),
+                ),
+              ],
+            ),
+          ),
         ],
         const SizedBox(height: 26),
         const Text(
@@ -238,9 +277,9 @@ class _ResetPageState extends State<ResetPage> {
           onTap: _showStretch,
         ),
         const SizedBox(height: 18),
-        const Text(
+        Text(
           'Untuk sesi Pomodoro, soundscape, dan fokus panjang, gunakan workspace web YouWell.',
-          style: TextStyle(color: appMuted, height: 1.5),
+          style: TextStyle(color: context.colors.muted, height: 1.5),
         ),
       ],
     );
@@ -260,7 +299,7 @@ class _ModeButton extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Material(
-    color: selected ? const Color(0xff203a32) : appRaised,
+    color: selected ? context.colors.selected : context.colors.raised,
     borderRadius: BorderRadius.circular(16),
     child: InkWell(
       onTap: onTap,
@@ -269,7 +308,10 @@ class _ModeButton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, color: selected ? appAccent : appMuted),
+            Icon(
+              icon,
+              color: selected ? context.colors.accent : context.colors.muted,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -302,15 +344,15 @@ class _ActionCard extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       children: [
         Row(
           children: [
-            Icon(icon, color: appAccent),
+            Icon(icon, color: context.colors.accent),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -322,7 +364,7 @@ class _ActionCard extends StatelessWidget {
                   ),
                   Text(
                     detail,
-                    style: const TextStyle(color: appMuted, fontSize: 12),
+                    style: TextStyle(color: context.colors.muted, fontSize: 12),
                   ),
                 ],
               ),
@@ -336,8 +378,8 @@ class _ActionCard extends StatelessWidget {
             value: progress,
             minHeight: 6,
             borderRadius: BorderRadius.circular(99),
-            backgroundColor: appRaised,
-            color: appAccentCyan,
+            backgroundColor: context.colors.raised,
+            color: context.colors.cyan,
           ),
         ],
       ],

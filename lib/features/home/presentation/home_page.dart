@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/checkin/presentation/energy_checkin_sheet.dart';
+import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
 import 'package:youwell/shared/widgets/wellness_companion.dart';
 
@@ -34,9 +35,9 @@ class HomePage extends StatelessWidget {
           style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Satu langkah kecil untuk hari yang lebih baik.',
-          style: TextStyle(color: appMuted),
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 20),
         _CompanionStage(
@@ -48,6 +49,10 @@ class HomePage extends StatelessWidget {
           progress: (controller.xp % 100) / 100,
           completedToday: done,
         ),
+        if (controller.reduction) ...[
+          const SizedBox(height: 20),
+          ReductionEntryCard(controller: controller),
+        ],
         const SizedBox(height: 26),
         Row(
           children: [
@@ -65,23 +70,27 @@ class HomePage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: appSurface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: appBorder),
+              border: Border.all(color: context.colors.border),
             ),
             child: Column(
               children: [
-                const Icon(Icons.style_rounded, color: appAccent, size: 36),
+                Icon(
+                  Icons.style_rounded,
+                  color: context.colors.accent,
+                  size: 36,
+                ),
                 const SizedBox(height: 10),
                 const Text(
                   'Quest-mu menunggu',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Buka satu kartu untuk 3–5 quest hari ini.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: appMuted),
+                  style: TextStyle(color: context.colors.muted),
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
@@ -133,13 +142,17 @@ class _CompanionStage extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
     decoration: BoxDecoration(
-      gradient: const RadialGradient(
+      gradient: RadialGradient(
         center: Alignment(0, -.15),
         radius: .9,
-        colors: [Color(0xff23493c), Color(0xff14221e), appSurface],
+        colors: [
+          context.colors.selected,
+          context.colors.raised,
+          context.colors.surface,
+        ],
       ),
       borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0xff315043)),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       children: [
@@ -176,8 +189,8 @@ class _CompanionStage extends StatelessWidget {
           child: LinearProgressIndicator(
             minHeight: 7,
             value: progress,
-            backgroundColor: appCanvas,
-            color: appAccent,
+            backgroundColor: context.colors.canvas,
+            color: context.colors.accent,
           ),
         ),
       ],
@@ -192,7 +205,7 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: appCanvas.withValues(alpha: .5),
+      color: context.colors.canvas.withValues(alpha: .5),
       borderRadius: BorderRadius.circular(14),
     ),
     child: Column(
@@ -200,9 +213,15 @@ class _Metric extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(color: appAccent, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: context.colors.accent,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        Text(label, style: const TextStyle(color: appMuted, fontSize: 11)),
+        Text(
+          label,
+          style: TextStyle(color: context.colors.muted, fontSize: 11),
+        ),
       ],
     ),
   );
@@ -226,15 +245,17 @@ class _TaskTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       decoration: BoxDecoration(
-        color: appRaised,
+        color: context.colors.raised,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: done ? const Color(0xff315043) : appBorder),
+        border: Border.all(
+          color: done ? context.colors.border : context.colors.border,
+        ),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: appSurface,
-            child: Icon(icon, color: appAccent),
+            backgroundColor: context.colors.surface,
+            child: Icon(icon, color: context.colors.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -250,7 +271,7 @@ class _TaskTile extends StatelessWidget {
                 ),
                 Text(
                   '${task['durationMinutes']} min  •  +${task['xp']} XP  •  Level ${task['difficulty']}',
-                  style: const TextStyle(color: appMuted, fontSize: 12),
+                  style: TextStyle(color: context.colors.muted, fontSize: 12),
                 ),
               ],
             ),
@@ -268,7 +289,7 @@ class _TaskTile extends StatelessWidget {
                   : task['activityKind'] == null
                   ? Icons.circle_outlined
                   : Icons.arrow_forward_rounded,
-              color: appAccent,
+              color: context.colors.accent,
             ),
           ),
         ],
@@ -288,13 +309,16 @@ class _QuickCheckIn extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: appSurface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: appBorder),
+        border: Border.all(color: context.colors.border),
       ),
       child: Row(
         children: [
-          const Icon(Icons.battery_charging_full_rounded, color: appAccent),
+          Icon(
+            Icons.battery_charging_full_rounded,
+            color: context.colors.accent,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

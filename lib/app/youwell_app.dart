@@ -4,10 +4,14 @@ import 'package:youwell/app/app_shell.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/config/app_environment.dart';
 import 'package:youwell/core/theme/app_theme.dart';
+import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/onboarding/presentation/onboarding_page.dart';
 import 'package:youwell/features/web/presentation/public_recap_page.dart';
 import 'package:youwell/features/web/presentation/web_landing_page.dart';
 import 'package:youwell/features/web/presentation/web_workspace_page.dart';
+
+const _mobilePreview = kIsWeb && bool.fromEnvironment('MOBILE_PREVIEW');
+const _webWorkspace = kIsWeb && !_mobilePreview;
 
 /// Local-first application root for the current web design phase.
 class YouWellApp extends StatelessWidget {
@@ -16,16 +20,67 @@ class YouWellApp extends StatelessWidget {
   final WellnessController controller;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) {
+    final app = AppearanceScope(
+      controller: controller,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (_, _) => _buildApp(),
+      ),
+    );
+    if (!_mobilePreview) return app;
+
+    // Keep the navigator and its dialogs inside a portrait phone viewport.
+    const screenSize = Size(393, 852);
+    return ColoredBox(
+      color: const Color(0xff25262b),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: SizedBox(
+                width: screenSize.width,
+                height: screenSize.height,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    size: screenSize,
+                    padding: const EdgeInsets.only(top: 47, bottom: 34),
+                    viewPadding: const EdgeInsets.only(top: 47, bottom: 34),
+                    viewInsets: EdgeInsets.zero,
+                  ),
+                  child: app,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApp() => MaterialApp(
     title: '${AppEnvironment.appName} • Little steps, better days',
     debugShowCheckedModeBanner: false,
-    theme: kIsWeb ? AppTheme.light : AppTheme.mobile,
+    theme: _mobilePreview
+        ? AppTheme.light.copyWith(platform: TargetPlatform.iOS)
+        : AppTheme.light,
+    darkTheme: _mobilePreview
+        ? AppTheme.dark.copyWith(platform: TargetPlatform.iOS)
+        : AppTheme.dark,
+    themeMode: switch (controller.themePreference) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    },
     routes: {
       '/app': (_) => _LocalAppEntry(controller: controller),
       '/recap': (_) => PublicRecapPage(controller: controller),
       '/admin': (_) => _LocalAppEntry(controller: controller, isAdmin: true),
     },
-    home: kIsWeb
+    home: _webWorkspace
         ? _WebLandingEntry(controller: controller)
         : _LocalAppEntry(controller: controller),
   );
@@ -52,12 +107,9 @@ class _LocalAppEntry extends StatelessWidget {
     animation: controller,
     builder: (context, _) {
       if (controller.profile == null) {
-        return Theme(
-          data: AppTheme.mobile,
-          child: OnboardingPage(controller: controller),
-        );
+        return OnboardingPage(controller: controller);
       }
-      return kIsWeb
+      return _webWorkspace
           ? WebWorkspacePage(controller: controller, isAdmin: isAdmin)
           : AppShell(controller: controller);
     },
