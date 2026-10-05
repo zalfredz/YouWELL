@@ -26,7 +26,7 @@ class _EnergyCheckInSheetState extends State<EnergyCheckInSheet> {
               width: 42,
               height: 4,
               decoration: BoxDecoration(
-                color: appBorder,
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -57,9 +57,9 @@ class _EnergyCheckInSheetState extends State<EnergyCheckInSheet> {
                     .toList(),
           ),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'Apa yang paling berpengaruh? (opsional)',
-            style: TextStyle(color: appMuted),
+            style: TextStyle(color: context.colors.muted),
           ),
           const SizedBox(height: 10),
           Wrap(

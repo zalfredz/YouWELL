@@ -19,9 +19,9 @@ class ProgressPage extends StatelessWidget {
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Semua langkah kecil tetap dihitung.',
-          style: TextStyle(color: appMuted),
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 22),
         _Panel(
@@ -37,15 +37,15 @@ class ProgressPage extends StatelessWidget {
               Text(
                 'Level ${controller.level} • ${controller.xp % 100} / 100 XP ke level berikutnya',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: appMuted),
+                style: TextStyle(color: context.colors.muted),
               ),
               const SizedBox(height: 14),
               LinearProgressIndicator(
                 value: (controller.xp % 100) / 100,
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(99),
-                color: appAccent,
-                backgroundColor: appRaised,
+                color: context.colors.accent,
+                backgroundColor: context.colors.raised,
               ),
             ],
           ),
@@ -76,20 +76,23 @@ class ProgressPage extends StatelessWidget {
             children: [
               Text(
                 '${(rate * 100).round()}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 42,
-                  color: appAccent,
+                  color: context.colors.accent,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const Text('langkah selesai', style: TextStyle(color: appMuted)),
+              Text(
+                'langkah selesai',
+                style: TextStyle(color: context.colors.muted),
+              ),
               const SizedBox(height: 14),
               LinearProgressIndicator(
                 value: rate,
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(99),
-                backgroundColor: appRaised,
-                color: appAccent,
+                backgroundColor: context.colors.raised,
+                color: context.colors.accent,
               ),
             ],
           ),
@@ -97,9 +100,9 @@ class ProgressPage extends StatelessWidget {
         _Panel(
           title: 'Energi terbaru',
           child: energy.isEmpty
-              ? const Text(
+              ? Text(
                   'Belum ada check-in. Mulai dari Home.',
-                  style: TextStyle(color: appMuted),
+                  style: TextStyle(color: context.colors.muted),
                 )
               : Wrap(
                   spacing: 8,
@@ -117,7 +120,7 @@ class ProgressPage extends StatelessWidget {
           title: 'Waktu fokus',
           child: Row(
             children: [
-              const Icon(Icons.timer_outlined, color: appAccentCyan, size: 34),
+              Icon(Icons.timer_outlined, color: context.colors.cyan, size: 34),
               const SizedBox(width: 14),
               Text(
                 '${controller.focusMinutesToday} menit',
@@ -127,7 +130,7 @@ class ProgressPage extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              const Text('hari ini', style: TextStyle(color: appMuted)),
+              Text('hari ini', style: TextStyle(color: context.colors.muted)),
             ],
           ),
         ),
@@ -148,10 +151,10 @@ class ProgressPage extends StatelessWidget {
         ),
         if (controller.reduction)
           _Panel(
-            title: 'Better habit',
+            title: 'Jeda rokok / vape',
             child: Row(
               children: [
-                const Icon(Icons.air_rounded, color: appAccent, size: 34),
+                Icon(Icons.air_rounded, color: context.colors.accent, size: 34),
                 const SizedBox(width: 14),
                 Text(
                   '${controller.delayedToday} kali jeda',
@@ -161,7 +164,7 @@ class ProgressPage extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Text('hari ini', style: TextStyle(color: appMuted)),
+                Text('hari ini', style: TextStyle(color: context.colors.muted)),
               ],
             ),
           ),
@@ -186,23 +189,23 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: appRaised,
+      color: context.colors.raised,
       borderRadius: BorderRadius.circular(18),
     ),
     child: Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
-            color: appAccent,
+            color: context.colors.accent,
             fontWeight: FontWeight.w900,
           ),
         ),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: appMuted, fontSize: 11),
+          style: TextStyle(color: context.colors.muted, fontSize: 11),
         ),
       ],
     ),
@@ -218,9 +221,9 @@ class _Panel extends StatelessWidget {
     margin: const EdgeInsets.only(top: 14),
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: appSurface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: appBorder),
+      border: Border.all(color: context.colors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

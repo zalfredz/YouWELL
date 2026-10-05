@@ -95,25 +95,25 @@ class _MealSnapPageState extends State<MealSnapPage> {
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Jurnal visual pribadi. Tanpa hitung kalori atau penilaian makanan.',
-          style: TextStyle(color: appMuted),
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 24),
         Container(
           height: 280,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: appSurface,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: appBorder),
+            border: Border.all(color: context.colors.border),
           ),
           child: _photo == null
-              ? const Center(
+              ? Center(
                   child: Icon(
                     Icons.photo_camera_outlined,
                     size: 72,
-                    color: appMuted,
+                    color: context.colors.muted,
                   ),
                 )
               : Image.memory(_photo!, fit: BoxFit.cover),
@@ -140,7 +140,7 @@ class _MealSnapPageState extends State<MealSnapPage> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 14),
-          Text(_error!, style: const TextStyle(color: appAccentAmber)),
+          Text(_error!, style: TextStyle(color: context.colors.amber)),
         ],
         const SizedBox(height: 20),
         FilledButton.icon(

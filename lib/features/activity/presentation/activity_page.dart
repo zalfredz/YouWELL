@@ -40,9 +40,9 @@ class ActivityPage extends StatelessWidget {
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Gerak, makan, dan jeda kecilmu.',
-          style: TextStyle(color: appMuted),
+          style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 22),
         Row(
@@ -87,9 +87,9 @@ class ActivityPage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: appSurface,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: appBorder),
+            border: Border.all(color: context.colors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +101,7 @@ class ActivityPage extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${controller.water.toInt()} / ${controller.profile?['waterGoal'] ?? 2000} ml',
-                style: const TextStyle(color: appMuted),
+                style: TextStyle(color: context.colors.muted),
               ),
               const SizedBox(height: 12),
               LinearProgressIndicator(
@@ -112,8 +112,8 @@ class ActivityPage extends StatelessWidget {
                         .clamp(0, 1),
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(99),
-                color: appAccent,
-                backgroundColor: appRaised,
+                color: context.colors.accent,
+                backgroundColor: context.colors.raised,
               ),
               const SizedBox(height: 14),
               FilledButton.icon(
@@ -131,9 +131,9 @@ class ActivityPage extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         if (workouts.isEmpty && meals.isEmpty)
-          const Text(
+          Text(
             'Belum ada. Mulai dari satu aktivitas kecil.',
-            style: TextStyle(color: appMuted),
+            style: TextStyle(color: context.colors.muted),
           )
         else ...[
           for (final row in workouts.reversed.take(3))
@@ -169,19 +169,19 @@ class _TodayMetric extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: appRaised,
+      color: context.colors.raised,
       borderRadius: BorderRadius.circular(18),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: appAccent),
+        Icon(icon, color: context.colors.accent),
         const SizedBox(height: 10),
         Text(
           value,
           style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
         ),
-        Text(label, style: const TextStyle(color: appMuted)),
+        Text(label, style: TextStyle(color: context.colors.muted)),
       ],
     ),
   );
@@ -199,17 +199,17 @@ class _ActivityAction extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Card(
-    color: appSurface,
+    color: context.colors.surface,
     margin: const EdgeInsets.only(bottom: 10),
     child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       leading: CircleAvatar(
-        backgroundColor: appRaised,
-        child: Icon(icon, color: appAccent),
+        backgroundColor: context.colors.raised,
+        child: Icon(icon, color: context.colors.accent),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(detail, style: const TextStyle(color: appMuted)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: appMuted),
+      subtitle: Text(detail, style: TextStyle(color: context.colors.muted)),
+      trailing: Icon(Icons.chevron_right_rounded, color: context.colors.muted),
       onTap: onTap,
     ),
   );
@@ -226,8 +226,8 @@ class _HistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
     contentPadding: EdgeInsets.zero,
-    leading: Icon(icon, color: appAccent),
+    leading: Icon(icon, color: context.colors.accent),
     title: Text(title),
-    subtitle: Text(detail, style: const TextStyle(color: appMuted)),
+    subtitle: Text(detail, style: TextStyle(color: context.colors.muted)),
   );
 }

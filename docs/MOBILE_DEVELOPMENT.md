@@ -24,6 +24,22 @@ capability iOS, archive, dan distribusi.
 - App icon dan launch screen masih placeholder Flutter dan harus diganti
   sebelum TestFlight.
 
+## Preview tampilan iPhone dari Windows
+
+Untuk melihat dan mencoba UI mobile tanpa Android SDK atau Mac, jalankan dari
+PowerShell di root project:
+
+```powershell
+flutter run -d chrome --dart-define=MOBILE_PREVIEW=true --dart-define-from-file=config/env/development.example.json
+```
+
+Preview membuka alur mobile yang sama (onboarding, Home, Aktivitas, Perjalanan,
+Komunitas, dan Profil) dalam frame portrait 393 × 852 dengan tema platform iOS.
+Data preview disimpan terpisah dari data web biasa. Ini preview UI di browser;
+fitur perangkat seperti permission iOS, kamera, dan GPS tetap perlu diuji pada
+iPhone atau simulator iOS di Mac. Tanpa flag `MOBILE_PREVIEW`, web tetap memakai
+landing page dan workspace desktop.
+
 ## Setup Mac satu kali
 
 Pastikan Xcode berada di `/Applications/Xcode.app`, lalu jalankan:

@@ -1,17 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
-
-const _bg = Color(0xff0d0e11);
-const _panel = Color(0xff16181d);
-const _raised = Color(0xff1c1f25);
-const _line = Color(0xff2a2d34);
-const _text = Color(0xfff1f3f5);
-const _muted = Color(0xff9298a3);
-const _green = Color(0xff78e3b1);
-const _cyan = Color(0xff77d7e5);
 
 class WebPomodoroPage extends StatefulWidget {
   const WebPomodoroPage({super.key, required this.controller});
@@ -128,25 +120,25 @@ class _WebPomodoroPageState extends State<WebPomodoroPage> {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: _bg,
+    color: context.colors.canvas,
     child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 28, 28, 56),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Pomodoro Focus',
             style: TextStyle(
-              color: _text,
+              color: context.colors.text,
               fontSize: 30,
               fontWeight: FontWeight.w800,
               letterSpacing: -.8,
             ),
           ),
           const SizedBox(height: 7),
-          const Text(
+          Text(
             'Ruang tenang untuk menyelesaikan satu hal dengan utuh.',
-            style: TextStyle(color: _muted),
+            style: TextStyle(color: context.colors.muted),
           ),
           const SizedBox(height: 22),
           LayoutBuilder(
@@ -226,12 +218,16 @@ class _TimerStage extends StatelessWidget {
       height: 690,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xff182522), Color(0xff12171a), Color(0xff18151e)],
+          colors: [
+            context.colors.selected,
+            context.colors.surface,
+            context.colors.raised,
+          ],
         ),
-        border: Border.all(color: const Color(0xff30403b)),
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
@@ -272,10 +268,10 @@ class _TimerStage extends StatelessWidget {
                     selected: identical(item, preset),
                     onSelected: (_) => onPreset(item),
                     showCheckmark: false,
-                    selectedColor: const Color(0xff2c4d41),
-                    backgroundColor: const Color(0xff20252a),
-                    side: const BorderSide(color: _line),
-                    labelStyle: const TextStyle(color: _text),
+                    selectedColor: context.colors.selected,
+                    backgroundColor: context.colors.raised,
+                    side: BorderSide(color: context.colors.border),
+                    labelStyle: TextStyle(color: context.colors.text),
                   ),
                 )
                 .toList(),
@@ -288,8 +284,8 @@ class _TimerStage extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress.clamp(0, 1),
               minHeight: 7,
-              color: _green,
-              backgroundColor: const Color(0xff364047),
+              color: context.colors.accent,
+              backgroundColor: context.colors.border,
             ),
           ),
           const SizedBox(height: 8),
@@ -297,12 +293,12 @@ class _TimerStage extends StatelessWidget {
             children: [
               Text(
                 '${(progress * 100).round()}%',
-                style: const TextStyle(color: _muted, fontSize: 11),
+                style: TextStyle(color: context.colors.muted, fontSize: 11),
               ),
               const Spacer(),
               Text(
                 '${preset.label} rhythm',
-                style: const TextStyle(color: _muted, fontSize: 11),
+                style: TextStyle(color: context.colors.muted, fontSize: 11),
               ),
             ],
           ),
@@ -315,8 +311,8 @@ class _TimerStage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onToggle,
                 style: FilledButton.styleFrom(
-                  backgroundColor: _green,
-                  foregroundColor: const Color(0xff102019),
+                  backgroundColor: context.colors.accent,
+                  foregroundColor: context.colors.canvas,
                   minimumSize: const Size(138, 48),
                 ),
                 icon: Icon(
@@ -334,12 +330,12 @@ class _TimerStage extends StatelessWidget {
           const Spacer(),
           TextField(
             controller: target,
-            style: const TextStyle(color: _text),
-            decoration: const InputDecoration(
+            style: TextStyle(color: context.colors.text),
+            decoration: InputDecoration(
               hintText: 'Apa target fokusmu sesi ini?',
-              prefixIcon: Icon(Icons.flag_outlined, color: _cyan),
+              prefixIcon: Icon(Icons.flag_outlined, color: context.colors.cyan),
               filled: true,
-              fillColor: Color(0xaa15191d),
+              fillColor: context.colors.raised.withValues(alpha: .67),
               border: OutlineInputBorder(),
             ),
           ),
@@ -351,7 +347,7 @@ class _TimerStage extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 notice,
-                style: const TextStyle(color: _muted, fontSize: 12),
+                style: TextStyle(color: context.colors.muted, fontSize: 12),
               ),
             ),
           ),
@@ -377,11 +373,11 @@ class _ModeChip extends StatelessWidget {
     selected: selected,
     onSelected: (_) => onTap(),
     showCheckmark: false,
-    selectedColor: _text,
+    selectedColor: context.colors.text,
     backgroundColor: Colors.transparent,
-    side: const BorderSide(color: Color(0x99ffffff)),
+    side: BorderSide(color: context.colors.border),
     labelStyle: TextStyle(
-      color: selected ? _bg : _text,
+      color: selected ? context.colors.canvas : context.colors.text,
       fontWeight: FontWeight.w700,
     ),
   );
@@ -398,12 +394,12 @@ class _FlipClock extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _FlipTile(value: minutes),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 14),
           child: Text(
             ':',
             style: TextStyle(
-              color: _text,
+              color: context.colors.text,
               fontSize: 68,
               fontWeight: FontWeight.w300,
             ),
@@ -433,9 +429,9 @@ class _FlipTile extends StatelessWidget {
       height: 180,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xff24272d),
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xff3a3e47)),
+        border: Border.all(color: context.colors.border),
         boxShadow: const [
           BoxShadow(
             color: Color(0x66000000),
@@ -449,17 +445,17 @@ class _FlipTile extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Column(
-              children: const [
-                Expanded(child: ColoredBox(color: Color(0xff292c33))),
-                Expanded(child: ColoredBox(color: Color(0xff202329))),
+              children: [
+                Expanded(child: ColoredBox(color: context.colors.raised)),
+                Expanded(child: ColoredBox(color: context.colors.surface)),
               ],
             ),
           ),
-          const Divider(color: Color(0xff111318), thickness: 2),
+          Divider(color: context.colors.border, thickness: 2),
           Text(
             value,
-            style: const TextStyle(
-              color: _text,
+            style: TextStyle(
+              color: context.colors.text,
               fontSize: 92,
               height: 1,
               fontWeight: FontWeight.w700,
@@ -489,10 +485,10 @@ class _FocusInsights extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Today’s focus',
             style: TextStyle(
-              color: _text,
+              color: context.colors.text,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -518,19 +514,19 @@ class _FocusInsights extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Recent sessions',
             style: TextStyle(
-              color: _muted,
+              color: context.colors.muted,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 9),
           if (today.isEmpty)
-            const Text(
+            Text(
               'Selesaikan timer pertamamu hari ini.',
-              style: TextStyle(color: _muted, fontSize: 12),
+              style: TextStyle(color: context.colors.muted, fontSize: 12),
             )
           else
             ...today.reversed
@@ -540,9 +536,9 @@ class _FocusInsights extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.check_circle_rounded,
-                          color: _green,
+                          color: context.colors.accent,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
@@ -552,7 +548,10 @@ class _FocusInsights extends StatelessWidget {
                                 ? session['target'].toString()
                                 : '${session['minutes']} minute focus',
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: _text, fontSize: 12),
+                            style: TextStyle(
+                              color: context.colors.text,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
@@ -577,25 +576,28 @@ class _InsightValue extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
-      color: _raised,
-      border: Border.all(color: _line),
+      color: context.colors.raised,
+      border: Border.all(color: context.colors.border),
       borderRadius: BorderRadius.circular(11),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: _cyan, size: 18),
+        Icon(icon, color: context.colors.cyan, size: 18),
         const SizedBox(height: 10),
         Text(
           value,
-          style: const TextStyle(
-            color: _text,
+          style: TextStyle(
+            color: context.colors.text,
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: _muted, fontSize: 10)),
+        Text(
+          label,
+          style: TextStyle(color: context.colors.muted, fontSize: 10),
+        ),
       ],
     ),
   );
@@ -609,8 +611,8 @@ class _Panel extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: _panel,
-      border: Border.all(color: _line),
+      color: context.colors.surface,
+      border: Border.all(color: context.colors.border),
       borderRadius: BorderRadius.circular(14),
     ),
     child: child,

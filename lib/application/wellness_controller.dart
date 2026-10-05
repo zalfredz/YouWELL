@@ -29,6 +29,16 @@ class WellnessController extends ChangeNotifier {
   Future<void> _pending = Future.value();
   String? storageError;
 
+  String get themePreference => _data['themeMode']?.toString() ?? 'system';
+
+  Future<void> setThemePreference(String value) {
+    if (!const ['system', 'light', 'dark'].contains(value)) {
+      throw ArgumentError.value(value, 'value', 'Unsupported theme mode');
+    }
+    _data['themeMode'] = value;
+    return _save();
+  }
+
   int get dayOffset => (_data['dayOffset'] as num?)?.toInt() ?? 0;
   DateTime get now => clock().add(Duration(days: dayOffset));
   String get today => dayKey(now);

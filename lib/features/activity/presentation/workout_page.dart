@@ -150,9 +150,9 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Tracking hanya aktif saat sesi ini berjalan.',
-              style: TextStyle(color: appMuted),
+              style: TextStyle(color: context.colors.muted),
             ),
             const SizedBox(height: 24),
             SegmentedButton<String>(
@@ -177,9 +177,9 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
             Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: appSurface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: appBorder),
+                border: Border.all(color: context.colors.border),
               ),
               child: Column(
                 children: [
@@ -188,7 +188,7 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
                         ? Icons.directions_walk_rounded
                         : Icons.directions_run_rounded,
                     size: 68,
-                    color: appAccent,
+                    color: context.colors.accent,
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -198,28 +198,31 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const Text('waktu aktif', style: TextStyle(color: appMuted)),
+                  Text(
+                    'waktu aktif',
+                    style: TextStyle(color: context.colors.muted),
+                  ),
                   const SizedBox(height: 22),
                   Text(
                     '${(_meters / 1000).toStringAsFixed(2)} km',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: appAccent,
+                      color: context.colors.accent,
                     ),
                   ),
                   Text(
                     _gpsEnabled
                         ? 'jarak GPS perkiraan'
                         : 'jarak belum tersedia',
-                    style: const TextStyle(color: appMuted),
+                    style: TextStyle(color: context.colors.muted),
                   ),
                 ],
               ),
             ),
             if (_message != null) ...[
               const SizedBox(height: 14),
-              Text(_message!, style: const TextStyle(color: appAccentAmber)),
+              Text(_message!, style: TextStyle(color: context.colors.amber)),
             ],
             const SizedBox(height: 22),
             FilledButton.icon(

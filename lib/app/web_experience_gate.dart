@@ -39,7 +39,7 @@ class WebDesktopFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0xff0d0e11),
+    color: context.colors.canvas,
     child: SizedBox.expand(child: child),
   );
 }
@@ -58,7 +58,7 @@ class _MobileWorkspacePrompt extends StatelessWidget {
         : AppEnvironment.playStoreUrl;
 
     return Scaffold(
-      backgroundColor: const Color(0xffeef2e9),
+      backgroundColor: context.colors.canvas,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -68,14 +68,14 @@ class _MobileWorkspacePrompt extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.spa_rounded, color: green),
+                      Icon(Icons.spa_rounded, color: context.colors.accent),
                       SizedBox(width: 8),
                       Text(
-                        'youwell.',
+                        'youwell',
                         style: TextStyle(
-                          color: ink,
+                          color: context.colors.text,
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                         ),
@@ -86,21 +86,21 @@ class _MobileWorkspacePrompt extends StatelessWidget {
                   Container(
                     width: 76,
                     height: 76,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: context.colors.surface,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.phone_iphone_rounded,
                       size: 38,
-                      color: green,
+                      color: context.colors.accent,
                     ),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
+                  Text(
                     'Workspace ini dibuat untuk layar besar.',
                     style: TextStyle(
-                      color: ink,
+                      color: context.colors.text,
                       fontSize: 36,
                       height: 1.1,
                       letterSpacing: -1,
@@ -108,9 +108,13 @@ class _MobileWorkspacePrompt extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Gunakan aplikasi YouWell untuk check-in saat bepergian. Landing page dan recap publik tetap dapat dibuka di browser ini.',
-                    style: TextStyle(color: muted, fontSize: 16, height: 1.55),
+                    style: TextStyle(
+                      color: context.colors.muted,
+                      fontSize: 16,
+                      height: 1.55,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   SizedBox(

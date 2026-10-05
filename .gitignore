@@ -15,7 +15,6 @@ windows/
 # Editor and generated project metadata
 .idea/
 *.iml
-test/
 
 # Local configuration and OS files
 .env

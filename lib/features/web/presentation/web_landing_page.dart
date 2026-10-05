@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/core/config/app_environment.dart';
 import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/core/theme/appearance_scope.dart';
 
 /// Public product page. It intentionally works on phones, tablets and desktop.
 class WebLandingPage extends StatefulWidget {
@@ -62,9 +63,13 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     constraints: const BoxConstraints(minHeight: 720),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       gradient: LinearGradient(
-        colors: [Color(0xff17392f), Color(0xff285e48), Color(0xff7aa26c)],
+        colors: [
+          context.colors.canvas,
+          context.colors.surface,
+          context.colors.selected,
+        ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -122,23 +127,24 @@ class _LandingNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      const Icon(Icons.spa_rounded, color: Color(0xffdcebcf)),
+      Icon(Icons.spa_rounded, color: context.colors.accent),
       const SizedBox(width: 8),
-      const Text(
-        'youwell.',
+      Text(
+        'youwell',
         style: TextStyle(
-          color: Colors.white,
+          color: context.colors.text,
           fontSize: 27,
           fontWeight: FontWeight.w800,
           letterSpacing: -1,
         ),
       ),
       const Spacer(),
+      const ThemeModeButton(),
       OutlinedButton(
         onPressed: onDashboard,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0x99ffffff)),
+          foregroundColor: context.colors.text,
+          side: BorderSide(color: context.colors.border),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         ),
         child: const Text('Join Us!'),
@@ -156,20 +162,20 @@ class _HeroCopy extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         'YOUWELL • RUANG TUMBUH HARIAN',
         style: TextStyle(
-          color: Color(0xffc5e0ba),
+          color: context.colors.accent,
           fontSize: 12,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.2,
         ),
       ),
       const SizedBox(height: 22),
-      const Text(
+      Text(
         'Sedikit lebih baik,\nsetiap hari.',
         style: TextStyle(
-          color: Colors.white,
+          color: context.colors.text,
           fontSize: 66,
           height: .98,
           letterSpacing: -3,
@@ -182,7 +188,7 @@ class _HeroCopy extends StatelessWidget {
         child: Text(
           'Bukan tentang menjadi sempurna. YouWell membantu kamu menemukan ritme kecil untuk bernapas, bergerak, dan bertumbuh bersama.',
           style: TextStyle(
-            color: Color(0xffe0ebe0),
+            color: context.colors.text,
             fontSize: 18,
             height: 1.55,
           ),
@@ -196,8 +202,8 @@ class _HeroCopy extends StatelessWidget {
           FilledButton.icon(
             onPressed: onDownload,
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: ink,
+              backgroundColor: brandOrange,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             ),
             icon: const Icon(Icons.download_rounded),
@@ -206,7 +212,7 @@ class _HeroCopy extends StatelessWidget {
           TextButton(
             onPressed: onDashboard,
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.text,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             ),
             child: const Text('Lihat web dashboard →'),
@@ -214,9 +220,9 @@ class _HeroCopy extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 20),
-      const Text(
+      Text(
         'Ruang kecil untuk merawat diri. Bukan layanan medis.',
-        style: TextStyle(color: Color(0xffb8cdbb), fontSize: 12),
+        style: TextStyle(color: context.colors.muted, fontSize: 12),
       ),
     ],
   );
@@ -231,12 +237,12 @@ class _PhonePreview extends StatelessWidget {
       angle: .045,
       child: Container(
         width: 300,
-        height: 560,
+        height: 620,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xff0e211b),
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(42),
-          border: Border.all(color: const Color(0x55ffffff)),
+          border: Border.all(color: context.colors.border),
           boxShadow: const [
             BoxShadow(
               color: Color(0x66000000),
@@ -248,7 +254,7 @@ class _PhonePreview extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(33),
           child: ColoredBox(
-            color: cream,
+            color: context.colors.canvas,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(22, 28, 22, 18),
               child: Column(
@@ -256,25 +262,25 @@ class _PhonePreview extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Selamat sore,',
-                        style: TextStyle(color: muted),
+                        style: TextStyle(color: context.colors.muted),
                       ),
                       const Spacer(),
                       Container(
                         width: 22,
                         height: 7,
                         decoration: BoxDecoration(
-                          color: ink,
+                          color: context.colors.text,
                           borderRadius: BorderRadius.circular(9),
                         ),
                       ),
                     ],
                   ),
-                  const Text(
+                  Text(
                     'pelan-pelan.',
                     style: TextStyle(
-                      color: ink,
+                      color: context.colors.text,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                     ),
@@ -284,18 +290,22 @@ class _PhonePreview extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xffe2edda),
+                      color: context.colors.selected,
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.spa_rounded, color: green, size: 48),
+                        Icon(
+                          Icons.spa_rounded,
+                          color: context.colors.accent,
+                          size: 48,
+                        ),
                         SizedBox(height: 8),
                         Text(
                           '1 langkah kecil\nhari ini',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: ink,
+                            color: context.colors.text,
                             fontWeight: FontWeight.w800,
                             fontSize: 19,
                           ),
@@ -304,9 +314,12 @@ class _PhonePreview extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Misi hari ini',
-                    style: TextStyle(color: ink, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: context.colors.text,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   ...[
@@ -322,13 +335,20 @@ class _PhonePreview extends StatelessWidget {
                             entry.key == 0
                                 ? Icons.check_circle
                                 : Icons.circle_outlined,
-                            color: entry.key == 0 ? green : muted,
+                            color: entry.key == 0
+                                ? context.colors.accent
+                                : context.colors.muted,
                             size: 20,
                           ),
                           const SizedBox(width: 9),
-                          Text(
-                            entry.value,
-                            style: const TextStyle(color: ink, fontSize: 13),
+                          Expanded(
+                            child: Text(
+                              entry.value,
+                              style: TextStyle(
+                                color: context.colors.text,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -339,18 +359,22 @@ class _PhonePreview extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: ink,
+                      color: context.colors.selected,
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.air_rounded, color: Colors.white, size: 18),
+                        Icon(
+                          Icons.air_rounded,
+                          color: context.colors.text,
+                          size: 18,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Ambil jeda',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.colors.text,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -373,7 +397,7 @@ class _ProductSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: cream,
+    color: context.colors.canvas,
     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 110),
     child: Center(
       child: ConstrainedBox(
@@ -381,20 +405,20 @@ class _ProductSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'SEBUAH RITME, BUKAN TARGET SEMPURNA',
               style: TextStyle(
-                color: green,
+                color: context.colors.accent,
                 fontSize: 12,
                 letterSpacing: 1.1,
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Temukan hal kecil yang\nbisa kamu lakukan hari ini.',
               style: TextStyle(
-                color: ink,
+                color: context.colors.text,
                 fontSize: 48,
                 height: 1.03,
                 letterSpacing: -2,
@@ -478,7 +502,7 @@ class _FeatureCard extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 240),
     padding: const EdgeInsets.all(25),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(28),
     ),
     child: Column(
@@ -486,23 +510,23 @@ class _FeatureCard extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(11),
-          decoration: const BoxDecoration(
-            color: Color(0xffe2edda),
+          decoration: BoxDecoration(
+            color: context.colors.selected,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: green),
+          child: Icon(icon, color: context.colors.accent),
         ),
         const SizedBox(height: 24),
         Text(
           title,
-          style: const TextStyle(
-            color: ink,
+          style: TextStyle(
+            color: context.colors.text,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 10),
-        Text(body, style: const TextStyle(color: muted, height: 1.55)),
+        Text(body, style: TextStyle(color: context.colors.muted, height: 1.55)),
       ],
     ),
   );
@@ -513,7 +537,7 @@ class _WellbeingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: const Color(0xffe0eadb),
+    color: context.colors.raised,
     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 100),
     child: Center(
       child: ConstrainedBox(
@@ -547,13 +571,13 @@ class _WellbeingCopy extends StatelessWidget {
   const _WellbeingCopy();
 
   @override
-  Widget build(BuildContext context) => const Column(
+  Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
         'BERTUMBUH TANPA DIHAKIMI',
         style: TextStyle(
-          color: green,
+          color: context.colors.accent,
           fontSize: 12,
           letterSpacing: 1.1,
           fontWeight: FontWeight.w800,
@@ -563,7 +587,7 @@ class _WellbeingCopy extends StatelessWidget {
       Text(
         'Kamu tidak perlu\nmelakukannya sendiri.',
         style: TextStyle(
-          color: ink,
+          color: context.colors.text,
           fontSize: 44,
           height: 1.04,
           letterSpacing: -2,
@@ -573,13 +597,17 @@ class _WellbeingCopy extends StatelessWidget {
       SizedBox(height: 18),
       Text(
         'YouWell dibuat untuk menemani, bukan mendorong dengan angka. Kami menyimpan ruang untuk langkah yang kecil, hari yang rumit, dan progres yang tidak selalu lurus.',
-        style: TextStyle(color: muted, fontSize: 16, height: 1.65),
+        style: TextStyle(
+          color: context.colors.muted,
+          fontSize: 16,
+          height: 1.65,
+        ),
       ),
       SizedBox(height: 18),
       Text(
         'Cerita pengguna pertama akan hadir bersama program beta—dengan izin mereka.',
         style: TextStyle(
-          color: green,
+          color: context.colors.accent,
           fontSize: 13,
           height: 1.5,
           fontWeight: FontWeight.w700,
@@ -596,22 +624,22 @@ class _PrinciplePanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(26),
     decoration: BoxDecoration(
-      color: ink,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(28),
     ),
-    child: const Column(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           Icons.favorite_outline_rounded,
-          color: Color(0xffb9d7a8),
+          color: context.colors.accent,
           size: 31,
         ),
         SizedBox(height: 20),
         Text(
           'Yang kami jaga',
           style: TextStyle(
-            color: Colors.white,
+            color: context.colors.text,
             fontSize: 23,
             fontWeight: FontWeight.w800,
           ),
@@ -647,8 +675,8 @@ class _Principle extends StatelessWidget {
       children: [
         Text(
           number,
-          style: const TextStyle(
-            color: Color(0xffa8c798),
+          style: TextStyle(
+            color: context.colors.accent,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -656,7 +684,7 @@ class _Principle extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(color: Color(0xffe8f0e4), height: 1.45),
+            style: TextStyle(color: context.colors.text, height: 1.45),
           ),
         ),
       ],
@@ -670,20 +698,20 @@ class _ClosingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: const Color(0xfff4b990),
+    color: context.colors.selected,
     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 88),
     child: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 960),
         child: Column(
           children: [
-            const Icon(Icons.spa_rounded, color: ink, size: 42),
+            Icon(Icons.spa_rounded, color: context.colors.text, size: 42),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Satu langkah kecil\nboleh dimulai sekarang.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: ink,
+                color: context.colors.text,
                 fontSize: 48,
                 height: 1.04,
                 letterSpacing: -2,
@@ -691,25 +719,29 @@ class _ClosingSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            const Text(
+            Text(
               'Aplikasi mobile dibuat untuk menemani harimu. Web hadir untuk melihat progres, mengambil jeda, dan berbagi Wrapped.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: ink, fontSize: 16, height: 1.55),
+              style: TextStyle(
+                color: context.colors.text,
+                fontSize: 16,
+                height: 1.55,
+              ),
             ),
             const SizedBox(height: 28),
             FilledButton.icon(
               onPressed: onDownload,
               style: FilledButton.styleFrom(
-                backgroundColor: ink,
-                foregroundColor: Colors.white,
+                backgroundColor: brandOrange,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               icon: const Icon(Icons.download_rounded),
               label: const Text('Dapatkan YouWell'),
             ),
             const SizedBox(height: 54),
-            const Text(
-              'youwell.  •  ruang kecil untuk merawat diri',
-              style: TextStyle(color: Color(0xaa203d34), fontSize: 12),
+            Text(
+              'youwell  •  ruang kecil untuk merawat diri',
+              style: TextStyle(color: context.colors.muted, fontSize: 12),
             ),
           ],
         ),
