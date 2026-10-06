@@ -10,7 +10,7 @@
 | Reward mobile | Bonus Hari Penuh 20 XP sekali per hari, ID persisten, lencana privat |
 | Daily Card | Lima kartu collectible, spin acak, swipe, reveal, satu kali ganti, commit; mobile punya Santai/Normal dan tema |
 | Aktivitas mobile | Foto/catatan makan lokal, timer/GPS foreground, hidrasi, riwayat detail, koreksi/hapus |
-| Reset mobile | Reset 60 detik dan stretch; habit delay untuk reduction. Dibuka dari Home, tanpa fokus atau hidrasi duplikat |
+| Reset mobile | Jeda fisik 60 detik: postur → stretching → ubah posisi; habit delay untuk reduction. Dibuka dari Home |
 | Perjalanan mobile | Ritme 4/7, kalender 28 hari, lencana, tangga quest, XP, aktivitas, total menit ditunda |
 | Community mobile | Encouragement Wall lokal, post menunggu review, reaksi cepat, laporan; seed post berlabel contoh |
 | Admin | Antrean post pending, approve/reject, dan penyelesaian laporan |
@@ -40,14 +40,28 @@ Web tidak dirombak dalam revisi mobile ini.
 - Core Quest, tangga Istirahat/Hidrasi, dan quest reduction tetap ada.
   Pada jalur reduction, Energi Segar menyediakan Habit Swap/pemicu sesuai level.
 - Kartu yang sudah dibuka atau di-commit tidak diganti diam-diam.
-- Penggantian Reset menjadi jeda fisik masih menunggu keputusan; belum diterapkan.
+- Reset menjadi Jeda fisik 60s, dengan tiga panduan 20 detik dan alternatif duduk.
+  Napas sebagai opsi Habit Swap tetap tersedia khusus jalur reduction.
 
 ## Aturan data dan penelitian
 
 - Reward mobile aktif saat AppShell mobile dipakai; layout/widget web tidak diubah.
 - Koreksi/hapus jurnal tidak mencabut XP dan tidak mencetak reward baru.
+- Durasi/jarak sesi gerak tidak bisa diedit, baik di UI maupun API controller;
+  hanya catatan pribadi yang dapat diubah. Hapus sesi jika keliru.
+- Menghapus sesi menghitung ulang bukti quest dan progress parsial. Quest yang
+  kehilangan bukti dikeluarkan dari evaluasi tangga dan `quests_done`/`quest_days`
+  penelitian, tanpa mencabut status reward, XP, atau level yang sudah diterima.
+  Bukti lain yang masih memenuhi target tetap sah. Tawaran naik yang belum
+  diterima dicek ulang, termasuk saat snapshot lama dibuka.
+- Angka durasi/jarak yang pernah dikoreksi manual oleh versi lama tidak menjadi
+  bukti quest. Mengedit catatan saja pada versi baru tidak membatalkan bukti.
 - `opened_days`, `activity_days`, dan `quest_days` di ringkasan UAT dibedakan.
-  `active_days` kini berarti hari dengan quest selesai, sama dengan `quest_days`.
+  `active_days` berarti hari unik membuka aplikasi, sama dengan `opened_days`.
+  Tidak harus selesai quest untuk dihitung aktif. Ritme gamifikasi 4/7 tetap
+  menggunakan hari quest selesai, bukan ukuran keterlibatan penelitian.
+- Ekspor ringkasan sekarang memakai `schema_version: 2`. Ringkasan yang sudah
+  diekspor sebelumnya harus diekspor ulang untuk memakai definisi yang benar.
 - Persetujuan UAT bisa ditarik lokal tanpa menghalangi penggunaan aplikasi.
   Penarikan ini tidak menghapus salinan yang sudah dibagikan secara manual.
 - Tes otomatis tidak menggantikan tujuh skenario UAT native iOS/Android atau

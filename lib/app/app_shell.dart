@@ -85,7 +85,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       builder: (_) => AnimatedBuilder(
         animation: widget.controller,
         builder: (_, _) => Scaffold(
-          appBar: AppBar(title: const Text('Ambil jeda')),
+          appBar: AppBar(title: Text(delay ? 'Delay Craving' : 'Jeda fisik')),
           body: ResetPage(
             controller: widget.controller,
             initialMode: delay ? 'delay' : 'reset',

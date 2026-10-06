@@ -33,7 +33,15 @@ class _Sim {
     controller.commitDailyCardPack();
     for (final task in controller.quests) {
       if (task['ladder'] == null || skip.contains(task['ladder'])) continue;
-      controller.completeCard(task['id']);
+      if (task['activityKind'] == 'walk' || task['activityKind'] == 'run') {
+        controller.recordWorkout(
+          kind: task['activityKind'],
+          seconds: (task['durationMinutes'] as int) * 60,
+          meters: (task['targetMeters'] as int?) ?? 0,
+        );
+      } else {
+        controller.completeCard(task['id']);
+      }
       if (effort != null) controller.rateQuestEffort(task['id'], effort);
     }
   }
@@ -198,7 +206,7 @@ void main() {
     final summary = sim.controller.researchSummary(1).toJson();
     expect(summary, {
       'week': 1,
-      'active_days': 2,
+      'active_days': 3,
       'opened_days': 3,
       'activity_days': 2,
       'quest_days': 2,

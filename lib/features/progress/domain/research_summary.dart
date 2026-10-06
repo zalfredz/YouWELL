@@ -50,14 +50,19 @@ class ResearchSummary {
       final quests = (entry.value is Map ? entry.value['quests'] : null) ?? [];
       final done = (quests as List)
           .whereType<Map>()
-          .where((task) => task['status'] == 'completed')
+          .where(
+            (task) =>
+                task['status'] == 'completed' &&
+                task['validationInvalidated'] != true,
+          )
           .length;
       questsDone += done;
       if (done > 0) questDays.add(entry.key);
     }
     return ResearchSummary(
       week: week,
-      activeDays: questDays.length,
+      // Research engagement counts opening the app, not finishing a quest.
+      activeDays: opened.length,
       openedDayCount: opened.length,
       activityDayCount: activity.length,
       questDayCount: questDays.length,

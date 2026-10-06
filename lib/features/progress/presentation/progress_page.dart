@@ -61,7 +61,7 @@ class ProgressPage extends StatelessWidget {
             Expanded(
               child: _Stat(
                 value: '${controller.activeDaysIn(7)}/7',
-                label: 'Hari aktif',
+                label: 'Hari quest',
               ),
             ),
           ],

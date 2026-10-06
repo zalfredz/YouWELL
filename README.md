@@ -32,15 +32,18 @@ data cloud.
   bukti untuk menaikkan tangga yang lebih tinggi.
 - Aktivitas memiliki riwayat foto/catatan dan sesi gerak. Bisa koreksi/hapus
   catatan; XP/quest yang sudah selesai tidak dicabut atau diberikan ulang.
-  Catatan yang dikoreksi tidak dipakai untuk memberikan kredit sesi baru.
+  Durasi/jarak tidak bisa diedit manual. Menghapus bukti sesi mengeluarkan quest
+  yang tidak lagi valid dari evaluasi tangga dan hitungan quest penelitian.
 - Meal Snap bisa diganti catatan tanpa foto. Jalan/lari mendukung timer tanpa
   GPS; sesi valid terakumulasi untuk target harian. GPS tetap foreground-only.
 - Profil: kurangi animasi, matikan getaran, serta persetujuan UAT opsional dan
   kode P1–P10. Ekspor ringkasan UAT hanya angka + kode, tanpa alias/foto/lokasi.
   Belum ada pengiriman otomatis atau cloud sync.
 - Mobile tidak menampilkan check-in energi atau timer fokus. Hidrasi ada di
-  Aktivitas; Ambil jeda dibuka dari Home. Reset 60s dan bantuan reduction tetap
-  tersedia, sedangkan Pomodoro tetap di web.
+  Aktivitas; Jeda fisik dibuka dari Home. Panduan postur/stretch/ubah posisi 60s
+  dan bantuan reduction tetap tersedia, sedangkan Pomodoro tetap di web.
+- Ringkasan UAT `active_days` menghitung hari unik membuka aplikasi; `quest_days`
+  tetap terpisah. Ekspor lama perlu dibuat ulang (schema ringkasan versi 2).
 
 Data versi lokal sebelumnya tetap didukung. Quest yang sudah di-commit tidak
 diganti oleh pembaruan. Pengingat terjadwal, backend, dan UAT native lengkap

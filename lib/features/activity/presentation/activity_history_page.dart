@@ -91,96 +91,50 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
           .where((row) => row['id'] == widget.id)
           .firstOrNull;
   Future<void> _edit(JsonMap row) async {
-    final note = TextEditingController(text: row['note']?.toString() ?? '');
-    final minutes = TextEditingController(
-      text: (((row['seconds'] as num?) ?? 0) / 60).toStringAsFixed(1),
-    );
-    final distance = TextEditingController(
-      text: row['meters']?.toString() ?? '0',
-    );
-    String? error;
-    await showDialog<void>(
+    var note = row['note']?.toString() ?? '';
+    final saved = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, update) => AlertDialog(
-          title: const Text('Koreksi catatan'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!_meal) ...[
-                  TextField(
-                    controller: minutes,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Durasi (menit)',
-                    ),
-                  ),
-                  TextField(
-                    controller: distance,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Jarak (meter)',
-                    ),
-                  ),
-                ],
-                TextField(
-                  controller: note,
-                  maxLength: 200,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Catatan pribadi',
-                    errorText: error,
-                  ),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit catatan pribadi'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!_meal) ...[
+                const Text(
+                  'Durasi dan jarak tidak bisa diedit. Hapus sesi jika keliru.',
                 ),
+                const SizedBox(height: 12),
               ],
-            ),
+              TextFormField(
+                initialValue: note,
+                onChanged: (value) => note = value,
+                maxLength: 200,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: 'Catatan pribadi'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final duration = double.tryParse(
-                  minutes.text.replaceAll(',', '.'),
-                );
-                final meters = int.tryParse(distance.text);
-                if (!_meal &&
-                    (duration == null ||
-                        !duration.isFinite ||
-                        duration <= 0 ||
-                        duration > 1440 ||
-                        meters == null ||
-                        meters < 0 ||
-                        meters > 100000)) {
-                  update(() => error = 'Isi durasi dan jarak yang valid.');
-                  return;
-                }
-                widget.controller.editActivity(
-                  widget.collection,
-                  widget.id,
-                  note: note.text,
-                  seconds: _meal
-                      ? null
-                      : (duration! * 60).round().clamp(1, 86400),
-                  meters: _meal ? null : meters,
-                );
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, note),
+            child: const Text('Simpan'),
+          ),
+        ],
       ),
     );
-    note.dispose();
-    minutes.dispose();
-    distance.dispose();
-    if (mounted) setState(() {});
+    if (saved == null || !mounted) return;
+    final changed = widget.controller.editActivity(
+      widget.collection,
+      widget.id,
+      note: saved,
+    );
+    setState(() => _error = changed ? null : 'Catatan belum bisa disimpan.');
   }
 
   Future<void> _delete(JsonMap row) async {
@@ -191,7 +145,7 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
         content: Text(
           _meal
               ? 'Catatan dan foto lokal dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
-              : 'Catatan ini dihapus permanen. XP yang sudah diperoleh tetap tersimpan.',
+              : 'Sesi dihapus permanen dan tidak lagi menjadi bukti evaluasi tangga atau quest penelitian. XP tetap tersimpan.',
         ),
         actions: [
           TextButton(
@@ -278,7 +232,7 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
                 const SizedBox(height: 16),
                 if (row['note']?.toString().isNotEmpty == true)
                   Text(row['note'].toString()),
-                if (row['correctedAt'] != null)
+                if (row['correctedAt'] != null || row['noteEditedAt'] != null)
                   Text(
                     'Catatan sudah dikoreksi',
                     style: TextStyle(color: context.colors.muted),
@@ -289,7 +243,7 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
                 FilledButton.icon(
                   onPressed: _deleting ? null : () => _edit(row),
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Koreksi'),
+                  label: const Text('Edit catatan'),
                 ),
                 TextButton.icon(
                   onPressed: _deleting ? null : () => _delete(row),

@@ -127,8 +127,8 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 18),
         FilledButton.tonalIcon(
           onPressed: onOpenReset,
-          icon: const Icon(Icons.self_improvement_rounded),
-          label: const Text('Ambil jeda'),
+          icon: const Icon(Icons.accessibility_new_rounded),
+          label: const Text('Jeda fisik'),
         ),
       ],
     );
@@ -222,7 +222,7 @@ class _CompanionStageState extends State<_CompanionStage> {
             Expanded(
               child: _Metric(
                 value: '${widget.activeDays} / 7',
-                label: 'target: 4 hari aktif',
+                label: 'target: quest di 4 hari',
               ),
             ),
           ],
@@ -365,6 +365,7 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = task['status'] == 'completed';
+    final needsEvidence = task['validationInvalidated'] == true;
     final icon = switch (task['category']) {
       'Body' => Icons.directions_walk_rounded,
       'Energy' => Icons.bolt_rounded,
@@ -418,13 +419,20 @@ class _TaskTile extends StatelessWidget {
                     'Tercapai sebagian: ${((task['partial'] as num) * 100).round()}%',
                     style: TextStyle(color: context.colors.amber, fontSize: 12),
                   ),
-                if (done && task['ladder'] != null)
+                if (needsEvidence)
+                  Text(
+                    'Bukti sesi tidak dipakai untuk evaluasi. XP tetap tersimpan.',
+                    style: TextStyle(color: context.colors.muted, fontSize: 12),
+                  ),
+                if (done && !needsEvidence && task['ladder'] != null)
                   _EffortRating(effort: task['effort'], onRate: onRate),
               ],
             ),
           ),
           IconButton(
-            tooltip: done
+            tooltip: needsEvidence
+                ? 'Catat sesi baru tanpa mengulang XP'
+                : done
                 ? 'Selesai'
                 : task['activityKind'] == null
                 ? 'Tandai selesai'
@@ -433,9 +441,11 @@ class _TaskTile extends StatelessWidget {
                 : task['activityKind'] == 'habit_swap'
                 ? 'Pilih Habit Swap'
                 : 'Buka Aktivitas untuk menyelesaikan',
-            onPressed: done ? null : onComplete,
+            onPressed: done && !needsEvidence ? null : onComplete,
             icon: Icon(
-              done
+              needsEvidence
+                  ? Icons.arrow_forward_rounded
+                  : done
                   ? Icons.check_circle_rounded
                   : task['activityKind'] == null
                   ? Icons.circle_outlined

@@ -17,8 +17,9 @@ capability iOS, archive, dan distribusi.
   perjalanan 28 hari dan ritme 4/7 menggunakan quest yang selesai.
 - Tab mobile: **Hari ini**, **Aktivitas**, **Perjalanan**, **Komunitas**. Jeda cepat
   dibuka dari Hari ini; Profil melalui avatar di kanan atas.
-- Check-in energi dan Fokus 5m tidak ada di mobile. Reset 60s dan stretch tetap
-  tersedia; hidrasi berada di Aktivitas. Fokus/Pomodoro hanya di web.
+- Check-in energi dan Fokus 5m tidak ada di mobile. Jeda fisik 60s memandu
+  postur, stretching, dan ubah posisi; hidrasi berada di Aktivitas.
+  Fokus/Pomodoro hanya di web.
 - Aktivitas memiliki Meal Snap (foto lokal di penyimpanan aplikasi) dan
   jalan/lari dengan timer serta perkiraan jarak GPS hanya saat layar sesi aktif.
   Aplikasi tidak menghitung kalori, tidak menyimpan koordinat/rute, dan belum
@@ -27,8 +28,11 @@ capability iOS, archive, dan distribusi.
   juga menghapus foto-foto Meal Snap pada perangkat tersebut.
 - Riwayat aktivitas bisa membuka foto, koreksi, dan hapus catatan. Menghapus
   satu Meal Snap juga menghapus file foto miliknya. XP tetap tersimpan;
-  koreksi tidak menyelesaikan quest atau menambah reward.
+  hanya catatan yang bisa diedit, bukan durasi/jarak. Hapus sesi keliru untuk
+  membatalkan bukti evaluasi tanpa mencabut XP atau menambah reward.
 - Persetujuan UAT P1–P10 tersedia di Profil; ringkasan angka diekspor manual.
+  `active_days` = hari unik membuka aplikasi, bukan hari quest selesai.
+  Buat ulang ekspor lama; schema ringkasan terbaru versi 2.
   Auth dan pengiriman ringkasan server belum aktif.
 - Ekspor data dan buka tautan sudah memakai API native.
 - Supabase, Google Sign-In, push notification, dan production signing belum

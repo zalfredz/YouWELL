@@ -63,6 +63,14 @@ class _ResetPageState extends State<ResetPage> {
       ? 0
       : (_duration - _elapsed.inSeconds).clamp(0, _duration).toInt();
 
+  int get _physicalStep => ((_duration - _remaining) ~/ 20).clamp(0, 2);
+
+  static const _physicalSteps = [
+    (Icons.accessibility_new_rounded, 'Lepaskan bahu & rapikan postur.'),
+    (Icons.open_with_rounded, 'Regangkan tangan pelan-pelan.'),
+    (Icons.directions_walk_rounded, 'Berdiri sebentar; boleh tetap duduk.'),
+  ];
+
   /// A delay stopped before the end is still progress: "ditunda X menit".
   String? _logStoppedDelay() {
     final minutes = _elapsed.inMinutes;
@@ -196,7 +204,7 @@ class _ResetPageState extends State<ResetPage> {
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
         Text(
-          reductionSupport ? widget.controller.reductionLabel : 'Ambil jeda',
+          reductionSupport ? widget.controller.reductionLabel : 'Jeda fisik',
           style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
@@ -205,7 +213,7 @@ class _ResetPageState extends State<ResetPage> {
               ? 'Saat muncul keinginan, mulai Delay Craving '
                     '${widget.controller.delayTargetMinutes} menit. '
                     'Sesi yang selesai otomatis dicatat.'
-              : 'Pilihan cepat saat kamu butuh jeda.',
+              : 'Postur, stretching, dan ubah posisi dalam 60 detik.',
           style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 22),
@@ -221,13 +229,36 @@ class _ResetPageState extends State<ResetPage> {
           child: Column(
             children: [
               Text(
-                _mode == 'delay' ? 'Tunda rokok / vape' : 'Jeda singkat',
+                _mode == 'delay'
+                    ? 'Tunda rokok / vape'
+                    : 'Gerak ringan 60 detik',
                 style: TextStyle(
                   color: context.colors.accent,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 20),
+              if (_mode == 'reset') ...[
+                Icon(
+                  _physicalSteps[_physicalStep].$1,
+                  size: 48,
+                  color: context.colors.accent,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _finished
+                      ? 'Jeda fisik selesai.'
+                      : _physicalSteps[_physicalStep].$2,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gerak senyamanmu. Berhenti jika terasa nyeri.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: context.colors.muted, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+              ],
               Text(
                 '$minutes:$seconds',
                 style: const TextStyle(
@@ -247,7 +278,7 @@ class _ResetPageState extends State<ResetPage> {
                             ? Icons.pause_rounded
                             : Icons.play_arrow_rounded,
                       ),
-                      label: Text(_running ? 'Tahan' : 'Mulai'),
+                      label: Text(_running ? 'Jeda' : 'Mulai'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -262,8 +293,8 @@ class _ResetPageState extends State<ResetPage> {
         ),
         const SizedBox(height: 14),
         _ModeButton(
-          label: 'Reset 60s',
-          icon: Icons.self_improvement_rounded,
+          label: 'Jeda fisik 60s',
+          icon: Icons.accessibility_new_rounded,
           selected: _mode == 'reset',
           onTap: () => _select('reset', 60),
         ),

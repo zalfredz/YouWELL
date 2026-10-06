@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:youwell/features/activity/domain/activity_evidence.dart';
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/data/models/wellness_snapshot.dart';
@@ -25,6 +26,8 @@ class WellnessController extends ChangeNotifier {
         storageError =
             'Preview lokal lama direset untuk memakai versi terbaru.';
       }
+      _reconcileActivityEvidence();
+      _refreshPendingLadderOffers();
     }
   }
 
@@ -283,6 +286,7 @@ class WellnessController extends ChangeNotifier {
   }
 
   void _reviewLadders() {
+    _reconcileActivityEvidence();
     final ladderState = (_data['capacity'] ??= <String, dynamic>{}) as Map;
     final pace = (profile?['pace'] as num?)?.toInt() ?? 1;
     final lowImpact = profile?['lowImpact'] == true;
@@ -322,16 +326,22 @@ class WellnessController extends ChangeNotifier {
   }
 
   /// Ladder quests the user committed to in the [period] days before today.
-  List<JsonMap> _ladderQuestsBefore(String category, int period) {
-    final start = dayKey(now.subtract(Duration(days: period)));
+  List<JsonMap> _ladderQuestsBefore(
+    String category,
+    int period, {
+    String? before,
+  }) {
+    final end = before ?? today;
+    final start = dayKey(DateTime.parse(end).subtract(Duration(days: period)));
     return [
       for (final entry in days.entries)
-        if (entry.key.compareTo(start) >= 0 && entry.key.compareTo(today) < 0)
+        if (entry.key.compareTo(start) >= 0 && entry.key.compareTo(end) < 0)
           for (final task
               in ((entry.value as Map)['quests'] ?? const []) as List)
             if (task is Map &&
                 task['ladder'] == category &&
-                task['practiceOnly'] != true)
+                task['practiceOnly'] != true &&
+                task['validationInvalidated'] != true)
               Map<String, dynamic>.from(task),
     ];
   }
@@ -500,43 +510,36 @@ class WellnessController extends ChangeNotifier {
     final before = quests;
     final tasks = quests;
     for (final (index, task) in tasks.indexed) {
-      if (task['status'] == 'completed') continue;
+      if (task['status'] == 'completed' &&
+          task['validationInvalidated'] != true) {
+        continue;
+      }
       final activity = task['activityKind'];
       if (!(activity == 'walk' && (kind == 'walk' || kind == 'run') ||
           activity == 'run' && kind == 'run')) {
         continue;
       }
-      final targetMeters = (task['targetMeters'] as num?)?.toInt();
-      final targetSeconds = max(
-        1,
-        ((task['durationMinutes'] as num?)?.toInt() ?? 0) * 60,
+      final ratio = ActivityEvidence.workoutProgress(
+        task,
+        workoutSessions,
+        today,
       );
-      // Valid sessions accumulate across the day; corrections never add credit.
-      final ratio = workoutSessions
-          .where(
-            (row) =>
-                row['day'] == today &&
-                row['countsForQuest'] != false &&
-                row['correctedAt'] == null &&
-                (activity == 'walk'
-                    ? const {'walk', 'run'}.contains(row['kind'])
-                    : row['kind'] == 'run'),
-          )
-          .fold<double>(0, (sum, row) {
-            final loggedMeters = (row['meters'] as num?)?.toInt() ?? 0;
-            final loggedSeconds = (row['seconds'] as num?)?.toInt() ?? 0;
-            return sum +
-                (targetMeters != null && loggedMeters > 0
-                    ? loggedMeters / targetMeters
-                    : loggedSeconds / targetSeconds);
-          });
       if (ratio >= 1) {
         completed.add(task['title'].toString());
-        tasks[index] = {...task, 'status': 'completed', 'done': true};
+        tasks[index] = {
+          ...task,
+          'status': 'completed',
+          'done': true,
+          'validationInvalidated': false,
+        };
       } else if (ratio > 0) {
         partial.add(task['title'].toString());
         final best = max(ratio, (task['partial'] as num?)?.toDouble() ?? 0);
-        tasks[index] = {...task, 'partial': (best * 100).floor() / 100};
+        tasks[index] = {
+          ...task,
+          'partial': (best * 100).floor() / 100,
+          if (task['status'] != 'completed') 'validationInvalidated': false,
+        };
       }
     }
     _data['days'][today]['quests'] = tasks;
@@ -551,6 +554,7 @@ class WellnessController extends ChangeNotifier {
       if (photoPath != null) 'photoPath': photoPath,
       'note': note.trim(),
     });
+    _reconcileActivityEvidence(day: today);
     for (final task in quests) {
       if (task['activityKind'] == 'meal_snap' &&
           task['status'] != 'completed') {
@@ -752,6 +756,7 @@ class WellnessController extends ChangeNotifier {
       throw StateError('Persetujuan ringkasan diperlukan.');
     }
     return const JsonEncoder.withIndent('  ').convert({
+      'schema_version': 2,
       'participant_code': researchParticipation!['code'],
       'weeks': [
         for (var week = 1; week <= 4; week++) researchSummary(week).toJson(),
@@ -759,26 +764,18 @@ class WellnessController extends ChangeNotifier {
     });
   }
 
-  /// Corrections change the journal only. Previously earned XP stays earned.
-  bool editActivity(
-    String collection,
-    String id, {
-    String? note,
-    int? seconds,
-    int? meters,
-  }) {
+  /// Only notes can be edited: measured timer/GPS data is immutable.
+  bool editActivity(String collection, String id, {String? note}) {
     if (!const {'mealCheckIns', 'workoutSessions'}.contains(collection)) {
       return false;
     }
     final rows = _data[collection] as List;
     final index = rows.indexWhere((row) => row['id'] == id);
-    if (index < 0) return false;
+    if (index < 0 || note == null || note.trim().length > 200) return false;
     rows[index] = {
       ...rows[index] as Map,
-      if (note != null) 'note': note.trim(),
-      if (seconds != null && seconds > 0) 'seconds': seconds,
-      if (meters != null && meters >= 0) 'meters': meters,
-      'correctedAt': now.toIso8601String(),
+      'note': note.trim(),
+      'noteEditedAt': now.toIso8601String(),
     };
     _save();
     return true;
@@ -789,11 +786,84 @@ class WellnessController extends ChangeNotifier {
       return false;
     }
     final rows = _data[collection] as List;
+    final row = rows.where((row) => row['id'] == id).firstOrNull;
+    if (row == null) return false;
+    final day = row['day']?.toString();
     final count = rows.length;
     rows.removeWhere((row) => row['id'] == id);
     if (rows.length == count) return false;
+    _reconcileActivityEvidence(day: day);
+    _refreshPendingLadderOffers();
     _save();
     return true;
+  }
+
+  /// Keep XP/status intact while separating unsupported claims from evidence.
+  /// Also handles older snapshots with manually corrected metrics or deletions.
+  void _reconcileActivityEvidence({String? day}) {
+    final sessionsByDay = <String, List<JsonMap>>{};
+    for (final session in workoutSessions) {
+      final loggedDay = session['day']?.toString();
+      if (loggedDay == null || day != null && loggedDay != day) continue;
+      (sessionsByDay[loggedDay] ??= []).add(session);
+    }
+    final mealDays = mealCheckIns.map((row) => row['day']).toSet();
+    for (final entry in days.entries) {
+      if (day != null && entry.key != day) continue;
+      final value = entry.value;
+      if (value is! Map || value['quests'] is! List) continue;
+      final tasks = value['quests'] as List;
+      for (final raw in tasks.whereType<Map>()) {
+        final task = Map<String, dynamic>.from(raw);
+        final completed = task['status'] == 'completed';
+        if (ActivityEvidence.isWorkout(task)) {
+          final ratio = ActivityEvidence.workoutProgress(
+            task,
+            sessionsByDay[entry.key] ?? const [],
+            entry.key,
+          );
+          if (completed) {
+            raw['validationInvalidated'] = ratio < 1;
+          } else if (task['partial'] is num ||
+              task['validationInvalidated'] == true) {
+            raw['validationInvalidated'] = ratio <= 0;
+            raw['partial'] = ((ratio.clamp(0, .99) * 100).floor()) / 100;
+          }
+        } else if (completed && task['activityKind'] == 'meal_snap') {
+          raw['validationInvalidated'] = !mealDays.contains(entry.key);
+        }
+      }
+    }
+  }
+
+  /// Pending offers must not be accepted on evidence that has been removed.
+  /// Accepted steps stay earned; normal future reviews decide the next step.
+  void _refreshPendingLadderOffers() {
+    for (final category in ladderOffers) {
+      final entry = capacity[category]!;
+      final current = (entry['step'] as num).toInt();
+      final review = reviewLadder(
+        category: category,
+        current: current,
+        maxStep: ladderMax(category, lowImpact: profile?['lowImpact'] == true),
+        weekQuests: _ladderQuestsBefore(
+          category,
+          7,
+          before: entry['reviewedOn']?.toString() ?? today,
+        ),
+        inactiveDays: 0,
+      );
+      final updated = {...entry};
+      if (review.change == 'up') {
+        updated['reason'] = review.reason;
+      } else {
+        updated.remove('offerStep');
+        updated['change'] = 'hold';
+        updated['reason'] =
+            'Bukti sesi diperbarui. Anak tangga tetap sampai peninjauan berikutnya.';
+      }
+      _data['capacity'][category] = updated;
+    }
   }
 
   Future<void> reset() async {
