@@ -73,7 +73,25 @@ void main() {
     await tester.pumpWidget(YouWellApp(controller: controller));
     await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
+    expect(find.text('Pilih rentang usiamu dulu.'), findsOneWidget);
+    await tester.tap(find.text('18–20 tahun'));
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Berhenti rokok / vape'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Lanjut'), 200);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Centang persetujuan untuk memakai jalur ini.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.scrollUntilVisible(find.text('Lanjut'), 200);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
     expect(find.text('Atur ritmemu'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byTooltip('Ganti ke dark mode'), -200);
     await tester.tap(find.byTooltip('Ganti ke dark mode'));
     await tester.pumpAndSettle();
     expect(
@@ -142,6 +160,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final controller = WellnessController();
+      controller.setReduceMotion(true);
       await controller.setup({
         'alias': 'preview',
         'path': 'wellness',

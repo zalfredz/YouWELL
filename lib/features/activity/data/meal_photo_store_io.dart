@@ -26,4 +26,17 @@ class MealPhotoStore {
     final folder = await _folder();
     if (await folder.exists()) await folder.delete(recursive: true);
   }
+
+  static Future<void> delete(String path) async {
+    final folder = await _folder();
+    final prefix = '${folder.absolute.path}/';
+    if (!path.startsWith(prefix) ||
+        !RegExp(r'^\d+\.jpg$').hasMatch(path.substring(prefix.length))) {
+      throw const FileSystemException(
+        'Foto bukan milik penyimpanan Meal Snap.',
+      );
+    }
+    final file = File(path);
+    if (await file.exists()) await file.delete();
+  }
 }

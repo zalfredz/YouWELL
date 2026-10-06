@@ -17,7 +17,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String _path = 'wellness';
   String _companion = 'plant';
   bool _lowImpact = false;
+  String? _ageGroup;
+  bool _guardianConsent = false;
+  bool _reductionConsent = false;
   String? _error;
+
+  static const _lastStep = 3;
+  bool get _underTwentyOne => _ageGroup == 'under18' || _ageGroup == '18-20';
+
+  /// Blocks "Lanjut" until the current step has what the rules require.
+  String? _stepError() => switch (_step) {
+    0 when _ageGroup == null => 'Pilih rentang usiamu dulu.',
+    0 when _ageGroup == 'under18' && !_guardianConsent =>
+      'Di bawah 18 tahun perlu izin orang tua/wali.',
+    1 when _path == 'reduction' && !_reductionConsent =>
+      'Centang persetujuan untuk memakai jalur ini.',
+    _ => null,
+  };
   final _alias = TextEditingController();
 
   @override
@@ -47,12 +63,48 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 24),
               LinearProgressIndicator(
-                value: (_step + 1) / 3,
+                value: (_step + 1) / (_lastStep + 1),
                 color: context.colors.accent,
                 backgroundColor: context.colors.raised,
               ),
               const SizedBox(height: 28),
               if (_step == 0) ...[
+                const Text(
+                  'Berapa usiamu?',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Dipakai untuk menyesuaikan isi. Yang disimpan hanya rentang usia.',
+                  style: TextStyle(color: context.colors.muted),
+                ),
+                const SizedBox(height: 22),
+                for (final (value, title) in const [
+                  ('under18', 'Di bawah 18 tahun'),
+                  ('18-20', '18–20 tahun'),
+                  ('21plus', '21 tahun ke atas'),
+                ])
+                  _Choice(
+                    title: title,
+                    detail: '',
+                    value: value,
+                    selected: _ageGroup ?? '',
+                    onTap: (value) => setState(() {
+                      _ageGroup = value;
+                      _error = null;
+                    }),
+                  ),
+                if (_ageGroup == 'under18')
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _guardianConsent,
+                    onChanged: (value) =>
+                        setState(() => _guardianConsent = value == true),
+                    title: const Text(
+                      'Orang tua/wali sudah mengizinkan aku memakai YouWell.',
+                    ),
+                  ),
+              ] else if (_step == 1) ...[
                 const Text(
                   'Apa yang ingin kamu bangun?',
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
@@ -64,20 +116,39 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 22),
                 _Choice(
-                  title: 'Better daily rhythm',
-                  detail: 'Energi, gerak, fokus, dan kebiasaan kecil.',
+                  title: 'Better Daily Rhythm',
+                  detail: 'Energi, gerak, tidur, hidrasi, dan kebiasaan kecil.',
                   value: 'wellness',
                   selected: _path,
                   onTap: (value) => setState(() => _path = value),
                 ),
                 _Choice(
-                  title: 'Kurangi rokok / vape',
-                  detail: 'Bangun jeda dan habit swap tanpa menghakimi.',
+                  title: _underTwentyOne
+                      ? 'Berhenti rokok / vape'
+                      : 'Kurangi rokok / vape',
+                  detail: _underTwentyOne
+                      ? 'Dukungan untuk berhenti lewat Delay Craving dan Habit Swap, tanpa menghakimi.'
+                      : 'Bangun jeda lewat Delay Craving dan Habit Swap, tanpa menghakimi.',
                   value: 'reduction',
                   selected: _path,
                   onTap: (value) => setState(() => _path = value),
                 ),
-              ] else if (_step == 1) ...[
+                if (_path == 'reduction')
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _reductionConsent,
+                    onChanged: (value) =>
+                        setState(() => _reductionConsent = value == true),
+                    title: const Text(
+                      'Aku setuju catatan Delay Craving & Habit Swap disimpan '
+                      'untuk fitur ini.',
+                    ),
+                    subtitle: const Text(
+                      'Ini data pribadi yang sensitif. Bisa dihapus kapan saja '
+                      'dari Profil.',
+                    ),
+                  ),
+              ] else if (_step == 2) ...[
                 const Text(
                   'Atur ritmemu',
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
@@ -104,15 +175,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 _Choice(
                   title: 'Lebih aktif',
-                  detail: 'Progressive challenge sesuai konsistensi.',
+                  detail: 'Tantangan naik bertahap sesuai konsistensimu.',
                   value: '3',
                   selected: '$_pace',
                   onTap: (value) => setState(() => _pace = int.parse(value)),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Mode low-impact'),
-                  subtitle: const Text('Utamakan gerakan lembut.'),
+                  title: const Text('Mode aktivitas ringan (low-impact)'),
+                  subtitle: const Text(
+                    'Utamakan gerakan lembut. Quest lari tidak akan muncul.',
+                  ),
                   value: _lowImpact,
                   onChanged: (value) => setState(() => _lowImpact = value),
                 ),
@@ -158,14 +231,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: [
                   if (_step > 0)
                     TextButton(
-                      onPressed: () => setState(() => _step--),
+                      onPressed: () => setState(() {
+                        _step--;
+                        _error = null;
+                      }),
                       child: const Text('Kembali'),
                     ),
                   const Spacer(),
                   FilledButton(
                     onPressed: () async {
-                      if (_step < 2) {
-                        setState(() => _step++);
+                      final blocked = _stepError();
+                      if (blocked != null) {
+                        setState(() => _error = blocked);
+                        return;
+                      }
+                      if (_step < _lastStep) {
+                        setState(() {
+                          _step++;
+                          _error = null;
+                        });
                         return;
                       }
                       try {
@@ -176,6 +260,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           'lowImpact': _lowImpact,
                           'companion': _companion,
                           'waterGoal': 2000,
+                          'ageGroup': _ageGroup,
+                          if (_ageGroup == 'under18') 'guardianConsent': true,
+                          if (_path == 'reduction') 'reductionConsent': true,
                         });
                       } catch (_) {
                         setState(
@@ -184,7 +271,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         );
                       }
                     },
-                    child: Text(_step == 2 ? 'Mulai' : 'Lanjut'),
+                    child: Text(_step == _lastStep ? 'Mulai' : 'Lanjut'),
                   ),
                 ],
               ),
@@ -231,7 +318,7 @@ class _Choice extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text(detail),
+        subtitle: detail.isEmpty ? null : Text(detail),
         trailing: Icon(
           selected == value
               ? Icons.check_circle_rounded

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/shared/widgets/wellness_companion.dart';
+import 'package:youwell/core/utils/date_key.dart';
+import 'package:youwell/features/home/domain/quest_ladder.dart';
+import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/features/progress/presentation/journey_rewards.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key, required this.controller});
@@ -28,11 +31,7 @@ class ProgressPage extends StatelessWidget {
           title: 'Companion-mu tumbuh',
           child: Column(
             children: [
-              WellnessCompanion(
-                kind: controller.profile?['companion']?.toString() ?? 'plant',
-                level: controller.level,
-                size: 180,
-              ),
+              MobileCompanion(controller: controller, size: 180),
               const SizedBox(height: 6),
               Text(
                 'Level ${controller.level} • ${controller.xp % 100} / 100 XP ke level berikutnya',
@@ -69,6 +68,7 @@ class ProgressPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
+        JourneyRewards(controller: controller),
         _Panel(
           title: 'Minggu ini',
           child: Column(
@@ -98,10 +98,33 @@ class ProgressPage extends StatelessWidget {
           ),
         ),
         _Panel(
+          title: 'Tangga quest',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Dicek tiap 7 hari. Naik hanya jika kamu setuju.',
+                style: TextStyle(color: context.colors.muted),
+              ),
+              for (final category in ladderCategories(
+                reduction: controller.reduction,
+              ))
+                _LadderRow(
+                  category: category,
+                  entry: controller.capacity[category],
+                  maxStep: ladderMax(
+                    category,
+                    lowImpact: controller.profile?['lowImpact'] == true,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        _Panel(
           title: 'Energi terbaru',
           child: energy.isEmpty
               ? Text(
-                  'Belum ada check-in. Mulai dari Home.',
+                  'Belum ada catatan energi. Mulai dari Hari ini.',
                   style: TextStyle(color: context.colors.muted),
                 )
               : Wrap(
@@ -151,20 +174,29 @@ class ProgressPage extends StatelessWidget {
         ),
         if (controller.reduction)
           _Panel(
-            title: 'Jeda rokok / vape',
+            title: controller.reductionLabel,
             child: Row(
               children: [
-                Icon(Icons.air_rounded, color: context.colors.accent, size: 34),
-                const SizedBox(width: 14),
-                Text(
-                  '${controller.delayedToday} kali jeda',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                Expanded(
+                  child: _Stat(
+                    value: '${controller.totalDelayMinutes}',
+                    label: 'menit ditunda\ntotal perjalanan',
                   ),
                 ),
-                const Spacer(),
-                Text('hari ini', style: TextStyle(color: context.colors.muted)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _Stat(
+                    value: '${_delayedMinutesThisWeek()}',
+                    label: 'menit ditunda\n7 hari terakhir',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _Stat(
+                    value: '${controller.habitSwapsToday}',
+                    label: 'Habit Swap\nhari ini',
+                  ),
+                ),
               ],
             ),
           ),
@@ -172,12 +204,23 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
+  /// Full and partial delays both count: every minute delayed is progress.
+  int _delayedMinutesThisWeek() {
+    final from = dayKey(controller.now.subtract(const Duration(days: 6)));
+    return controller.habitDelays
+        .where((row) => row['day'].toString().compareTo(from) >= 0)
+        .fold<int>(
+          0,
+          (sum, row) => sum + ((row['minutes'] as num?)?.toInt() ?? 0),
+        );
+  }
+
   String _energyLabel(String value) =>
       const {
-        'low': 'Low',
+        'low': 'Lelah',
         'steady': 'Santai',
-        'good': 'Good',
-        'charged': 'Charged',
+        'good': 'Baik',
+        'charged': 'Semangat',
       }[value] ??
       value;
 }
@@ -237,4 +280,58 @@ class _Panel extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _LadderRow extends StatelessWidget {
+  const _LadderRow({
+    required this.category,
+    required this.entry,
+    required this.maxStep,
+  });
+  final String category;
+  final Map<String, dynamic>? entry;
+  final int maxStep;
+
+  @override
+  Widget build(BuildContext context) {
+    final step = ((entry?['step'] as num?)?.toInt() ?? 1).clamp(1, maxStep);
+    final rung = ladders[category]![step - 1];
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  ladderLabels[category] ?? category,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                'Anak tangga $step / $maxStep',
+                style: TextStyle(color: context.colors.accent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: step / maxStep,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(99),
+            color: context.colors.accent,
+            backgroundColor: context.colors.raised,
+          ),
+          const SizedBox(height: 6),
+          Text(rung.title),
+          if (entry?['reason'] != null)
+            Text(
+              entry!['reason'].toString(),
+              style: TextStyle(color: context.colors.muted, fontSize: 12),
+            ),
+        ],
+      ),
+    );
+  }
 }

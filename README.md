@@ -7,11 +7,39 @@ data cloud.
 
 ## Produk saat ini
 
-- Mobile: Home, Reset, Progress, Community, dan Profile dari avatar.
+- Mobile: **Hari ini, Aktivitas, Perjalanan, Komunitas**; Profil dari avatar.
 - Web: landing, Home, Focus Station, Progress, Community, Admin, dan recap.
 - Core loop: pilih 1 dari 5 Daily Card berisi 3–5 quest adaptif, selesaikan,
   dapatkan XP, dan tumbuhkan companion.
 - Path reduction opsional untuk habit swap rokok/vape; bukan identitas utama.
+
+## Gamifikasi mobile
+
+- Quest selesai: XP melayang menuju companion, respons senang, dan getaran
+  opsional. Feedback berupa panel kecil bertema, bukan snackbar putih.
+- Companion punya 5 tahap (level 1, 2, 4, 7, 10), animasi ringan, respons sentuh,
+  serta lemari aksesori/latar. Hadiah dibuka pada level 2, 3, 4, 6, dan 8.
+- Semua quest harian selesai: bonus **20 XP sekali per hari**. Reward/lencana
+  memakai ID persisten; membuka ulang aplikasi tidak menggandakan bonus.
+- Ritme mingguan menargetkan **4 dari 7 hari** menyelesaikan minimal satu quest.
+  Tidak ada progress yang dicabut karena absen. Perjalanan punya kalender 28
+  hari sejak onboarding dan koleksi pencapaian privat.
+- Draw mobile menawarkan **Santai / Normal** sebelum reveal pertama, 5 tema
+  dengan reward sebanding, dan satu kesempatan ganti. Mode Santai tidak
+  mengubah tangga permanen; latihan yang diringankan tidak dipakai sebagai
+  bukti untuk menaikkan tangga yang lebih tinggi.
+- Aktivitas memiliki riwayat foto/catatan dan sesi gerak. Bisa koreksi/hapus
+  catatan; XP/quest yang sudah selesai tidak dicabut atau diberikan ulang.
+  Catatan yang dikoreksi tidak dipakai untuk memberikan kredit sesi baru.
+- Meal Snap bisa diganti catatan tanpa foto. Jalan/lari mendukung timer tanpa
+  GPS; sesi valid terakumulasi untuk target harian. GPS tetap foreground-only.
+- Profil: kurangi animasi, matikan getaran, serta persetujuan UAT opsional dan
+  kode P1–P10. Ekspor ringkasan UAT hanya angka + kode, tanpa alias/foto/lokasi.
+  Belum ada pengiriman otomatis atau cloud sync.
+
+Data versi lokal sebelumnya tetap didukung. Quest yang sudah di-commit tidak
+diganti oleh pembaruan. Pengingat terjadwal, backend, dan UAT native lengkap
+iOS/Android masih tahap berikutnya. UI web tidak direvisi dalam iterasi ini.
 
 ## Menjalankan
 
@@ -50,12 +78,14 @@ quest pada kartu harian berikutnya mengikuti jalur yang aktif.
 | --- | --- |
 | Navigasi mobile | `lib/app/app_shell.dart` |
 | Aktivitas, Meal Snap, dan jalan/lari mobile | `lib/features/activity/` |
-| Home + companion | `lib/features/home/presentation/home_page.dart` |
+| Home | `lib/features/home/presentation/home_page.dart` |
+| Companion, animasi, aksesori, feedback reward | `lib/features/companion/` |
+| Aturan reward mobile | `lib/application/wellness_gamification.dart` |
 | Daily Card popup | `lib/features/home/presentation/daily_card_draw_dialog.dart` |
 | Aturan quest adaptif | `lib/features/home/domain/daily_card_generator.dart` |
 | Reset / quick focus | `lib/features/reset/presentation/reset_page.dart` |
 | Progress | `lib/features/progress/presentation/progress_page.dart` |
-| Community, Squad, Buddy, Vibe Map | `lib/features/community/presentation/community_page.dart` |
+| Community Wall lokal | `lib/features/community/presentation/community_page.dart` |
 | Antrean Admin | `lib/features/community/presentation/admin_moderation_page.dart` |
 | Onboarding | `lib/features/onboarding/presentation/onboarding_page.dart` |
 | Profile & settings | `lib/features/profile/presentation/profile_page.dart` |
@@ -68,6 +98,7 @@ quest pada kartu harian berikutnya mengikuti jalur yang aktif.
 
 ```bash
 flutter analyze
+flutter test
 flutter build web --release --no-web-resources-cdn \
   --dart-define-from-file=config/env/development.example.json
 flutter build ios --simulator --no-codesign \

@@ -20,7 +20,7 @@ class ReductionSupportPage extends StatelessWidget {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: controller,
     builder: (context, _) => Scaffold(
-      appBar: AppBar(title: const Text('Bantuan rokok / vape')),
+      appBar: AppBar(title: const Text('Delay Craving & Habit Swap')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -50,22 +50,35 @@ class ReductionEntryCard extends StatelessWidget {
           children: [
             Icon(Icons.smoke_free_rounded, color: context.colors.accent),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Kurangi rokok / vape',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                controller.reductionLabel,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
-          'Jalur aktif. Mulai jeda 5 menit saat muncul keinginan, lalu pilih aktivitas pengganti.',
+          '${controller.totalDelayMinutes} menit sudah kamu tunda',
+          style: TextStyle(
+            color: context.colors.accent,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Jalur aktif. Saat keinginan muncul, mulai Delay Craving '
+          '${controller.delayTargetMinutes} menit, lalu pilih Habit Swap.',
           style: TextStyle(color: context.colors.muted, height: 1.5),
         ),
         const SizedBox(height: 8),
         Text(
-          '${controller.delayedToday} jeda selesai hari ini',
+          '${controller.delayedToday} Delay Craving & '
+          '${controller.habitSwapsToday} Habit Swap hari ini',
           style: TextStyle(
             color: context.colors.accent,
             fontWeight: FontWeight.w700,
@@ -75,7 +88,7 @@ class ReductionEntryCard extends StatelessWidget {
         FilledButton.icon(
           onPressed: () => openReductionSupport(context, controller),
           icon: const Icon(Icons.air_rounded),
-          label: const Text('Buka bantuan rokok / vape'),
+          label: const Text('Buka Delay Craving & Habit Swap'),
         ),
       ],
     ),

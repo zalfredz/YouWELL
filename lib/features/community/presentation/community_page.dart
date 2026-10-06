@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/shared/widgets/ui_helpers.dart';
 
-class CommunityPage extends StatefulWidget {
+class CommunityPage extends StatelessWidget {
   const CommunityPage({super.key, required this.controller});
   final WellnessController controller;
-  @override
-  State<CommunityPage> createState() => _CommunityPageState();
-}
-
-class _CommunityPageState extends State<CommunityPage> {
-  int _section = 0;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -26,25 +21,7 @@ class _CommunityPageState extends State<CommunityPage> {
         style: TextStyle(color: context.colors.muted),
       ),
       const SizedBox(height: 20),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Wall')),
-            ButtonSegment(value: 1, label: Text('Squad')),
-            ButtonSegment(value: 2, label: Text('Vibe')),
-            ButtonSegment(value: 3, label: Text('Buddy')),
-          ],
-          selected: {_section},
-          onSelectionChanged: (value) => setState(() => _section = value.first),
-        ),
-      ),
-      const SizedBox(height: 18),
-      if (_section == 0) _Wall(controller: widget.controller),
-      if (_section == 1) _Squad(controller: widget.controller),
-      if (_section == 2) const _VibeMap(),
-      if (_section == 3) _Buddy(controller: widget.controller),
+      _Wall(controller: controller),
     ],
   );
 }
@@ -60,7 +37,7 @@ class _Wall extends StatelessWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Bagikan small win'),
+          title: const Text('Bagikan kemenangan kecil'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -71,7 +48,7 @@ class _Wall extends StatelessWidget {
               const SizedBox(height: 12),
               TextField(
                 controller: text,
-                maxLength: 180,
+                maxLength: maxCommunityPostLength,
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: 'Hari ini aku berhasil…',
@@ -91,7 +68,9 @@ class _Wall extends StatelessWidget {
                   controller.submitCommunityPost(text.text);
                   Navigator.pop(dialogContext);
                 } catch (_) {
-                  setDialogState(() => error = 'Tulis 3–180 karakter.');
+                  setDialogState(
+                    () => error = 'Tulis 3–$maxCommunityPostLength karakter.',
+                  );
                 }
               },
               child: const Text('Kirim untuk review'),
@@ -124,7 +103,7 @@ class _Wall extends StatelessWidget {
         const _InfoCard(
           icon: Icons.schedule_rounded,
           title: 'Post kamu sedang direview',
-          detail: 'Admin akan memilih apakah post aman untuk Wall.',
+          detail: 'Moderator akan mengecek post sebelum tampil.',
         ),
     ],
   );
@@ -164,10 +143,23 @@ class _PostCard extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
+            if (post['sample'] == true) tag('contoh'),
             PopupMenuButton<String>(
               tooltip: 'Laporkan post',
-              onSelected: (reason) =>
-                  controller.reportCommunityPost(post['id'], reason),
+              onSelected: (reason) {
+                final sent = controller.reportCommunityPost(post['id'], reason);
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        sent
+                            ? 'Terima kasih. Laporan dikirim ke moderator.'
+                            : 'Post ini sudah kamu laporkan.',
+                      ),
+                    ),
+                  );
+              },
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'unsafe', child: Text('Tidak aman')),
                 PopupMenuItem(value: 'spam', child: Text('Spam')),
@@ -203,174 +195,14 @@ class _PostCard extends StatelessWidget {
   );
 }
 
-class _Squad extends StatelessWidget {
-  const _Squad({required this.controller});
-  final WellnessController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final squad = controller.squad;
-    if (squad == null) {
-      return _InfoCard(
-        icon: Icons.groups_2_outlined,
-        title: 'Cari squad kecilmu',
-        detail: 'Jaga kebiasaan bersama 3–5 alias dengan satu target mingguan.',
-        action: FilledButton.icon(
-          onPressed: controller.joinSquad,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Gabung demo squad'),
-        ),
-      );
-    }
-    final progress = (squad['progress'] as num).toInt();
-    final goal = (squad['goal'] as num).toInt();
-    final members = (squad['members'] as List).map((item) => item.toString());
-    return _InfoCard(
-      icon: Icons.groups_2_rounded,
-      title: squad['name'].toString(),
-      detail: '$progress / $goal langkah selesai minggu ini',
-      action: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LinearProgressIndicator(
-            value: progress / goal,
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(99),
-            color: context.colors.accent,
-            backgroundColor: context.colors.raised,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: members
-                .map(
-                  (alias) => Chip(
-                    avatar: CircleAvatar(child: Text(alias[0].toUpperCase())),
-                    label: Text(alias),
-                  ),
-                )
-                .toList(),
-          ),
-          TextButton(
-            onPressed: controller.leaveSquad,
-            child: const Text('Keluar dari demo squad'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VibeMap extends StatelessWidget {
-  const _VibeMap();
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        height: 260,
-        decoration: BoxDecoration(
-          color: context.colors.raised,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: context.colors.border),
-        ),
-        child: Stack(
-          children: [
-            _VibeDot(left: .15, top: .25, size: 72, color: context.colors.cyan),
-            _VibeDot(
-              left: .55,
-              top: .18,
-              size: 96,
-              color: context.colors.accent,
-            ),
-            _VibeDot(
-              left: .38,
-              top: .60,
-              size: 64,
-              color: context.colors.amber,
-            ),
-            _VibeDot(left: .72, top: .63, size: 54, color: context.colors.cyan),
-            Center(
-              child: Text(
-                'Collective Vibe\nDEMO DATA',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'Agregat anonim untuk rasa kebersamaan. Lokasi presisi tidak ditampilkan.',
-        style: TextStyle(color: context.colors.muted, height: 1.5),
-      ),
-    ],
-  );
-}
-
-class _VibeDot extends StatelessWidget {
-  const _VibeDot({
-    required this.left,
-    required this.top,
-    required this.size,
-    required this.color,
-  });
-  final double left, top, size;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Positioned(
-    left: left * 300,
-    top: top * 210,
-    child: Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withValues(alpha: .18),
-        border: Border.all(color: color.withValues(alpha: .65), width: 2),
-      ),
-    ),
-  );
-}
-
-class _Buddy extends StatelessWidget {
-  const _Buddy({required this.controller});
-  final WellnessController controller;
-  @override
-  Widget build(BuildContext context) {
-    final buddy = controller.buddy;
-    return _InfoCard(
-      icon: Icons.handshake_outlined,
-      title: buddy == null ? 'Accountability Buddy' : '@${buddy['alias']}',
-      detail: buddy == null
-          ? 'Pasangan alias dengan jalur serupa untuk saling mengingatkan.'
-          : '${buddy['activeDays']} hari aktif • jalur ${buddy['path']}',
-      action: buddy == null
-          ? FilledButton(
-              onPressed: controller.matchBuddy,
-              child: const Text('Cari demo buddy'),
-            )
-          : OutlinedButton(
-              onPressed: controller.endBuddy,
-              child: const Text('Akhiri pairing demo'),
-            ),
-    );
-  }
-}
-
 class _InfoCard extends StatelessWidget {
   const _InfoCard({
     required this.icon,
     required this.title,
     required this.detail,
-    this.action,
   });
   final IconData icon;
   final String title, detail;
-  final Widget? action;
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
@@ -394,7 +226,6 @@ class _InfoCard extends StatelessWidget {
           detail,
           style: TextStyle(color: context.colors.muted, height: 1.5),
         ),
-        if (action != null) ...[const SizedBox(height: 18), action!],
       ],
     ),
   );

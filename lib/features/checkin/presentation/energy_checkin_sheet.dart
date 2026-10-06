@@ -42,10 +42,10 @@ class _EnergyCheckInSheetState extends State<EnergyCheckInSheet> {
             runSpacing: 10,
             children:
                 const [
-                      ('low', 'Low'),
+                      ('low', 'Lelah'),
                       ('steady', 'Santai'),
-                      ('good', 'Good'),
-                      ('charged', 'Charged'),
+                      ('good', 'Baik'),
+                      ('charged', 'Semangat'),
                     ]
                     .map(
                       (item) => ChoiceChip(

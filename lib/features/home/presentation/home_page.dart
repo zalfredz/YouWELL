@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/checkin/presentation/energy_checkin_sheet.dart';
+import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
-import 'package:youwell/shared/widgets/wellness_companion.dart';
+import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/features/companion/presentation/companion_page.dart';
+import 'package:youwell/features/companion/domain/companion_rewards.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -13,12 +16,14 @@ class HomePage extends StatelessWidget {
     required this.onOpenDraw,
     required this.onOpenReset,
     required this.onOpenActivity,
+    this.companionKey,
   });
 
   final WellnessController controller;
   final VoidCallback onOpenDraw;
   final VoidCallback onOpenReset;
   final VoidCallback onOpenActivity;
+  final GlobalKey? companionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -41,17 +46,22 @@ class HomePage extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _CompanionStage(
+          controller: controller,
+          companionKey: companionKey,
           kind: companion,
           name: name,
           level: controller.level,
           xp: controller.xp,
           activeDays: controller.activeDaysIn(7),
           progress: (controller.xp % 100) / 100,
-          completedToday: done,
         ),
         if (controller.reduction) ...[
           const SizedBox(height: 20),
           ReductionEntryCard(controller: controller),
+        ],
+        for (final category in controller.ladderOffers) ...[
+          const SizedBox(height: 16),
+          LadderOfferCard(controller: controller, category: category),
         ],
         const SizedBox(height: 26),
         Row(
@@ -96,7 +106,7 @@ class HomePage extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onOpenDraw,
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Draw a card'),
+                  label: const Text('Ambil kartu'),
                 ),
               ],
             ),
@@ -105,9 +115,14 @@ class HomePage extends StatelessWidget {
           ...controller.quests.map(
             (task) => _TaskTile(
               task: task,
-              onComplete: task['activityKind'] == null
-                  ? () => controller.completeCard(task['id'].toString())
-                  : onOpenActivity,
+              onComplete: switch (task['activityKind']) {
+                null => () => controller.completeCard(task['id'].toString()),
+                'delay' ||
+                'habit_swap' => () => openReductionSupport(context, controller),
+                _ => onOpenActivity,
+              },
+              onRate: (effort) =>
+                  controller.rateQuestEffort(task['id'].toString(), effort),
             ),
           ),
         const SizedBox(height: 18),
@@ -123,7 +138,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _CompanionStage extends StatelessWidget {
+class _CompanionStage extends StatefulWidget {
   const _CompanionStage({
     required this.kind,
     required this.name,
@@ -131,12 +146,27 @@ class _CompanionStage extends StatelessWidget {
     required this.xp,
     required this.activeDays,
     required this.progress,
-    required this.completedToday,
+    required this.controller,
+    this.companionKey,
   });
 
   final String kind, name;
-  final int level, xp, activeDays, completedToday;
+  final int level, xp, activeDays;
   final double progress;
+  final WellnessController controller;
+  final GlobalKey? companionKey;
+  @override
+  State<_CompanionStage> createState() => _CompanionStageState();
+}
+
+class _CompanionStageState extends State<_CompanionStage> {
+  int _greeting = 0;
+  static const _greetings = [
+    'Kita jalan pelan-pelan.',
+    'Senang kamu mampir!',
+    'Satu langkah juga berarti.',
+    'Aku tumbuh bareng kamu.',
+  ];
 
   @override
   Widget build(BuildContext context) => Container(
@@ -159,27 +189,44 @@ class _CompanionStage extends StatelessWidget {
         Row(
           children: [
             Text(
-              name,
+              widget.name,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const Spacer(),
-            tag('LV $level'),
+            tag('LV ${widget.level}'),
+            IconButton(
+              tooltip: 'Companion & hadiah',
+              onPressed: _openWardrobe,
+              icon: const Icon(Icons.card_giftcard_rounded),
+            ),
           ],
         ),
-        WellnessCompanion(kind: kind, level: level, size: 286),
+        SizedBox(
+          key: widget.companionKey,
+          child: MobileCompanion(
+            controller: widget.controller,
+            onTap: () =>
+                setState(() => _greeting = (_greeting + 1) % _greetings.length),
+          ),
+        ),
         Text(
-          completedToday >= 3 ? 'Hari ini keren!' : 'Kita jalan pelan-pelan.',
+          widget.controller.dailyProgress == 1
+              ? 'Semua langkah hari ini tercapai! ✨'
+              : _greetings[_greeting],
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
-              child: _Metric(value: '$xp XP', label: 'total progress'),
+              child: _Metric(value: '${widget.xp} XP', label: 'total progress'),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _Metric(value: '$activeDays / 7', label: 'hari aktif'),
+              child: _Metric(
+                value: '${widget.activeDays} / 7',
+                label: 'target: 4 hari aktif',
+              ),
             ),
           ],
         ),
@@ -188,12 +235,38 @@ class _CompanionStage extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           child: LinearProgressIndicator(
             minHeight: 7,
-            value: progress,
+            value: widget.progress,
             backgroundColor: context.colors.canvas,
             color: context.colors.accent,
           ),
         ),
+        const SizedBox(height: 12),
+        Text(
+          companionStageName(widget.kind, companionStage(widget.level)),
+          style: TextStyle(color: context.colors.muted),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _nextReward(widget.controller),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
       ],
+    ),
+  );
+
+  String _nextReward(WellnessController controller) {
+    final next = companionUnlocks
+        .where((item) => item.level > controller.level)
+        .firstOrNull;
+    if (next == null) return 'Semua hadiah terbuka. Kita terus tumbuh!';
+    return '${(next.level - 1) * 100 - controller.xp} XP lagi: ${next.label}';
+  }
+
+  void _openWardrobe() => Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => CompanionPage(controller: widget.controller),
     ),
   );
 }
@@ -227,10 +300,70 @@ class _Metric extends StatelessWidget {
   );
 }
 
+/// Offers a ladder step up; the user may stay ("Tetap di level ini").
+class LadderOfferCard extends StatelessWidget {
+  const LadderOfferCard({
+    super.key,
+    required this.controller,
+    required this.category,
+  });
+  final WellnessController controller;
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = controller.capacity[category]!;
+    final next = (entry['offerStep'] as num).toInt();
+    final rung = ladders[category]![next - 1];
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.colors.selected,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.colors.accent.withValues(alpha: .4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Siap naik? ${ladderLabels[category]}: ${rung.title}',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            entry['reason'].toString(),
+            style: TextStyle(color: context.colors.muted, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              FilledButton(
+                onPressed: () => controller.acceptLadderStep(category),
+                child: const Text('Naik satu anak tangga'),
+              ),
+              OutlinedButton(
+                onPressed: () => controller.declineLadderStep(category),
+                child: const Text('Tetap di level ini'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TaskTile extends StatelessWidget {
-  const _TaskTile({required this.task, required this.onComplete});
+  const _TaskTile({
+    required this.task,
+    required this.onComplete,
+    required this.onRate,
+  });
   final Map<String, dynamic> task;
   final VoidCallback onComplete;
+  final ValueChanged<String> onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -270,9 +403,26 @@ class _TaskTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${task['durationMinutes']} min  •  +${task['xp']} XP  •  Level ${task['difficulty']}',
+                  [
+                    '${task['durationMinutes']} menit',
+                    '+${task['xp']} XP',
+                    if (task['ladder'] != null)
+                      '${ladderLabels[task['ladder']]} · anak tangga ${task['step']}',
+                  ].join('  •  '),
                   style: TextStyle(color: context.colors.muted, fontSize: 12),
                 ),
+                if (task['strenuous'] == true && !done)
+                  Text(
+                    'Berhenti jika pusing atau nyeri.',
+                    style: TextStyle(color: context.colors.muted, fontSize: 12),
+                  ),
+                if (!done && task['partial'] is num)
+                  Text(
+                    'Tercapai sebagian: ${((task['partial'] as num) * 100).round()}%',
+                    style: TextStyle(color: context.colors.amber, fontSize: 12),
+                  ),
+                if (done && task['ladder'] != null)
+                  _EffortRating(effort: task['effort'], onRate: onRate),
               ],
             ),
           ),
@@ -281,6 +431,10 @@ class _TaskTile extends StatelessWidget {
                 ? 'Selesai'
                 : task['activityKind'] == null
                 ? 'Tandai selesai'
+                : task['activityKind'] == 'delay'
+                ? 'Mulai timer Delay Craving'
+                : task['activityKind'] == 'habit_swap'
+                ? 'Pilih Habit Swap'
                 : 'Buka Aktivitas untuk menyelesaikan',
             onPressed: done ? null : onComplete,
             icon: Icon(
@@ -292,6 +446,48 @@ class _TaskTile extends StatelessWidget {
               color: context.colors.accent,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One tap after a ladder quest; "berat" feeds the weekly ladder review.
+class _EffortRating extends StatelessWidget {
+  const _EffortRating({required this.effort, required this.onRate});
+  final Object? effort;
+  final ValueChanged<String> onRate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (effort != null) {
+      return Text(
+        'Terasa ${effort.toString()}',
+        style: TextStyle(color: context.colors.muted, fontSize: 12),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Gimana rasanya?',
+            style: TextStyle(color: context.colors.muted, fontSize: 12),
+          ),
+          for (final (value, label) in const [
+            ('ringan', 'Ringan'),
+            ('pas', 'Pas'),
+            ('berat', 'Berat'),
+          ])
+            ActionChip(
+              visualDensity: VisualDensity.compact,
+              backgroundColor: context.colors.surface,
+              side: BorderSide(color: context.colors.border),
+              label: Text(label),
+              onPressed: () => onRate(value),
+            ),
         ],
       ),
     );

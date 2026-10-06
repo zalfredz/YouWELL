@@ -3,6 +3,7 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/activity/presentation/meal_snap_page.dart';
 import 'package:youwell/features/activity/presentation/workout_page.dart';
+import 'package:youwell/features/activity/presentation/activity_history_page.dart';
 
 class ActivityPage extends StatelessWidget {
   const ActivityPage({
@@ -125,6 +126,13 @@ class ActivityPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+        OutlinedButton.icon(
+          onPressed: () =>
+              _open(context, ActivityHistoryPage(controller: controller)),
+          icon: const Icon(Icons.history_rounded),
+          label: const Text('Buka riwayat aktivitas'),
+        ),
+        const SizedBox(height: 16),
         const Text(
           'Terakhir dicatat',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),

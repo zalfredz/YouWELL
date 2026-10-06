@@ -10,6 +10,11 @@ capability iOS, archive, dan distribusi.
 - Minimum iOS deployment target: iOS 15.
 - iPhone menggunakan orientasi portrait.
 - Penyimpanan masih local-first melalui `SharedPreferences`.
+- Gamifikasi mobile terpisah di `lib/features/companion/` dan
+  `lib/application/wellness_gamification.dart`. Web tidak memakai reward host
+  atau ilustrasi companion mobile yang baru.
+- Reward/lencana dan preferensi animasi/getaran tersimpan lokal. Kalender
+  perjalanan 28 hari dan ritme 4/7 menggunakan quest yang selesai.
 - Tab mobile: **Hari ini**, **Aktivitas**, **Perjalanan**, **Komunitas**. Jeda cepat
   dibuka dari Hari ini atau Aktivitas; Profil melalui avatar di kanan atas.
 - Aktivitas memiliki Meal Snap (foto lokal di penyimpanan aplikasi) dan
@@ -18,6 +23,11 @@ capability iOS, archive, dan distribusi.
   mendukung tracking saat aplikasi berjalan di background.
 - Foto Meal Snap tidak ikut dalam ekspor JSON. Menghapus data lokal dari Profil
   juga menghapus foto-foto Meal Snap pada perangkat tersebut.
+- Riwayat aktivitas bisa membuka foto, koreksi, dan hapus catatan. Menghapus
+  satu Meal Snap juga menghapus file foto miliknya. XP tetap tersimpan;
+  koreksi tidak menyelesaikan quest atau menambah reward.
+- Persetujuan UAT P1–P10 tersedia di Profil; ringkasan angka diekspor manual.
+  Auth dan pengiriman ringkasan server belum aktif.
 - Ekspor data dan buka tautan sudah memakai API native.
 - Supabase, Google Sign-In, push notification, dan production signing belum
   diaktifkan. Tambahkan setelah alur mobile stabil.

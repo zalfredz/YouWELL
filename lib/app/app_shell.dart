@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
@@ -9,6 +11,7 @@ import 'package:youwell/features/home/presentation/home_page.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
 import 'package:youwell/features/progress/presentation/progress_page.dart';
 import 'package:youwell/features/reset/presentation/reset_page.dart';
+import 'package:youwell/features/companion/presentation/mobile_reward_host.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller});
@@ -18,17 +21,42 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _tab = 0;
   bool _drawing = false;
+  late String _day = widget.controller.today;
+  Timer? _dayWatcher;
+  final _companionTarget = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.prepareToday();
-      _openDailyDraw();
+    widget.controller.enableMobileRewards();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startDay());
+    // Catch midnight while the app stays open in the foreground.
+    _dayWatcher = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (widget.controller.today != _day) _startDay();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _dayWatcher?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _startDay();
+  }
+
+  void _startDay() {
+    if (!mounted) return;
+    _day = widget.controller.today;
+    widget.controller.prepareToday();
+    _openDailyDraw();
   }
 
   Future<void> _openDailyDraw() async {
@@ -37,14 +65,18 @@ class _AppShellState extends State<AppShell> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => DailyCardDrawDialog(controller: widget.controller),
+      builder: (_) => DailyCardDrawDialog(
+        controller: widget.controller,
+        mobileExperience: true,
+      ),
     );
     _drawing = false;
   }
 
   void _openProfile() => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => ProfilePage(controller: widget.controller),
+      builder: (_) =>
+          ProfilePage(controller: widget.controller, mobileExperience: true),
     ),
   );
 
@@ -68,6 +100,7 @@ class _AppShellState extends State<AppShell> {
     final pages = [
       HomePage(
         controller: widget.controller,
+        companionKey: _companionTarget,
         onOpenDraw: _openDailyDraw,
         onOpenReset: () => _openReset(),
         onOpenActivity: () => setState(() => _tab = 1),
@@ -87,66 +120,79 @@ class _AppShellState extends State<AppShell> {
       Icons.people_alt_outlined,
     ];
     final alias = widget.controller.profile!['alias'].toString();
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 14, 8),
-              child: Row(
-                children: [
-                  const Text(
-                    'youwell',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
-                  ),
-                  const Spacer(),
-                  const ThemeModeButton(),
-                  if (widget.controller.needsDailyCardDraw)
-                    IconButton(
-                      tooltip: 'Ambil kartu hari ini',
-                      onPressed: _openDailyDraw,
-                      icon: Icon(
-                        Icons.style_rounded,
-                        color: context.colors.accent,
+    return MobileRewardHost(
+      controller: widget.controller,
+      target: _companionTarget,
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 14, 14, 8),
+                child: Row(
+                  children: [
+                    const Text(
+                      'youwell',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                  const SizedBox(width: 4),
-                  Semantics(
-                    button: true,
-                    label: 'Buka profil',
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(40),
-                      onTap: _openProfile,
-                      child: CircleAvatar(
-                        radius: 21,
-                        backgroundColor: context.colors.raised,
-                        child: Text(
-                          alias[0].toUpperCase(),
-                          style: TextStyle(
-                            color: context.colors.accent,
-                            fontWeight: FontWeight.w800,
+                    const Spacer(),
+                    const ThemeModeButton(),
+                    if (widget.controller.needsDailyCardDraw)
+                      IconButton(
+                        tooltip: 'Ambil kartu hari ini',
+                        onPressed: _openDailyDraw,
+                        icon: Icon(
+                          Icons.style_rounded,
+                          color: context.colors.accent,
+                        ),
+                      ),
+                    const SizedBox(width: 4),
+                    Semantics(
+                      button: true,
+                      label: 'Buka profil',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(40),
+                        onTap: _openProfile,
+                        child: CircleAvatar(
+                          radius: 21,
+                          backgroundColor: context.colors.raised,
+                          child: Text(
+                            alias[0].toUpperCase(),
+                            style: TextStyle(
+                              color: context.colors.accent,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: IndexedStack(index: _tab, children: pages),
-            ),
-          ],
+              Expanded(
+                child: IndexedStack(
+                  index: _tab,
+                  children: [
+                    for (final (index, page) in pages.indexed)
+                      TickerMode(enabled: index == _tab, child: page),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (value) => setState(() => _tab = value),
-        destinations: List.generate(
-          labels.length,
-          (index) => NavigationDestination(
-            icon: Icon(icons[index]),
-            label: labels[index],
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (value) => setState(() => _tab = value),
+          destinations: List.generate(
+            labels.length,
+            (index) => NavigationDestination(
+              icon: Icon(icons[index]),
+              label: labels[index],
+            ),
           ),
         ),
       ),

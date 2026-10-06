@@ -122,11 +122,23 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
   void _finish() {
     _pause();
     if (_watch.elapsed.inSeconds < 1) return;
-    widget.controller.recordWorkout(
+    final result = widget.controller.recordWorkout(
       kind: _kind,
       seconds: _watch.elapsed.inSeconds,
       meters: _meters.round(),
     );
+    final message = result.tooFast
+        ? 'Sesi tercatat, tapi kecepatan rata-rata di atas '
+              '${maxWalkRunKmPerHour.round()} km/jam, jadi tidak dihitung '
+              'untuk quest.'
+        : result.completed.isNotEmpty
+        ? 'Quest selesai: ${result.completed.join(', ')}.'
+        : result.partial.isNotEmpty
+        ? 'Tercapai sebagian: ${result.partial.join(', ')}. Tetap tercatat.'
+        : 'Sesi tercatat.';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
     Navigator.of(context).pop();
   }
 
@@ -151,8 +163,9 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tracking hanya aktif saat sesi ini berjalan.',
-              style: TextStyle(color: context.colors.muted),
+              'Lokasi hanya dipakai saat sesi berjalan untuk menghitung jarak. '
+              'Rute tidak disimpan. Berhenti jika pusing atau nyeri.',
+              style: TextStyle(color: context.colors.muted, height: 1.4),
             ),
             const SizedBox(height: 24),
             SegmentedButton<String>(
@@ -240,7 +253,7 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
                 _starting
                     ? 'Menyiapkan...'
                     : _watch.isRunning
-                    ? 'Pause'
+                    ? 'Tahan'
                     : elapsed.inSeconds > 0
                     ? 'Lanjutkan'
                     : 'Mulai',

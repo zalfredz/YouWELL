@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
@@ -16,21 +17,63 @@ class ResetPage extends StatefulWidget {
   State<ResetPage> createState() => _ResetPageState();
 }
 
+const _habitSwaps = [
+  'Minum segelas air',
+  'Napas pelan 1 menit',
+  'Jalan sebentar',
+  'Kunyah permen bebas gula',
+  'Kabari teman',
+];
+
 class _ResetPageState extends State<ResetPage> {
   Timer? _timer;
   int _duration = 5 * 60;
-  int _remaining = 5 * 60;
   String _mode = 'focus';
+  // Wall-clock based so the countdown stays honest while backgrounded.
+  Duration _elapsedBeforePause = Duration.zero;
+  DateTime? _runningSince;
+  bool _finished = false;
+  String? _delayNote;
+  ScaffoldMessengerState? _messenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.maybeOf(context);
+  }
 
   @override
   void initState() {
     super.initState();
     _mode = widget.initialMode;
-    _duration = _mode == 'delay' ? 300 : 60;
-    _remaining = _duration;
+    _duration = _mode == 'delay'
+        ? widget.controller.delayTargetMinutes * 60
+        : 60;
   }
 
   bool get _running => _timer != null;
+
+  Duration get _elapsed =>
+      _elapsedBeforePause +
+      (_runningSince == null
+          ? Duration.zero
+          : clock.now().difference(_runningSince!));
+
+  int get _remaining => _finished
+      ? 0
+      : (_duration - _elapsed.inSeconds).clamp(0, _duration).toInt();
+
+  /// A delay stopped before the end is still progress: "ditunda X menit".
+  String? _logStoppedDelay() {
+    final minutes = _elapsed.inMinutes;
+    if (_mode != 'delay' || _finished || minutes < 1) return null;
+    widget.controller.recordHabitDelay(
+      minutes: minutes,
+      plannedMinutes: _duration ~/ 60,
+      completed: false,
+    );
+    return 'Tercatat: kamu sudah menunda $minutes menit.';
+  }
 
   void _showStretch() => showModalBottomSheet<void>(
     context: context,
@@ -65,29 +108,49 @@ class _ResetPageState extends State<ResetPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    if (_mode == 'delay' && !_finished && _elapsed.inMinutes >= 1) {
+      // Defer so listeners are not notified while this tree is unmounting.
+      final messenger = _messenger;
+      final stopped = _logStoppedDelay;
+      scheduleMicrotask(() {
+        final note = stopped();
+        if (note != null) {
+          messenger?.showSnackBar(SnackBar(content: Text(note)));
+        }
+      });
+    }
     super.dispose();
   }
 
   void _select(String mode, int seconds) {
     _timer?.cancel();
+    final note = _logStoppedDelay();
     setState(() {
       _timer = null;
       _mode = mode;
       _duration = seconds;
-      _remaining = seconds;
+      _elapsedBeforePause = Duration.zero;
+      _runningSince = null;
+      _finished = false;
+      _delayNote = note;
     });
   }
 
   void _toggle() {
     if (_running) {
       _timer?.cancel();
-      setState(() => _timer = null);
+      setState(() {
+        _timer = null;
+        _elapsedBeforePause = _elapsed;
+        _runningSince = null;
+      });
       return;
     }
+    _runningSince = clock.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      if (_remaining > 1) {
-        setState(() => _remaining--);
+      if (_remaining > 0) {
+        setState(() {});
         return;
       }
       timer.cancel();
@@ -97,14 +160,35 @@ class _ResetPageState extends State<ResetPage> {
           'mode': 'quick',
         });
       } else if (_mode == 'delay') {
-        widget.controller.recordHabitDelay(minutes: _duration ~/ 60);
+        widget.controller.recordHabitDelay(
+          minutes: _duration ~/ 60,
+          plannedMinutes: _duration ~/ 60,
+        );
       }
       setState(() {
         _timer = null;
-        _remaining = 0;
+        _runningSince = null;
+        _finished = true;
       });
     });
-    setState(() {});
+    setState(() => _delayNote = null);
+  }
+
+  void _logSwap(String swap) {
+    final wait = widget.controller.habitSwapCooldownMinutes;
+    final saved = widget.controller.recordHabitSwap(swap);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            saved
+                ? 'Habit Swap dicatat: $swap'
+                : 'Habit Swap barusan sudah tercatat. Catat lagi saat '
+                      'keinginan berikutnya muncul (sekitar $wait menit lagi).',
+          ),
+        ),
+      );
   }
 
   @override
@@ -117,13 +201,15 @@ class _ResetPageState extends State<ResetPage> {
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
         Text(
-          reductionSupport ? 'Kurangi rokok / vape' : 'Ambil jeda',
+          reductionSupport ? widget.controller.reductionLabel : 'Ambil jeda',
           style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
         Text(
           reductionSupport
-              ? 'Saat muncul keinginan, mulai jeda 5 menit. Sesi yang selesai otomatis dicatat.'
+              ? 'Saat muncul keinginan, mulai Delay Craving '
+                    '${widget.controller.delayTargetMinutes} menit. '
+                    'Sesi yang selesai otomatis dicatat.'
               : 'Pilihan cepat saat kamu butuh jeda.',
           style: TextStyle(color: context.colors.muted),
         ),
@@ -144,7 +230,7 @@ class _ResetPageState extends State<ResetPage> {
                     ? 'Tunda rokok / vape'
                     : _mode == 'reset'
                     ? 'Jeda singkat'
-                    : 'Quick focus',
+                    : 'Fokus singkat',
                 style: TextStyle(
                   color: context.colors.accent,
                   fontWeight: FontWeight.w800,
@@ -170,7 +256,7 @@ class _ResetPageState extends State<ResetPage> {
                             ? Icons.pause_rounded
                             : Icons.play_arrow_rounded,
                       ),
-                      label: Text(_running ? 'Pause' : 'Mulai'),
+                      label: Text(_running ? 'Tahan' : 'Mulai'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -208,10 +294,12 @@ class _ResetPageState extends State<ResetPage> {
         if (widget.controller.reduction) ...[
           const SizedBox(height: 10),
           _ModeButton(
-            label: 'Tunda rokok / vape 5m',
+            label:
+                'Delay Craving ${widget.controller.delayTargetMinutes} menit',
             icon: Icons.air_rounded,
             selected: _mode == 'delay',
-            onTap: () => _select('delay', 300),
+            onTap: () =>
+                _select('delay', widget.controller.delayTargetMinutes * 60),
           ),
           const SizedBox(height: 18),
           Text(
@@ -221,9 +309,13 @@ class _ResetPageState extends State<ResetPage> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (_mode == 'delay' && _remaining == 0) ...[
+          if (_mode == 'delay' && _finished) ...[
             const SizedBox(height: 8),
             const Text('Jeda selesai dan sudah dicatat.'),
+          ],
+          if (_delayNote != null) ...[
+            const SizedBox(height: 8),
+            Text(_delayNote!),
           ],
           const SizedBox(height: 14),
           Container(
@@ -237,13 +329,35 @@ class _ResetPageState extends State<ResetPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Pilih aktivitas pengganti',
+                  'Habit Swap',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Minum air, tarik napas perlahan, atau alihkan perhatian ke aktivitas singkat.',
+                  'Pilih aktivitas pengganti yang kamu lakukan sekarang.',
                   style: TextStyle(color: context.colors.muted, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final swap in _habitSwaps)
+                      ActionChip(
+                        backgroundColor: context.colors.raised,
+                        side: BorderSide(color: context.colors.border),
+                        label: Text(swap),
+                        onPressed: () => _logSwap(swap),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '${widget.controller.habitSwapsToday} habit swap hari ini',
+                  style: TextStyle(
+                    color: context.colors.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -251,7 +365,7 @@ class _ResetPageState extends State<ResetPage> {
         ],
         const SizedBox(height: 26),
         const Text(
-          'Quick actions',
+          'Aksi cepat',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
@@ -275,11 +389,6 @@ class _ResetPageState extends State<ResetPage> {
           detail: 'Leher, bahu, dan punggung',
           action: 'Lihat gerakan',
           onTap: _showStretch,
-        ),
-        const SizedBox(height: 18),
-        Text(
-          'Untuk sesi Pomodoro, soundscape, dan fokus panjang, gunakan workspace web YouWell.',
-          style: TextStyle(color: context.colors.muted, height: 1.5),
         ),
       ],
     );

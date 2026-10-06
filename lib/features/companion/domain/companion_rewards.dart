@@ -1,0 +1,72 @@
+/// Personal rewards only: no rankings, penalties, or expiring progress.
+class CompanionUnlock {
+  const CompanionUnlock(this.id, this.label, this.level, this.background);
+  final String id, label;
+  final int level;
+  final bool background;
+}
+
+const companionUnlocks = [
+  CompanionUnlock('ribbon', 'Pita ceria', 2, false),
+  CompanionUnlock('dusk', 'Langit senja', 3, true),
+  CompanionUnlock('stars', 'Bintang kecil', 4, false),
+  CompanionUnlock('sunrise', 'Pagi hangat', 6, true),
+  CompanionUnlock('crown', 'Mahkota daun', 8, false),
+];
+
+int companionStage(int level) => switch (level) {
+  >= 10 => 5,
+  >= 7 => 4,
+  >= 4 => 3,
+  >= 2 => 2,
+  _ => 1,
+};
+
+String companionStageName(String kind, int stage) {
+  final names = switch (kind) {
+    'cat' => [
+      'Anak kucing',
+      'Penjelajah',
+      'Teman ceria',
+      'Pemberani',
+      'Sahabat',
+    ],
+    'cloud' => [
+      'Awan kecil',
+      'Awan lembut',
+      'Awan ceria',
+      'Pelangi',
+      'Langit penuh',
+    ],
+    _ => ['Biji', 'Tunas', 'Daun', 'Berbunga', 'Pohon kecil'],
+  };
+  return names[(stage - 1).clamp(0, 4)];
+}
+
+class RewardMoment {
+  const RewardMoment({
+    required this.serial,
+    this.xp = 0,
+    this.dayComplete = false,
+    this.evolved = false,
+    this.ladder,
+    this.unlocks = const [],
+    this.badges = const [],
+  });
+  final int serial, xp;
+  final bool dayComplete, evolved;
+  final String? ladder;
+  final List<String> unlocks, badges;
+}
+
+const achievementNames = {
+  'first-quest': 'Langkah pertama',
+  'full-day': 'Hari penuh pertama',
+  'weekly-rhythm': 'Ritme 4 hari',
+  'first-delay': 'Jeda pertama',
+  'delay-30': '30 menit ditunda',
+  'delay-60': '1 jam ditunda',
+  'delay-300': '5 jam ditunda',
+  'hydration-7': '7 hari hidrasi',
+  'first-ladder': 'Anak tangga baru',
+};

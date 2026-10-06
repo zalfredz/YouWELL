@@ -78,10 +78,46 @@ class _MealSnapPageState extends State<MealSnapPage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'Foto gagal disimpan di perangkat ini.';
+          _error = 'Foto belum bisa disimpan di perangkat ini. Coba lagi.';
         });
       }
     }
+  }
+
+  Future<void> _noteOnly() async {
+    final note = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Catat tanpa foto'),
+        content: TextField(
+          controller: note,
+          maxLength: 200,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Apa yang kamu makan?'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ValueListenableBuilder(
+            valueListenable: note,
+            builder: (context, value, _) => FilledButton(
+              onPressed: value.text.trim().isEmpty
+                  ? null
+                  : () {
+                      widget.controller.recordMeal(note: note.text);
+                      Navigator.pop(dialogContext);
+                      Navigator.pop(this.context);
+                    },
+              child: const Text('Simpan'),
+            ),
+          ),
+        ],
+      ),
+    );
+    note.dispose();
   }
 
   @override
@@ -100,6 +136,11 @@ class _MealSnapPageState extends State<MealSnapPage> {
           style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 24),
+        TextButton.icon(
+          onPressed: _saving ? null : _noteOnly,
+          icon: const Icon(Icons.edit_note_rounded),
+          label: const Text('Catat tanpa foto'),
+        ),
         Container(
           height: 280,
           clipBehavior: Clip.antiAlias,

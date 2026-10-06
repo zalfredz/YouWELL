@@ -2,17 +2,10 @@ import 'package:youwell/core/utils/date_key.dart';
 
 /// Pure, pressure-free progress rules used by mobile and web.
 class ProgressCalculator {
-  const ProgressCalculator({
-    required this.days,
-    required this.now,
-    required this.basePace,
-    required this.lowImpact,
-  });
+  const ProgressCalculator({required this.days, required this.now});
 
   final Map<String, dynamic> days;
   final DateTime now;
-  final int basePace;
-  final bool lowImpact;
   String get today => dayKey(now);
 
   List<String> get activeDays =>
@@ -61,15 +54,6 @@ class ProgressCalculator {
       completed += quests.where(_isCompleted).length;
     }
     return total == 0 ? 0 : completed / total;
-  }
-
-  int get recommendedDifficulty {
-    if (lowImpact) return 1;
-    final rate = completionRate(7);
-    if (activeDaysIn(7) < 3) return basePace.clamp(1, 2);
-    if (rate >= .8) return (basePace + 1).clamp(1, 3);
-    if (rate < .4) return (basePace - 1).clamp(1, 3);
-    return basePace.clamp(1, 3);
   }
 
   List<Map<String, dynamic>> _quests(dynamic day) {

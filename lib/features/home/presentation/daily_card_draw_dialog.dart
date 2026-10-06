@@ -8,8 +8,13 @@ import 'package:youwell/core/types/json_map.dart';
 
 /// Shared mobile/web draw ritual: spin, swipe, reveal, then commit one pack.
 class DailyCardDrawDialog extends StatefulWidget {
-  const DailyCardDrawDialog({super.key, required this.controller});
+  const DailyCardDrawDialog({
+    super.key,
+    required this.controller,
+    this.mobileExperience = false,
+  });
   final WellnessController controller;
+  final bool mobileExperience;
 
   @override
   State<DailyCardDrawDialog> createState() => _DailyCardDrawDialogState();
@@ -55,6 +60,7 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
               borderRadius: BorderRadius.circular(24),
               child: _DrawStage(
                 controller: widget.controller,
+                mobileExperience: widget.mobileExperience,
                 onClose: () => Navigator.pop(context),
               ),
             ),
@@ -66,9 +72,14 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
 }
 
 class _DrawStage extends StatelessWidget {
-  const _DrawStage({required this.controller, required this.onClose});
+  const _DrawStage({
+    required this.controller,
+    required this.onClose,
+    required this.mobileExperience,
+  });
   final WellnessController controller;
   final VoidCallback onClose;
+  final bool mobileExperience;
 
   @override
   Widget build(BuildContext context) {
@@ -86,9 +97,9 @@ class _DrawStage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Daily Card Draw',
+                  mobileExperience ? 'Kartu hari ini' : 'Daily Card Draw',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 ),
               ),
@@ -101,25 +112,56 @@ class _DrawStage extends StatelessWidget {
               ),
             ],
           ),
-          Text(
-            'Satu kartu, 3–5 quest. Swipe lalu buka.',
-            style: TextStyle(color: context.colors.muted),
-          ),
+          if (!mobileExperience)
+            Text(
+              'Satu kartu, 3–5 quest. Swipe lalu buka.',
+              style: TextStyle(color: context.colors.muted),
+            ),
+          if (mobileExperience &&
+              selected == null &&
+              controller.passedDailyCardIds.isEmpty) ...[
+            const SizedBox(height: 6),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'relaxed',
+                  label: Text('Santai'),
+                  icon: Icon(Icons.spa_outlined),
+                ),
+                ButtonSegment(
+                  value: 'normal',
+                  label: Text('Normal'),
+                  icon: Icon(Icons.bolt_outlined),
+                ),
+              ],
+              selected: {controller.dailyPace},
+              onSelectionChanged: (values) =>
+                  controller.setDailyPace(values.first),
+            ),
+          ],
           const SizedBox(height: 12),
           Expanded(
             child: selected == null
                 ? _SpinningDeck(
                     key: ValueKey(
-                      '${controller.dailyDeckStartIndex}-${controller.passedDailyCardIds.length}',
+                      '${controller.dailyDeckStartIndex}-${controller.passedDailyCardIds.length}-${controller.dailyPace}',
                     ),
                     cards: controller.dailyDrawCards,
                     passedIds: controller.passedDailyCardIds,
                     initialIndex: controller.dailyDeckStartIndex,
                     onSelect: controller.selectDailyCard,
+                    reduceMotion:
+                        mobileExperience &&
+                        (controller.reduceMotion ||
+                            MediaQuery.disableAnimationsOf(context)),
                   )
                 : _FlipReveal(
                     key: ValueKey(selected['id']),
                     card: selected,
+                    reduceMotion:
+                        mobileExperience &&
+                        (controller.reduceMotion ||
+                            MediaQuery.disableAnimationsOf(context)),
                     canChange: controller.canChooseAnotherDailyCard,
                     changesLeft: controller.dailyCardSwitchesRemaining,
                     onChange: controller.chooseAnotherDailyCard,
@@ -141,11 +183,13 @@ class _SpinningDeck extends StatefulWidget {
     required this.passedIds,
     required this.initialIndex,
     required this.onSelect,
+    this.reduceMotion = false,
   });
   final List<JsonMap> cards;
   final List<String> passedIds;
   final int initialIndex;
   final ValueChanged<String> onSelect;
+  final bool reduceMotion;
 
   @override
   State<_SpinningDeck> createState() => _SpinningDeckState();
@@ -184,11 +228,15 @@ class _SpinningDeckState extends State<_SpinningDeck> {
     final deckLength = widget.cards.length;
     final fullTurns = 2 + _random.nextInt(2);
     final offset = (destination - (_startPage % deckLength)) % deckLength;
-    await _pages.animateToPage(
-      _startPage + fullTurns * deckLength + offset,
-      duration: const Duration(milliseconds: 1450),
-      curve: Curves.easeInOutCubicEmphasized,
-    );
+    if (widget.reduceMotion) {
+      _pages.jumpToPage(_startPage + offset);
+    } else {
+      await _pages.animateToPage(
+        _startPage + fullTurns * deckLength + offset,
+        duration: const Duration(milliseconds: 1450),
+        curve: Curves.easeInOutCubicEmphasized,
+      );
+    }
     if (mounted) setState(() => _spinning = false);
   }
 
@@ -468,15 +516,17 @@ class _FlipReveal extends StatelessWidget {
     required this.changesLeft,
     required this.onChange,
     required this.onCommit,
+    this.reduceMotion = false,
   });
   final JsonMap card;
   final bool canChange;
   final int changesLeft;
   final VoidCallback onChange, onCommit;
+  final bool reduceMotion;
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-    duration: const Duration(milliseconds: 760),
+    duration: Duration(milliseconds: reduceMotion ? 0 : 760),
     curve: Curves.easeInOutCubic,
     tween: Tween(begin: 0, end: 1),
     builder: (context, progress, _) {

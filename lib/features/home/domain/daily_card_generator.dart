@@ -1,30 +1,26 @@
 import 'package:youwell/core/types/json_map.dart';
+import 'package:youwell/features/home/domain/quest_ladder.dart';
 
-/// Explainable, rule-based daily packs. Each card becomes the day's plan.
+/// Explainable, rule-based daily packs. Every card carries the user's ladder
+/// quest for each category; light side quests make the five cards differ.
 class DailyCardGenerator {
   const DailyCardGenerator();
 
   List<JsonMap> cardPacks({
     required String today,
-    required int difficulty,
+    required Map<String, int> steps,
+    required int pace,
     required bool lowImpact,
     required bool reduction,
-    required double completionRate,
-    required int daysUsingApp,
+    bool relaxed = false,
+    bool mobileThemes = false,
   }) {
-    final level = daysUsingApp <= 2 || completionRate < .4
-        ? 1
-        : difficulty.clamp(1, 3);
-    final questCount = level + 2;
+    final sideCount = pace.clamp(1, 2);
     final eligible = _catalog.where((task) {
       if (task.reductionOnly && !reduction) return false;
-      if (task.difficulty > level) return false;
-      if (lowImpact && task.category == 'Body' && !task.lowImpact) return false;
+      if (task.difficulty > pace.clamp(1, 3)) return false;
       return true;
     }).toList();
-    final categories = reduction
-        ? const ['Body', 'Energy', 'Reduction']
-        : const ['Body', 'Energy', 'Lifestyle'];
     const names = [
       'Tunas Baru',
       'Langkah Segar',
@@ -32,42 +28,65 @@ class DailyCardGenerator {
       'Ritme Ceria',
       'Arah Baru',
     ];
+    const themes = [
+      'Gerak Ringan',
+      'Energi Segar',
+      'Istirahat',
+      'Ruang Nyaman',
+      'Koneksi Kecil',
+    ];
+    const themedIds = [
+      ['posture', 'stretch', 'fresh-air'],
+      ['sunlight', 'meal-snap', 'focus-sprint'],
+      ['screen-break', 'music', 'posture'],
+      ['tidy', 'tomorrow', 'routine-plan'],
+      ['kind-message', 'music', 'habit-swap'],
+    ];
     return List.generate(names.length, (index) {
-      final picked = <_TaskDefinition>[];
-      var stride = 1;
-      for (final category in categories) {
-        final choices =
-            eligible.where((task) => task.category == category).toList()..sort(
-              (a, b) => _score(a.id, today).compareTo(_score(b.id, today)),
-            );
-        picked.add(choices[(index + index ~/ stride) % choices.length]);
-        stride *= choices.length;
-      }
-      final remaining =
-          eligible.where((task) => !picked.contains(task)).toList()..sort(
-            (a, b) => _score(
-              a.id,
-              '$today:$index',
-            ).compareTo(_score(b.id, '$today:$index')),
-          );
-      if (level > 1 && picked.length < questCount) {
-        final challenge = remaining.firstWhere(
-          (task) => task.difficulty == level,
-          orElse: () => remaining.first,
-        );
-        picked.add(challenge);
-        remaining.remove(challenge);
-      }
-      picked.addAll(remaining.take(questCount - picked.length));
-      final tasks = [
-        for (final (taskIndex, task) in picked.indexed)
-          _toMap(task, today, 'card-$index-task-$taskIndex'),
+      final ladderTasks = [
+        for (final category in ladderCategories(reduction: reduction))
+          _ladderTask(
+            category,
+            ((steps[category] ?? 1) - (relaxed ? 1 : 0)).clamp(
+              1,
+              ladderMax(category, lowImpact: lowImpact),
+            ),
+            today,
+            index,
+          ),
       ];
+      final sides = [...eligible]
+        ..sort((a, b) {
+          if (mobileThemes) {
+            final preferredA = themedIds[index].contains(a.id) ? 0 : 1;
+            final preferredB = themedIds[index].contains(b.id) ? 0 : 1;
+            if (preferredA != preferredB) {
+              return preferredA.compareTo(preferredB);
+            }
+          }
+          return _score(
+            a.id,
+            '$today:$index',
+          ).compareTo(_score(b.id, '$today:$index'));
+        });
+      final tasks = [
+        ...ladderTasks,
+        for (final (sideIndex, task) in sides.take(sideCount).indexed)
+          {
+            ..._toMap(task, today, 'card-$index-side-$sideIndex'),
+            if (mobileThemes) 'xp': 20,
+          },
+      ];
+      if (relaxed) {
+        for (final task in tasks.where((task) => task['ladder'] != null)) {
+          task['practiceOnly'] = task['step'] != steps[task['ladder']];
+        }
+      }
       return {
         'id': '$today-card-$index',
-        'title': names[index],
+        'title': mobileThemes ? themes[index] : names[index],
         'cardStyle': index,
-        'difficulty': level,
+        'difficulty': pace.clamp(1, 3),
         'tasks': tasks,
         'xp': tasks.fold<int>(0, (sum, task) => sum + (task['xp'] as int)),
         'durationMinutes': tasks.fold<int>(
@@ -78,8 +97,33 @@ class DailyCardGenerator {
     });
   }
 
+  JsonMap _ladderTask(String category, int step, String today, int card) {
+    final rung = ladders[category]![step - 1];
+    return {
+      'id': '$today-card-$card-ladder-$category',
+      'catalogId': 'ladder-${category.toLowerCase()}',
+      'ladder': category,
+      'step': step,
+      'title': rung.title,
+      'description': rung.description,
+      'category': category,
+      'difficulty': step,
+      'durationMinutes': rung.durationMinutes,
+      'xp': 15 + step * 5,
+      'source': 'card',
+      'status': 'available',
+      'done': false,
+      'activityKind': ?rung.activityKind,
+      'targetMeters': ?rung.targetMeters,
+      'delayMinutes': ?rung.delayMinutes,
+      'waterMl': ?rung.waterMl,
+      if (rung.strenuous) 'strenuous': true,
+    };
+  }
+
   JsonMap _toMap(_TaskDefinition task, String today, String suffix) => {
     'id': '$today-$suffix-${task.id}',
+    'catalogId': task.id,
     'title': task.title,
     'description': task.description,
     'category': task.category,
@@ -89,7 +133,7 @@ class DailyCardGenerator {
     'source': 'card',
     'status': 'available',
     'done': false,
-    if (task.activityKind != null) 'activityKind': task.activityKind,
+    'activityKind': ?task.activityKind,
   };
 
   int _score(String value, String salt) {
@@ -110,29 +154,20 @@ class _TaskDefinition {
     required this.difficulty,
     required this.durationMinutes,
     required this.xp,
-    this.lowImpact = true,
     this.reductionOnly = false,
     this.activityKind,
   });
   final String id, title, description, category;
   final int difficulty, durationMinutes, xp;
-  final bool lowImpact, reductionOnly;
+  final bool reductionOnly;
   final String? activityKind;
 }
 
+/// Side quests: short, self-reported (or photo-backed) extras.
 const _catalog = [
   _TaskDefinition(
-    id: 'water',
-    title: 'Minum satu gelas air',
-    description: 'Satu gelas, pelan-pelan.',
-    category: 'Body',
-    difficulty: 1,
-    durationMinutes: 1,
-    xp: 15,
-  ),
-  _TaskDefinition(
     id: 'posture',
-    title: 'Posture reset',
+    title: 'Rapikan postur',
     description: 'Lepaskan bahu dan rapikan posisi duduk.',
     category: 'Body',
     difficulty: 1,
@@ -141,55 +176,22 @@ const _catalog = [
   ),
   _TaskDefinition(
     id: 'stretch',
-    title: 'Stretch ringan',
-    description: 'Gerakkan tubuh dengan nyaman.',
+    title: 'Stretching ringan',
+    description: 'Leher, bahu, dan punggung dengan nyaman.',
     category: 'Body',
     difficulty: 1,
     durationMinutes: 3,
     xp: 20,
   ),
   _TaskDefinition(
-    id: 'walk',
-    title: 'Jalan santai',
-    description: 'Berjalan dengan ritmemu sendiri.',
-    category: 'Body',
-    difficulty: 2,
-    durationMinutes: 10,
-    xp: 30,
-    lowImpact: false,
-    activityKind: 'walk',
-  ),
-  _TaskDefinition(
-    id: 'walk-long',
-    title: 'Jalan 20 menit',
-    description: 'Nikmati rute yang aman dengan ritmemu.',
-    category: 'Body',
-    difficulty: 3,
-    durationMinutes: 20,
-    xp: 45,
-    lowImpact: false,
-    activityKind: 'walk',
-  ),
-  _TaskDefinition(
     id: 'meal-snap',
     title: 'Catat satu momen makan',
-    description: 'Foto untuk jurnal makan pribadimu.',
+    description: 'Foto untuk jurnal makan pribadimu. Foto tetap di HP.',
     category: 'Lifestyle',
     difficulty: 1,
     durationMinutes: 1,
     xp: 15,
     activityKind: 'meal_snap',
-  ),
-  _TaskDefinition(
-    id: 'easy-run',
-    title: 'Lari ringan 10 menit',
-    description: 'Mulai pelan dan pilih rute yang aman.',
-    category: 'Body',
-    difficulty: 3,
-    durationMinutes: 10,
-    xp: 40,
-    lowImpact: false,
-    activityKind: 'run',
   ),
   _TaskDefinition(
     id: 'sunlight',
@@ -211,21 +213,12 @@ const _catalog = [
   ),
   _TaskDefinition(
     id: 'focus-sprint',
-    title: 'Focus sprint',
+    title: 'Fokus singkat 10 menit',
     description: 'Kerjakan satu hal tanpa berpindah.',
     category: 'Energy',
     difficulty: 2,
     durationMinutes: 10,
     xp: 30,
-  ),
-  _TaskDefinition(
-    id: 'focus-deep',
-    title: 'Fokus 20 menit',
-    description: 'Pilih satu hal dan beri perhatian penuh.',
-    category: 'Energy',
-    difficulty: 3,
-    durationMinutes: 20,
-    xp: 45,
   ),
   _TaskDefinition(
     id: 'tidy',
@@ -264,29 +257,20 @@ const _catalog = [
     xp: 40,
   ),
   _TaskDefinition(
-    id: 'delay',
-    title: 'Tunda 5 menit',
-    description: 'Saat ingin merokok atau vape, beri jeda.',
-    category: 'Reduction',
-    difficulty: 1,
-    durationMinutes: 5,
-    xp: 25,
-    reductionOnly: true,
-  ),
-  _TaskDefinition(
     id: 'habit-swap',
-    title: 'Siapkan habit swap',
-    description: 'Taruh air atau permen bebas gula di dekatmu.',
+    title: 'Coba 1 Habit Swap',
+    description: 'Saat keinginan muncul, pilih satu aktivitas pengganti.',
     category: 'Reduction',
     difficulty: 1,
     durationMinutes: 2,
     xp: 20,
     reductionOnly: true,
+    activityKind: 'habit_swap',
   ),
   _TaskDefinition(
     id: 'trigger',
     title: 'Kenali satu pemicu',
-    description: 'Catat situasi dan alternatif yang lebih baik.',
+    description: 'Perhatikan situasi saat keinginan muncul.',
     category: 'Reduction',
     difficulty: 2,
     durationMinutes: 3,
@@ -295,8 +279,8 @@ const _catalog = [
   ),
   _TaskDefinition(
     id: 'swap-plan',
-    title: 'Rencana habit swap',
-    description: 'Siapkan dua pengganti untuk momen craving.',
+    title: 'Rencana Habit Swap',
+    description: 'Siapkan dua pengganti untuk momen keinginan.',
     category: 'Reduction',
     difficulty: 3,
     durationMinutes: 8,

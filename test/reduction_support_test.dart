@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:youwell/app/youwell_app.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
-import 'package:youwell/shared/widgets/wellness_companion.dart';
+import 'package:youwell/features/companion/presentation/mobile_companion.dart';
 
 void main() {
   for (final mode in ['light', 'dark']) {
@@ -15,6 +15,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         final controller = WellnessController();
+        controller.setReduceMotion(true);
         await controller.setup({
           'alias': 'preview',
           'path': 'wellness',
@@ -44,8 +45,11 @@ void main() {
         await tester.ensureVisible(preference);
         await tester.tap(preference);
         await tester.pumpAndSettle();
+        expect(controller.reduction, isFalse);
+        await tester.tap(find.text('Setuju & aktifkan'));
+        await tester.pumpAndSettle();
         expect(controller.reduction, isTrue);
-        expect(find.text('Buka bantuan rokok / vape'), findsOneWidget);
+        expect(find.text('Buka Delay Craving & Habit Swap'), findsOneWidget);
         expect(
           WellnessController(saved: controller.export()).reduction,
           isTrue,
@@ -54,26 +58,37 @@ void main() {
 
         await tester.pageBack();
         await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Kurangi rokok / vape'), 150);
         expect(find.text('Kurangi rokok / vape'), findsOneWidget);
         expect(
           tester.getTopLeft(find.text('Kurangi rokok / vape')).dy,
-          greaterThan(tester.getBottomLeft(find.byType(WellnessCompanion)).dy),
+          greaterThan(tester.getBottomLeft(find.byType(MobileCompanion)).dy),
         );
-        await tester.ensureVisible(find.text('Buka bantuan rokok / vape'));
+        await tester.ensureVisible(
+          find.text('Buka Delay Craving & Habit Swap'),
+        );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Buka bantuan rokok / vape'));
+        await tester.tap(find.text('Buka Delay Craving & Habit Swap'));
         await tester.pumpAndSettle();
-        expect(find.text('Bantuan rokok / vape'), findsOneWidget);
-        expect(find.text('05:00'), findsOneWidget);
+        expect(find.text('Delay Craving & Habit Swap'), findsOneWidget);
+        // Pace 1 starts the Reduction ladder at Delay Craving 2 minutes.
+        expect(find.text('02:00'), findsOneWidget);
         await tester.tap(find.text('Mulai'));
-        await tester.pump(const Duration(minutes: 5));
+        await tester.pump(const Duration(minutes: 2));
         await tester.pumpAndSettle();
         expect(controller.delayedToday, 1);
         expect(find.text('Jeda selesai dan sudah dicatat.'), findsOneWidget);
 
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('1 jeda selesai hari ini'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('1 Delay Craving & 0 Habit Swap hari ini'),
+          150,
+        );
+        expect(
+          find.text('1 Delay Craving & 0 Habit Swap hari ini'),
+          findsOneWidget,
+        );
         controller.switchPath(false);
         await tester.pumpAndSettle();
         expect(
