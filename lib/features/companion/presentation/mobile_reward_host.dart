@@ -163,7 +163,7 @@ class _RewardOverlay extends StatelessWidget {
             ),
           ),
         Positioned(
-        top: MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+          top: MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
           left: 16,
           right: 16,
           child: Semantics(

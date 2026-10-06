@@ -9,12 +9,12 @@ lib/
 ├── features/
 │   ├── activity/        # gerak, Meal Snap, hidrasi, riwayat
 │   ├── companion/       # evolusi, aksesori, animasi reward mobile
-│   ├── community/       # Wall, Squad, Buddy, Vibe Map, Admin
+│   ├── community/       # Wall (post, reaksi, lapor), Admin
 │   ├── home/            # companion, quest, Daily Card
 │   ├── onboarding/      # personalisasi awal
 │   ├── profile/         # preferences dan kontrol data
 │   ├── progress/        # insight progress mobile
-│   ├── reset/           # jeda mobile, stretch, Delay Craving, Habit Swap
+│   ├── reduction/       # Delay Craving & Habit Swap (jalur rokok/vape)
 │   └── web/             # landing, workspace, focus, recap publik
 └── shared/widgets/      # komponen visual lintas fitur
 ```

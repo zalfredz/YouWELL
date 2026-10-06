@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/features/reset/presentation/reset_page.dart';
+import 'package:youwell/features/reduction/presentation/delay_craving_panel.dart';
 
 void openReductionSupport(BuildContext context, WellnessController controller) {
   Navigator.of(context).push(
@@ -24,7 +24,7 @@ class ReductionSupportPage extends StatelessWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
-          child: ResetPage(controller: controller, initialMode: 'delay'),
+          child: DelayCravingPanel(controller: controller),
         ),
       ),
     ),

@@ -10,7 +10,6 @@ import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
 import 'package:youwell/features/profile/presentation/profile_page.dart';
 import 'package:youwell/features/progress/presentation/progress_page.dart';
-import 'package:youwell/features/reset/presentation/reset_page.dart';
 import 'package:youwell/features/companion/presentation/mobile_reward_host.dart';
 
 class AppShell extends StatefulWidget {
@@ -80,21 +79,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     ),
   );
 
-  void _openReset({bool delay = false}) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => AnimatedBuilder(
-        animation: widget.controller,
-        builder: (_, _) => Scaffold(
-          appBar: AppBar(title: Text(delay ? 'Delay Craving' : 'Jeda fisik')),
-          body: ResetPage(
-            controller: widget.controller,
-            initialMode: delay ? 'delay' : 'reset',
-          ),
-        ),
-      ),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     final pages = [
@@ -102,7 +86,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         controller: widget.controller,
         companionKey: _companionTarget,
         onOpenDraw: _openDailyDraw,
-        onOpenReset: () => _openReset(),
         onOpenActivity: () => setState(() => _tab = 1),
       ),
       ActivityPage(controller: widget.controller),

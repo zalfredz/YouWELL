@@ -91,7 +91,7 @@ quest pada kartu harian berikutnya mengikuti jalur yang aktif.
 | Aturan reward mobile | `lib/application/wellness_gamification.dart` |
 | Daily Card popup | `lib/features/home/presentation/daily_card_draw_dialog.dart` |
 | Aturan quest adaptif | `lib/features/home/domain/daily_card_generator.dart` |
-| Reset / jeda mobile | `lib/features/reset/presentation/reset_page.dart` |
+| Delay Craving & Habit Swap | `lib/features/reduction/presentation/delay_craving_panel.dart` |
 | Progress | `lib/features/progress/presentation/progress_page.dart` |
 | Community Wall lokal | `lib/features/community/presentation/community_page.dart` |
 | Antrean Admin | `lib/features/community/presentation/admin_moderation_page.dart` |

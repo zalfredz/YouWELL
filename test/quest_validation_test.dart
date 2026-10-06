@@ -6,7 +6,7 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/data/models/wellness_snapshot.dart';
-import 'package:youwell/features/reset/presentation/reset_page.dart';
+import 'package:youwell/features/reduction/presentation/delay_craving_panel.dart';
 
 final _now = DateTime(2026, 10, 12, 9);
 
@@ -121,9 +121,7 @@ void main() {
     final controller = _controller([_quest('delay', activityKind: 'delay')]);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: ResetPage(controller: controller, initialMode: 'delay'),
-        ),
+        home: Scaffold(body: DelayCravingPanel(controller: controller)),
       ),
     );
     await tester.tap(find.text('Mulai'));

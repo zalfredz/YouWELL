@@ -13,14 +13,12 @@ class HomePage extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onOpenDraw,
-    required this.onOpenReset,
     required this.onOpenActivity,
     this.companionKey,
   });
 
   final WellnessController controller;
   final VoidCallback onOpenDraw;
-  final VoidCallback onOpenReset;
   final VoidCallback onOpenActivity;
   final GlobalKey? companionKey;
 
@@ -124,12 +122,6 @@ class HomePage extends StatelessWidget {
                   controller.rateQuestEffort(task['id'].toString(), effort),
             ),
           ),
-        const SizedBox(height: 18),
-        FilledButton.tonalIcon(
-          onPressed: onOpenReset,
-          icon: const Icon(Icons.accessibility_new_rounded),
-          label: const Text('Jeda fisik'),
-        ),
       ],
     );
   }
