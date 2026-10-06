@@ -105,10 +105,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         onOpenReset: () => _openReset(),
         onOpenActivity: () => setState(() => _tab = 1),
       ),
-      ActivityPage(
-        controller: widget.controller,
-        onOpenReset: () => _openReset(),
-      ),
+      ActivityPage(controller: widget.controller),
       ProgressPage(controller: widget.controller),
       CommunityPage(controller: widget.controller),
     ];

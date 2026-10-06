@@ -13,7 +13,6 @@ class ProgressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rate = controller.compliance(7);
-    final energy = controller.energyCheckIns.reversed.take(7).toList();
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
       children: [
@@ -121,43 +120,6 @@ class ProgressPage extends StatelessWidget {
           ),
         ),
         _Panel(
-          title: 'Energi terbaru',
-          child: energy.isEmpty
-              ? Text(
-                  'Belum ada catatan energi. Mulai dari Hari ini.',
-                  style: TextStyle(color: context.colors.muted),
-                )
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: energy
-                      .map(
-                        (row) => Chip(
-                          label: Text(_energyLabel(row['energy'].toString())),
-                        ),
-                      )
-                      .toList(),
-                ),
-        ),
-        _Panel(
-          title: 'Waktu fokus',
-          child: Row(
-            children: [
-              Icon(Icons.timer_outlined, color: context.colors.cyan, size: 34),
-              const SizedBox(width: 14),
-              Text(
-                '${controller.focusMinutesToday} menit',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              Text('hari ini', style: TextStyle(color: context.colors.muted)),
-            ],
-          ),
-        ),
-        _Panel(
           title: 'Jejak aktivitas',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,15 +176,6 @@ class ProgressPage extends StatelessWidget {
           (sum, row) => sum + ((row['minutes'] as num?)?.toInt() ?? 0),
         );
   }
-
-  String _energyLabel(String value) =>
-      const {
-        'low': 'Lelah',
-        'steady': 'Santai',
-        'good': 'Baik',
-        'charged': 'Semangat',
-      }[value] ??
-      value;
 }
 
 class _Stat extends StatelessWidget {

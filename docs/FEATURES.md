@@ -10,8 +10,8 @@
 | Reward mobile | Bonus Hari Penuh 20 XP sekali per hari, ID persisten, lencana privat |
 | Daily Card | Lima kartu collectible, spin acak, swipe, reveal, satu kali ganti, commit; mobile punya Santai/Normal dan tema |
 | Aktivitas mobile | Foto/catatan makan lokal, timer/GPS foreground, hidrasi, riwayat detail, koreksi/hapus |
-| Reset | Quick Focus 5 menit, Reset 60 detik, hydration, stretch; habit delay untuk reduction |
-| Perjalanan mobile | Ritme 4/7, kalender 28 hari, lencana, tangga quest, XP, energi, aktivitas, total menit ditunda |
+| Reset mobile | Reset 60 detik dan stretch; habit delay untuk reduction. Dibuka dari Home, tanpa fokus atau hidrasi duplikat |
+| Perjalanan mobile | Ritme 4/7, kalender 28 hari, lencana, tangga quest, XP, aktivitas, total menit ditunda |
 | Community mobile | Encouragement Wall lokal, post menunggu review, reaksi cepat, laporan; seed post berlabel contoh |
 | Admin | Antrean post pending, approve/reject, dan penyelesaian laporan |
 | Profile | Tema, path, low-impact, kurangi animasi, getaran, ekspor/hapus lokal, persetujuan dan kode UAT |
@@ -30,6 +30,17 @@
 Tidak tersedia: estimasi kalori/AI makanan, upload foto ke cloud, tracking GPS
 background, komentar bebas, peringkat kompetitif, dan hukuman karena absen.
 Web tidak dirombak dalam revisi mobile ini.
+
+## Penyederhanaan mobile
+
+- Check-in energi dan panel energi dihapus; catatan lama tetap ikut ekspor lokal.
+- Fokus/Pomodoro hanya tersedia di web. Koleksi sesi fokus bersama dipertahankan.
+- Lima tema mobile: Gerak Ringan, Energi Segar, Istirahat, Hidrasi & Makan,
+  Udara Segar. Quest pendamping produktivitas/relasi tidak masuk pool mobile.
+- Core Quest, tangga Istirahat/Hidrasi, dan quest reduction tetap ada.
+  Pada jalur reduction, Energi Segar menyediakan Habit Swap/pemicu sesuai level.
+- Kartu yang sudah dibuka atau di-commit tidak diganti diam-diam.
+- Penggantian Reset menjadi jeda fisik masih menunggu keputusan; belum diterapkan.
 
 ## Aturan data dan penelitian
 

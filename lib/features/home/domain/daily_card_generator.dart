@@ -16,7 +16,11 @@ class DailyCardGenerator {
     bool mobileThemes = false,
   }) {
     final sideCount = pace.clamp(1, 2);
-    final eligible = _catalog.where((task) {
+    final catalog = [
+      ..._catalog,
+      ...(mobileThemes ? _mobileCatalog : _webCatalog),
+    ];
+    final eligible = catalog.where((task) {
       if (task.reductionOnly && !reduction) return false;
       if (task.difficulty > pace.clamp(1, 3)) return false;
       return true;
@@ -32,17 +36,22 @@ class DailyCardGenerator {
       'Gerak Ringan',
       'Energi Segar',
       'Istirahat',
-      'Ruang Nyaman',
-      'Koneksi Kecil',
+      'Hidrasi & Makan',
+      'Udara Segar',
     ];
     const themedIds = [
       ['posture', 'stretch', 'fresh-air'],
-      ['sunlight', 'meal-snap', 'focus-sprint'],
-      ['screen-break', 'music', 'posture'],
-      ['tidy', 'tomorrow', 'routine-plan'],
-      ['kind-message', 'music', 'habit-swap'],
+      ['sunlight', 'stand-break', 'stretch'],
+      ['screen-break', 'posture', 'stretch'],
+      ['water-glass', 'meal-snap', 'fruit-veg'],
+      ['fresh-air', 'sunlight', 'screen-break'],
     ];
     return List.generate(names.length, (index) {
+      // Keep reduction extras reachable, rather than merely present in a pool
+      // that physical theme priorities would always outrank.
+      final preferredIds = reduction && index == 1
+          ? const ['habit-swap', 'trigger', 'swap-plan']
+          : themedIds[index];
       final ladderTasks = [
         for (final category in ladderCategories(reduction: reduction))
           _ladderTask(
@@ -58,8 +67,8 @@ class DailyCardGenerator {
       final sides = [...eligible]
         ..sort((a, b) {
           if (mobileThemes) {
-            final preferredA = themedIds[index].contains(a.id) ? 0 : 1;
-            final preferredB = themedIds[index].contains(b.id) ? 0 : 1;
+            final preferredA = preferredIds.contains(a.id) ? 0 : 1;
+            final preferredB = preferredIds.contains(b.id) ? 0 : 1;
             if (preferredA != preferredB) {
               return preferredA.compareTo(preferredB);
             }
@@ -134,6 +143,7 @@ class DailyCardGenerator {
     'status': 'available',
     'done': false,
     'activityKind': ?task.activityKind,
+    'waterMl': ?task.waterMl,
   };
 
   int _score(String value, String salt) {
@@ -156,11 +166,13 @@ class _TaskDefinition {
     required this.xp,
     this.reductionOnly = false,
     this.activityKind,
+    this.waterMl,
   });
   final String id, title, description, category;
   final int difficulty, durationMinutes, xp;
   final bool reductionOnly;
   final String? activityKind;
+  final int? waterMl;
 }
 
 /// Side quests: short, self-reported (or photo-backed) extras.
@@ -212,6 +224,83 @@ const _catalog = [
     xp: 15,
   ),
   _TaskDefinition(
+    id: 'habit-swap',
+    title: 'Coba 1 Habit Swap',
+    description: 'Saat keinginan muncul, pilih satu aktivitas pengganti.',
+    category: 'Reduction',
+    difficulty: 1,
+    durationMinutes: 2,
+    xp: 20,
+    reductionOnly: true,
+    activityKind: 'habit_swap',
+  ),
+  _TaskDefinition(
+    id: 'trigger',
+    title: 'Kenali satu pemicu',
+    description: 'Perhatikan situasi saat keinginan muncul.',
+    category: 'Reduction',
+    difficulty: 2,
+    durationMinutes: 3,
+    xp: 30,
+    reductionOnly: true,
+  ),
+  _TaskDefinition(
+    id: 'swap-plan',
+    title: 'Rencana Habit Swap',
+    description: 'Siapkan dua pengganti untuk momen keinginan.',
+    category: 'Reduction',
+    difficulty: 3,
+    durationMinutes: 8,
+    xp: 40,
+    reductionOnly: true,
+  ),
+  _TaskDefinition(
+    id: 'fresh-air',
+    title: 'Cari udara segar',
+    description: 'Keluar sebentar dan ubah suasana.',
+    category: 'Lifestyle',
+    difficulty: 1,
+    durationMinutes: 5,
+    xp: 25,
+  ),
+];
+
+/// Physical wellness extras for mobile; never change the web quest pool.
+const _mobileCatalog = [
+  _TaskDefinition(
+    id: 'water-glass',
+    title: 'Satu gelas air',
+    description: 'Minum sesuai kebutuhanmu, lalu catat di Hidrasi.',
+    category: 'Lifestyle',
+    difficulty: 1,
+    durationMinutes: 1,
+    xp: 20,
+    activityKind: 'water',
+    waterMl: 250,
+  ),
+  _TaskDefinition(
+    id: 'fruit-veg',
+    title: 'Tambahkan buah atau sayur',
+    description: 'Pilih buah atau sayur yang tersedia saat makan.',
+    category: 'Lifestyle',
+    difficulty: 1,
+    durationMinutes: 2,
+    xp: 20,
+  ),
+  _TaskDefinition(
+    id: 'stand-break',
+    title: 'Ubah posisi sebentar',
+    description: 'Berdiri atau regangkan tubuh sambil duduk senyamanmu.',
+    category: 'Body',
+    difficulty: 1,
+    durationMinutes: 1,
+    xp: 20,
+  ),
+];
+
+/// Existing desktop tasks stay available to the untouched web experience.
+const _webCatalog = [
+  _TaskDefinition(
     id: 'focus-sprint',
     title: 'Fokus singkat 10 menit',
     description: 'Kerjakan satu hal tanpa berpindah.',
@@ -255,46 +344,6 @@ const _catalog = [
     difficulty: 3,
     durationMinutes: 10,
     xp: 40,
-  ),
-  _TaskDefinition(
-    id: 'habit-swap',
-    title: 'Coba 1 Habit Swap',
-    description: 'Saat keinginan muncul, pilih satu aktivitas pengganti.',
-    category: 'Reduction',
-    difficulty: 1,
-    durationMinutes: 2,
-    xp: 20,
-    reductionOnly: true,
-    activityKind: 'habit_swap',
-  ),
-  _TaskDefinition(
-    id: 'trigger',
-    title: 'Kenali satu pemicu',
-    description: 'Perhatikan situasi saat keinginan muncul.',
-    category: 'Reduction',
-    difficulty: 2,
-    durationMinutes: 3,
-    xp: 30,
-    reductionOnly: true,
-  ),
-  _TaskDefinition(
-    id: 'swap-plan',
-    title: 'Rencana Habit Swap',
-    description: 'Siapkan dua pengganti untuk momen keinginan.',
-    category: 'Reduction',
-    difficulty: 3,
-    durationMinutes: 8,
-    xp: 40,
-    reductionOnly: true,
-  ),
-  _TaskDefinition(
-    id: 'fresh-air',
-    title: 'Cari udara segar',
-    description: 'Keluar sebentar dan ubah suasana.',
-    category: 'Lifestyle',
-    difficulty: 1,
-    durationMinutes: 5,
-    xp: 25,
   ),
   _TaskDefinition(
     id: 'music',

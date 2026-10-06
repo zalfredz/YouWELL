@@ -132,7 +132,7 @@ class WellnessController extends ChangeNotifier {
   int activeDaysIn(int period) => _progress.activeDaysIn(period);
   double compliance(int period) => _progress.completionRate(period);
 
-  List<JsonMap> get energyCheckIns => _rows('energyCheckIns');
+  // Focus belongs to the web Pomodoro. Mobile does not expose this collection.
   List<JsonMap> get focusSessions => _rows('focusSessions');
   List<JsonMap> get habitDelays => _rows('habitDelays');
   List<JsonMap> get habitSwaps => _rows('habitSwaps');
@@ -559,9 +559,6 @@ class WellnessController extends ChangeNotifier {
     }
   }
 
-  void checkInEnergy(String energy, {List<String> tags = const []}) =>
-      _add('energyCheckIns', {'energy': energy, 'tags': tags});
-
   void recordFocusSession(JsonMap value) => _add('focusSessions', value);
 
   /// A stopped timer is logged as "ditunda X menit", never as a miss.
@@ -684,7 +681,6 @@ class WellnessController extends ChangeNotifier {
       'time': now.toIso8601String(),
     });
     if (const {
-      'energyCheckIns',
       'focusSessions',
       'habitDelays',
       'habitSwaps',

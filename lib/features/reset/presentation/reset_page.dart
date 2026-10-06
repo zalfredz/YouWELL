@@ -27,8 +27,8 @@ const _habitSwaps = [
 
 class _ResetPageState extends State<ResetPage> {
   Timer? _timer;
-  int _duration = 5 * 60;
-  String _mode = 'focus';
+  int _duration = 60;
+  String _mode = 'reset';
   // Wall-clock based so the countdown stays honest while backgrounded.
   Duration _elapsedBeforePause = Duration.zero;
   DateTime? _runningSince;
@@ -45,7 +45,7 @@ class _ResetPageState extends State<ResetPage> {
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode;
+    _mode = widget.initialMode == 'delay' ? 'delay' : 'reset';
     _duration = _mode == 'delay'
         ? widget.controller.delayTargetMinutes * 60
         : 60;
@@ -154,12 +154,7 @@ class _ResetPageState extends State<ResetPage> {
         return;
       }
       timer.cancel();
-      if (_mode == 'focus') {
-        widget.controller.recordFocusSession({
-          'minutes': _duration ~/ 60,
-          'mode': 'quick',
-        });
-      } else if (_mode == 'delay') {
+      if (_mode == 'delay') {
         widget.controller.recordHabitDelay(
           minutes: _duration ~/ 60,
           plannedMinutes: _duration ~/ 60,
@@ -226,11 +221,7 @@ class _ResetPageState extends State<ResetPage> {
           child: Column(
             children: [
               Text(
-                _mode == 'delay'
-                    ? 'Tunda rokok / vape'
-                    : _mode == 'reset'
-                    ? 'Jeda singkat'
-                    : 'Fokus singkat',
+                _mode == 'delay' ? 'Tunda rokok / vape' : 'Jeda singkat',
                 style: TextStyle(
                   color: context.colors.accent,
                   fontWeight: FontWeight.w800,
@@ -270,26 +261,11 @@ class _ResetPageState extends State<ResetPage> {
           ),
         ),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _ModeButton(
-                label: 'Fokus 5m',
-                icon: Icons.bolt_rounded,
-                selected: _mode == 'focus' && _duration == 300,
-                onTap: () => _select('focus', 300),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _ModeButton(
-                label: 'Reset 60s',
-                icon: Icons.self_improvement_rounded,
-                selected: _mode == 'reset',
-                onTap: () => _select('reset', 60),
-              ),
-            ),
-          ],
+        _ModeButton(
+          label: 'Reset 60s',
+          icon: Icons.self_improvement_rounded,
+          selected: _mode == 'reset',
+          onTap: () => _select('reset', 60),
         ),
         if (widget.controller.reduction) ...[
           const SizedBox(height: 10),
@@ -370,20 +346,6 @@ class _ResetPageState extends State<ResetPage> {
         ),
         const SizedBox(height: 12),
         _ActionCard(
-          icon: Icons.water_drop_outlined,
-          title: 'Minum air',
-          detail:
-              '${widget.controller.water.toInt()} / ${widget.controller.profile?['waterGoal'] ?? 2000} ml',
-          action: '+250 ml',
-          onTap: widget.controller.addWater,
-          progress:
-              (widget.controller.water /
-                      ((widget.controller.profile?['waterGoal'] as num?) ??
-                          2000))
-                  .clamp(0, 1)
-                  .toDouble(),
-        ),
-        _ActionCard(
           icon: Icons.accessibility_new_rounded,
           title: 'Stretch ringan',
           detail: 'Leher, bahu, dan punggung',
@@ -442,12 +404,10 @@ class _ActionCard extends StatelessWidget {
     required this.detail,
     required this.action,
     this.onTap,
-    this.progress,
   });
   final IconData icon;
   final String title, detail, action;
   final VoidCallback? onTap;
-  final double? progress;
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
@@ -481,16 +441,6 @@ class _ActionCard extends StatelessWidget {
             TextButton(onPressed: onTap, child: Text(action)),
           ],
         ),
-        if (progress != null) ...[
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(99),
-            backgroundColor: context.colors.raised,
-            color: context.colors.cyan,
-          ),
-        ],
       ],
     ),
   );

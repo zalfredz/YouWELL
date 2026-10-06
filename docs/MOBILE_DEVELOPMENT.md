@@ -16,7 +16,9 @@ capability iOS, archive, dan distribusi.
 - Reward/lencana dan preferensi animasi/getaran tersimpan lokal. Kalender
   perjalanan 28 hari dan ritme 4/7 menggunakan quest yang selesai.
 - Tab mobile: **Hari ini**, **Aktivitas**, **Perjalanan**, **Komunitas**. Jeda cepat
-  dibuka dari Hari ini atau Aktivitas; Profil melalui avatar di kanan atas.
+  dibuka dari Hari ini; Profil melalui avatar di kanan atas.
+- Check-in energi dan Fokus 5m tidak ada di mobile. Reset 60s dan stretch tetap
+  tersedia; hidrasi berada di Aktivitas. Fokus/Pomodoro hanya di web.
 - Aktivitas memiliki Meal Snap (foto lokal di penyimpanan aplikasi) dan
   jalan/lari dengan timer serta perkiraan jarak GPS hanya saat layar sesi aktif.
   Aplikasi tidak menghitung kalori, tidak menyimpan koordinat/rute, dan belum

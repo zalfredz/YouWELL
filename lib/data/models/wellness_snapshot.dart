@@ -18,7 +18,6 @@ JsonMap createEmptyWellnessState() => {
   'companionBackground': 'natural',
   'profile': null,
   'days': <String, dynamic>{},
-  'energyCheckIns': <dynamic>[],
   'focusSessions': <dynamic>[],
   'habitDelays': <dynamic>[],
   'habitSwaps': <dynamic>[],

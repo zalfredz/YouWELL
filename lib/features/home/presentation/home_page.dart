@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/features/checkin/presentation/energy_checkin_sheet.dart';
 import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
@@ -131,8 +130,6 @@ class HomePage extends StatelessWidget {
           icon: const Icon(Icons.self_improvement_rounded),
           label: const Text('Ambil jeda'),
         ),
-        const SizedBox(height: 12),
-        _QuickCheckIn(controller: controller),
       ],
     );
   }
@@ -488,51 +485,6 @@ class _EffortRating extends StatelessWidget {
               label: Text(label),
               onPressed: () => onRate(value),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickCheckIn extends StatelessWidget {
-  const _QuickCheckIn({required this.controller});
-  final WellnessController controller;
-  @override
-  Widget build(BuildContext context) {
-    final checked = controller.energyCheckIns.any(
-      (row) => row['day'] == controller.today,
-    );
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.colors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.battery_charging_full_rounded,
-            color: context.colors.accent,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              checked
-                  ? 'Energi hari ini sudah dicatat.'
-                  : 'Energi kamu sekarang?',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          TextButton(
-            onPressed: checked
-                ? null
-                : () => sheet(
-                    context,
-                    EnergyCheckInSheet(controller: controller),
-                  ),
-            child: Text(checked ? 'Selesai' : 'Check-in'),
-          ),
         ],
       ),
     );

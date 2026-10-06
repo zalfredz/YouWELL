@@ -25,7 +25,9 @@ data cloud.
   Tidak ada progress yang dicabut karena absen. Perjalanan punya kalender 28
   hari sejak onboarding dan koleksi pencapaian privat.
 - Draw mobile menawarkan **Santai / Normal** sebelum reveal pertama, 5 tema
-  dengan reward sebanding, dan satu kesempatan ganti. Mode Santai tidak
+  fisik/wellness dengan reward sebanding, dan satu kesempatan ganti. Tema:
+  Gerak Ringan, Energi Segar, Istirahat, Hidrasi & Makan, Udara Segar.
+  Mode Santai tidak
   mengubah tangga permanen; latihan yang diringankan tidak dipakai sebagai
   bukti untuk menaikkan tangga yang lebih tinggi.
 - Aktivitas memiliki riwayat foto/catatan dan sesi gerak. Bisa koreksi/hapus
@@ -36,6 +38,9 @@ data cloud.
 - Profil: kurangi animasi, matikan getaran, serta persetujuan UAT opsional dan
   kode P1–P10. Ekspor ringkasan UAT hanya angka + kode, tanpa alias/foto/lokasi.
   Belum ada pengiriman otomatis atau cloud sync.
+- Mobile tidak menampilkan check-in energi atau timer fokus. Hidrasi ada di
+  Aktivitas; Ambil jeda dibuka dari Home. Reset 60s dan bantuan reduction tetap
+  tersedia, sedangkan Pomodoro tetap di web.
 
 Data versi lokal sebelumnya tetap didukung. Quest yang sudah di-commit tidak
 diganti oleh pembaruan. Pengingat terjadwal, backend, dan UAT native lengkap
@@ -83,7 +88,7 @@ quest pada kartu harian berikutnya mengikuti jalur yang aktif.
 | Aturan reward mobile | `lib/application/wellness_gamification.dart` |
 | Daily Card popup | `lib/features/home/presentation/daily_card_draw_dialog.dart` |
 | Aturan quest adaptif | `lib/features/home/domain/daily_card_generator.dart` |
-| Reset / quick focus | `lib/features/reset/presentation/reset_page.dart` |
+| Reset / jeda mobile | `lib/features/reset/presentation/reset_page.dart` |
 | Progress | `lib/features/progress/presentation/progress_page.dart` |
 | Community Wall lokal | `lib/features/community/presentation/community_page.dart` |
 | Antrean Admin | `lib/features/community/presentation/admin_moderation_page.dart` |

@@ -6,13 +6,8 @@ import 'package:youwell/features/activity/presentation/workout_page.dart';
 import 'package:youwell/features/activity/presentation/activity_history_page.dart';
 
 class ActivityPage extends StatelessWidget {
-  const ActivityPage({
-    super.key,
-    required this.controller,
-    required this.onOpenReset,
-  });
+  const ActivityPage({super.key, required this.controller});
   final WellnessController controller;
-  final VoidCallback onOpenReset;
 
   void _open(BuildContext context, Widget page) =>
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
@@ -42,7 +37,7 @@ class ActivityPage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Gerak, makan, dan jeda kecilmu.',
+          'Gerak, makan, dan hidrasi.',
           style: TextStyle(color: context.colors.muted),
         ),
         const SizedBox(height: 22),
@@ -77,12 +72,6 @@ class ActivityPage extends StatelessWidget {
           title: 'Meal Snap',
           detail: 'Simpan foto makan secara privat.',
           onTap: () => _open(context, MealSnapPage(controller: controller)),
-        ),
-        _ActivityAction(
-          icon: Icons.self_improvement_rounded,
-          title: 'Ambil jeda',
-          detail: 'Napas singkat, fokus, atau tunda kebiasaan.',
-          onTap: onOpenReset,
         ),
         const SizedBox(height: 18),
         Container(
