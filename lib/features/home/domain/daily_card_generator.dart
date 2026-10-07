@@ -93,7 +93,11 @@ class DailyCardGenerator {
       }
       return {
         'id': '$today-card-$index',
-        'title': mobileThemes ? themes[index] : names[index],
+        'title': !mobileThemes
+            ? names[index]
+            : reduction && index == 1
+            ? 'Ganti Kebiasaan'
+            : themes[index],
         'cardStyle': index,
         'difficulty': pace.clamp(1, 3),
         'tasks': tasks,

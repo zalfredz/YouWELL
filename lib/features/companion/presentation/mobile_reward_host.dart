@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/companion/domain/companion_rewards.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 
 /// Listens once for rewards from every mobile route, including activity pages.
 /// The queue is transient; earned rewards themselves are persisted by the controller.
@@ -31,8 +33,10 @@ class _MobileRewardHostState extends State<MobileRewardHost> {
     widget.controller.addListener(_schedule);
   }
 
+  bool _celebrating = false;
+
   void _schedule() {
-    if (_entry != null || _scheduled || !mounted) return;
+    if (_entry != null || _celebrating || _scheduled || !mounted) return;
     _scheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduled = false;
@@ -41,9 +45,13 @@ class _MobileRewardHostState extends State<MobileRewardHost> {
   }
 
   void _showNext() {
-    if (_entry != null || !mounted) return;
+    if (_entry != null || _celebrating || !mounted) return;
     final moment = widget.controller.takeRewardMoment();
     if (moment == null) return;
+    if (moment.dayComplete) {
+      _celebrate(moment);
+      return;
+    }
     final overlay = Overlay.of(context, rootOverlay: true);
     final box = widget.target.currentContext?.findRenderObject();
     final overlayBox = overlay.context.findRenderObject();
@@ -79,6 +87,28 @@ class _MobileRewardHostState extends State<MobileRewardHost> {
       Duration(seconds: moment.dayComplete || moment.evolved ? 5 : 3),
       _close,
     );
+  }
+
+  /// Full-screen "Kerja bagus!" for finishing every quest of the day.
+  Future<void> _celebrate(RewardMoment moment) async {
+    _celebrating = true;
+    if (widget.controller.haptics) {
+      unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
+    }
+    final reduce =
+        widget.controller.reduceMotion ||
+        MediaQuery.disableAnimationsOf(context);
+    await showGeneralDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration(milliseconds: reduce ? 0 : 250),
+      pageBuilder: (_, _, _) =>
+          _FullDayCelebration(moment: moment, reduceMotion: reduce),
+    );
+    _celebrating = false;
+    if (mounted) _schedule();
   }
 
   void _close() {
@@ -119,10 +149,12 @@ class _RewardOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final target = destination ?? Offset(size.width / 2, 160);
+    final c = context.colors;
+    final big = moment.dayComplete || moment.evolved;
     final title = moment.dayComplete
-        ? 'Hari penuh! ✨'
+        ? 'Hari Penuh!'
         : moment.evolved
-        ? 'Temanmu tumbuh! 🌱'
+        ? 'Temanmu tumbuh!'
         : moment.ladder ??
               (moment.xp > 0 ? 'Langkah kecil, berarti.' : 'Pencapaian baru!');
     final details = [
@@ -147,13 +179,9 @@ class _RewardOverlay extends StatelessWidget {
                       top: target.dy + 90 * (1 - value),
                       child: Opacity(
                         opacity: (1 - value).clamp(0, 1),
-                        child: Text(
-                          '+${moment.xp} XP ✨',
-                          style: TextStyle(
-                            color: context.colors.accent,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: XpPill(moment.xp, large: true),
                         ),
                       ),
                     ),
@@ -162,6 +190,8 @@ class _RewardOverlay extends StatelessWidget {
               ),
             ),
           ),
+        if (big && !reduceMotion)
+          const Positioned.fill(child: IgnorePointer(child: _Confetti())),
         Positioned(
           top: MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
           left: 16,
@@ -169,25 +199,37 @@ class _RewardOverlay extends StatelessWidget {
           child: Semantics(
             liveRegion: true,
             child: Material(
-              color: context.colors.surface,
-              elevation: 8,
-              shadowColor: Colors.black38,
+              color: big ? c.xpSoft : c.card,
+              elevation: 3,
+              shadowColor: Colors.black26,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
-                side: BorderSide(
-                  color: context.colors.accent.withValues(alpha: .5),
-                ),
+                side: BorderSide(color: c.xp, width: 2),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(
-                      moment.ladder != null
-                          ? Icons.stairs_rounded
-                          : Icons.auto_awesome_rounded,
-                      color: context.colors.accent,
-                      size: 30,
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: c.xp,
+                      ),
+                      child: Icon(
+                        moment.dayComplete
+                            ? Icons.emoji_events_rounded
+                            : moment.evolved
+                            ? Icons.spa_rounded
+                            : moment.ladder != null
+                            ? Icons.stairs_rounded
+                            : moment.badges.isNotEmpty
+                            ? Icons.workspace_premium_rounded
+                            : Icons.bolt_rounded,
+                        color: const Color(0xff3b1a02),
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -202,20 +244,20 @@ class _RewardOverlay extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          if (moment.xp > 0)
-                            Text(
-                              '+${moment.xp} XP',
-                              style: TextStyle(
-                                color: context.colors.accent,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                          if (moment.xp > 0) ...[
+                            const SizedBox(height: 4),
+                            XpPill(moment.xp),
+                          ],
                           if (details.isNotEmpty)
-                            Text(
-                              details.join(' · '),
-                              style: TextStyle(
-                                color: context.colors.muted,
-                                fontSize: 13,
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                details.join(' · '),
+                                style: TextStyle(
+                                  color: c.text,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                         ],
@@ -235,4 +277,166 @@ class _RewardOverlay extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Short burst of falling confetti for big moments (Hari Penuh, evolution).
+class _Confetti extends StatelessWidget {
+  const _Confetti();
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final colors = [c.xp, c.primary, c.success, c.energy, c.lifestyle];
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 2200),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) =>
+          CustomPaint(painter: _ConfettiPainter(value, colors)),
+    );
+  }
+}
+
+class _ConfettiPainter extends CustomPainter {
+  _ConfettiPainter(this.t, this.colors);
+  final double t;
+  final List<Color> colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(7);
+    final paint = Paint();
+    for (var i = 0; i < 46; i++) {
+      final x = random.nextDouble() * size.width;
+      final drift = (random.nextDouble() - .5) * 80;
+      final fall = size.height * (.15 + .7 * random.nextDouble());
+      final y = -20 + fall * t;
+      final spin = random.nextDouble() * math.pi * 2 + t * 8;
+      paint.color = colors[i % colors.length].withValues(
+        alpha: (1 - t * .8).clamp(0, 1),
+      );
+      canvas.save();
+      canvas.translate(x + drift * t, y);
+      canvas.rotate(spin);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(-4, -7, 8, 14),
+          const Radius.circular(2),
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConfettiPainter old) => old.t != t;
+}
+
+class _FullDayCelebration extends StatelessWidget {
+  const _FullDayCelebration({required this.moment, required this.reduceMotion});
+  final RewardMoment moment;
+  final bool reduceMotion;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    const ink = Color(0xff0d1417);
+    return Material(
+      color: ink,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(painter: _SwooshPainter(c.primary, c.xp)),
+          ),
+          if (!reduceMotion)
+            const Positioned.fill(child: IgnorePointer(child: _Confetti())),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  Icon(Icons.emoji_events_rounded, color: c.xp, size: 72),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Kerja bagus!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 44,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Semua misi hari ini selesai. Hari Penuh!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xffd7e3e8),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  XpPill(moment.xp, large: true),
+                  for (final line in [
+                    if (moment.evolved) 'Temanmu tumbuh ke tahap baru',
+                    ...moment.unlocks.map((name) => '$name terbuka'),
+                    ...moment.badges.map((name) => 'Lencana: $name'),
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        line,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  const Spacer(),
+                  ChunkyButton(
+                    label: 'Lanjut',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Two bold curves behind the celebration text.
+class _SwooshPainter extends CustomPainter {
+  _SwooshPainter(this.top, this.bottom);
+  final Color top, bottom;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = size.width * .16;
+    final w = size.width, h = size.height;
+    canvas.drawPath(
+      Path()
+        ..moveTo(-w * .2, h * .32)
+        ..cubicTo(w * .3, h * .12, w * .75, h * .2, w * 1.15, -h * .05),
+      paint..color = top,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(-w * .2, h * .74)
+        ..cubicTo(w * .25, h * .95, w * .7, h * .9, w * 1.2, h * .7),
+      paint..color = bottom,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SwooshPainter old) =>
+      old.top != top || old.bottom != bottom;
 }

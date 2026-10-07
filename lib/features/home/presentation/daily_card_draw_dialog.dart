@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/types/json_map.dart';
@@ -24,7 +25,10 @@ class _DailyCardDrawDialogState extends State<DailyCardDrawDialog> {
   @override
   void initState() {
     super.initState();
-    widget.controller.drawDailyCards();
+    // Saving notifies listeners, so wait until this first frame is built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.controller.drawDailyCards();
+    });
   }
 
   @override
@@ -305,7 +309,7 @@ class _SpinningDeckState extends State<_SpinningDeck> {
           child: Text(
             _spinning
                 ? 'Mengocok deck…'
-                : '${_page % widget.cards.length + 1} / ${widget.cards.length}  •  Tap kartu tengah',
+                : '${_page % widget.cards.length + 1} / ${widget.cards.length}  •  Ketuk kartu tengah',
             key: ValueKey(_spinning),
             style: TextStyle(
               color: _spinning ? context.colors.accent : context.colors.muted,
@@ -424,7 +428,7 @@ class _CardBack extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            passed ? 'SUDAH DILEWATI' : 'MYSTERY',
+                            passed ? 'SUDAH DILEWATI' : 'KARTU MISI',
                             style: TextStyle(
                               color: palette.ink,
                               fontSize: 12,
@@ -437,8 +441,8 @@ class _CardBack extends StatelessWidget {
                             passed
                                 ? 'TIDAK BISA DIPILIH'
                                 : centered
-                                ? 'TAP TO REVEAL'
-                                : 'SWIPE DECK',
+                                ? 'KETUK UNTUK BUKA'
+                                : 'GESER KARTU',
                             style: TextStyle(
                               color: palette.ink.withValues(alpha: .7),
                               fontSize: 10,
@@ -652,7 +656,7 @@ class _CardFront extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${tasks.length} quest  •  $difficultyLabel',
+                  '${tasks.length} misi  •  $difficultyLabel',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: context.colors.muted,
@@ -677,7 +681,7 @@ class _CardFront extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(
-                          _categoryIcon(task['category'].toString()),
+                          questIcon(task),
                           color: context.colors.accent,
                           size: 19,
                         ),
@@ -711,7 +715,7 @@ class _CardFront extends StatelessWidget {
                 const SizedBox(height: 8),
                 _Pill(
                   label:
-                      '${card['durationMinutes']} MIN TOTAL  •  +${card['xp']} XP',
+                      '${card['durationMinutes']} menit  •  total +${card['xp']} XP',
                   color: context.colors.accent,
                 ),
                 const SizedBox(height: 16),
@@ -723,8 +727,8 @@ class _CardFront extends StatelessWidget {
                       backgroundColor: palette.light,
                       foregroundColor: palette.ink,
                     ),
-                    icon: const Icon(Icons.lock_rounded),
-                    label: Text('Ambil ${tasks.length} quest'),
+                    icon: const Icon(Icons.rocket_launch_rounded),
+                    label: Text('Mulai ${tasks.length} misi'),
                   ),
                 ),
                 if (canChange) ...[
@@ -806,10 +810,3 @@ BoxDecoration _cardDecoration(_Palette palette, bool active) => BoxDecoration(
     ),
   ],
 );
-
-IconData _categoryIcon(String category) => switch (category) {
-  'Body' => Icons.directions_walk_rounded,
-  'Energy' => Icons.bolt_rounded,
-  'Reduction' => Icons.air_rounded,
-  _ => Icons.auto_awesome_rounded,
-};

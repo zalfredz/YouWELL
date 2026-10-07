@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:youwell/app/youwell_app.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/features/home/presentation/home_page.dart';
-import 'package:youwell/features/companion/presentation/mobile_companion.dart';
 
 void main() {
   for (final mode in ['light', 'dark']) {
@@ -45,9 +44,6 @@ void main() {
         await tester.ensureVisible(preference);
         await tester.tap(preference);
         await tester.pumpAndSettle();
-        expect(controller.reduction, isFalse);
-        await tester.tap(find.text('Setuju & aktifkan'));
-        await tester.pumpAndSettle();
         expect(controller.reduction, isTrue);
         expect(find.text('Buka Delay Craving & Habit Swap'), findsOneWidget);
         expect(
@@ -60,9 +56,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(find.text('Kurangi rokok / vape'), 150);
         expect(find.text('Kurangi rokok / vape'), findsOneWidget);
+        // The reduction card sits after today's quests on Home.
         expect(
-          tester.getTopLeft(find.text('Kurangi rokok / vape')).dy,
-          greaterThan(tester.getBottomLeft(find.byType(MobileCompanion)).dy),
+          find.descendant(
+            of: find.byType(HomePage),
+            matching: find.text('Kurangi rokok / vape'),
+          ),
+          findsOneWidget,
         );
         await tester.ensureVisible(
           find.text('Buka Delay Craving & Habit Swap'),

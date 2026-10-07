@@ -64,12 +64,18 @@ class YouWellApp extends StatelessWidget {
   Widget _buildApp() => MaterialApp(
     title: '${AppEnvironment.appName} • Little steps, better days',
     debugShowCheckedModeBanner: false,
-    theme: _mobilePreview
-        ? AppTheme.light.copyWith(platform: TargetPlatform.iOS)
-        : AppTheme.light,
-    darkTheme: _mobilePreview
-        ? AppTheme.dark.copyWith(platform: TargetPlatform.iOS)
-        : AppTheme.dark,
+    // The web workspace keeps its own look; the phone app gets the
+    // reward-focused mobile theme.
+    theme: _webWorkspace
+        ? AppTheme.light
+        : _mobilePreview
+        ? AppTheme.mobileLight.copyWith(platform: TargetPlatform.iOS)
+        : AppTheme.mobileLight,
+    darkTheme: _webWorkspace
+        ? AppTheme.dark
+        : _mobilePreview
+        ? AppTheme.mobileDark.copyWith(platform: TargetPlatform.iOS)
+        : AppTheme.mobileDark,
     themeMode: switch (controller.themePreference) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,

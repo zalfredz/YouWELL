@@ -79,18 +79,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Berhenti rokok / vape'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Lanjut'), 200);
     await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Centang persetujuan untuk memakai jalur ini.'),
-      findsOneWidget,
-    );
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.scrollUntilVisible(find.text('Lanjut'), 200);
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Atur ritmemu'), findsOneWidget);
+    expect(find.text('Mau mulai sesantai apa?'), findsOneWidget);
     await tester.scrollUntilVisible(find.byTooltip('Ganti ke dark mode'), -200);
     await tester.tap(find.byTooltip('Ganti ke dark mode'));
     await tester.pumpAndSettle();
@@ -98,7 +89,7 @@ void main() {
       Theme.of(tester.element(find.byType(Scaffold))).brightness,
       Brightness.dark,
     );
-    expect(find.text('Atur ritmemu'), findsOneWidget);
+    expect(find.text('Mau mulai sesantai apa?'), findsOneWidget);
     await tester.tap(find.byTooltip('Ganti ke light mode'));
     await tester.pumpAndSettle();
     expect(

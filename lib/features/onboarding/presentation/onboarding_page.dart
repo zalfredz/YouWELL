@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/theme/appearance_scope.dart';
-import 'package:youwell/shared/widgets/wellness_companion.dart';
+import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 
+/// Conversational onboarding: the companion asks one question per screen.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key, required this.controller});
   final WellnessController controller;
@@ -19,10 +21,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   bool _lowImpact = false;
   String? _ageGroup;
   bool _guardianConsent = false;
-  bool _reductionConsent = false;
   String? _error;
+  final _alias = TextEditingController();
 
   static const _lastStep = 3;
+  static const _names = {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'};
   bool get _underTwentyOne => _ageGroup == 'under18' || _ageGroup == '18-20';
 
   /// Blocks "Lanjut" until the current step has what the rules require.
@@ -30,11 +33,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     0 when _ageGroup == null => 'Pilih rentang usiamu dulu.',
     0 when _ageGroup == 'under18' && !_guardianConsent =>
       'Di bawah 18 tahun perlu izin orang tua/wali.',
-    1 when _path == 'reduction' && !_reductionConsent =>
-      'Centang persetujuan untuk memakai jalur ini.',
     _ => null,
   };
-  final _alias = TextEditingController();
 
   @override
   void dispose() {
@@ -42,291 +42,420 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
+  void _pick(VoidCallback change) => setState(() {
+    change();
+    _error = null;
+  });
+
+  Future<void> _next() async {
+    final blocked = _stepError();
+    if (blocked != null) {
+      setState(() => _error = blocked);
+      return;
+    }
+    if (_step < _lastStep) {
+      setState(() {
+        _step++;
+        _error = null;
+      });
+      return;
+    }
+    try {
+      await widget.controller.setup({
+        'alias': _alias.text,
+        'path': _path,
+        'pace': _pace,
+        'lowImpact': _lowImpact,
+        'companion': _companion,
+        'waterGoal': 2000,
+        'ageGroup': _ageGroup,
+        if (_ageGroup == 'under18') 'guardianConsent': true,
+      });
+    } catch (_) {
+      setState(
+        () => _error = 'Alias 3–20 karakter, diawali huruf (huruf/angka/_).',
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: ListView(
-            padding: const EdgeInsets.all(28),
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final name = _names[_companion]!;
+    final (question, helper) = switch (_step) {
+      0 => (
+        'Hai! Aku $name, teman tumbuhmu. Umurmu berapa?',
+        'Biar isinya pas buatmu. Yang disimpan cuma rentang usia.',
+      ),
+      1 => (
+        'Oke! Kamu mau fokus ke mana dulu?',
+        'Bisa diganti kapan saja di Profil.',
+      ),
+      2 => (
+        'Mau mulai sesantai apa?',
+        'Tenang, misinya naik pelan-pelan kalau kamu siap.',
+      ),
+      _ => (
+        'Terakhir! Pilih temanmu, lalu kasih tahu mau dipanggil apa.',
+        'Alias ini yang tampil di Community, bukan nama asli.',
+      ),
+    };
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 8, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Kembali',
+                        onPressed: _step == 0
+                            ? null
+                            : () => setState(() {
+                                _step--;
+                                _error = null;
+                              }),
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: _step == 0 ? Colors.transparent : c.muted,
+                        ),
+                      ),
+                      Expanded(
+                        child: XpBar(value: (_step + 1) / (_lastStep + 1)),
+                      ),
+                      const SizedBox(width: 4),
+                      const ThemeModeButton(),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          CompanionPreview(
+                            kind: _companion,
+                            stage: 2,
+                            size: 92,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: _Bubble(question)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        helper,
+                        style: TextStyle(
+                          color: c.muted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      ..._stepContent(context),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                  child: Column(
+                    children: [
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: c.reduction,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ChunkyButton(
+                        label: _step == _lastStep ? 'Mulai' : 'Lanjut',
+                        onPressed: _next,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Data masih disimpan di perangkat ini.',
+                        style: TextStyle(color: c.muted, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _stepContent(BuildContext context) => switch (_step) {
+    0 => [
+      for (final (value, title, icon) in const [
+        ('under18', 'Di bawah 18 tahun', Icons.backpack_rounded),
+        ('18-20', '18–20 tahun', Icons.school_rounded),
+        ('21plus', '21 tahun ke atas', Icons.work_outline_rounded),
+      ])
+        _Option(
+          icon: icon,
+          title: title,
+          selected: _ageGroup == value,
+          onTap: () => _pick(() => _ageGroup = value),
+        ),
+      if (_ageGroup == 'under18')
+        _Consent(
+          value: _guardianConsent,
+          text: 'Orang tua/wali sudah mengizinkan aku memakai YouWell.',
+          onChanged: (value) => _pick(() => _guardianConsent = value),
+        ),
+    ],
+    1 => [
+      _Option(
+        icon: Icons.wb_sunny_rounded,
+        title: 'Better Daily Rhythm',
+        detail: 'Gerak, tidur, minum, dan kebiasaan kecil.',
+        selected: _path == 'wellness',
+        onTap: () => _pick(() => _path = 'wellness'),
+      ),
+      _Option(
+        icon: Icons.smoke_free_rounded,
+        title: _underTwentyOne
+            ? 'Berhenti rokok / vape'
+            : 'Kurangi rokok / vape',
+        detail: _underTwentyOne
+            ? 'Latih jeda saat ingin, lalu ganti dengan aktivitas lain.'
+            : 'Tunda keinginan dan coba aktivitas pengganti, tanpa dihakimi.',
+        selected: _path == 'reduction',
+        onTap: () => _pick(() => _path = 'reduction'),
+      ),
+    ],
+    2 => [
+      for (final (value, title, detail, icon) in const [
+        (1, 'Santai dulu', 'Sekitar 5 menit sehari', Icons.spa_rounded),
+        (2, 'Sedang', 'Sekitar 10–15 menit sehari', Icons.directions_walk),
+        (3, 'Siap gerak', 'Sekitar 20 menit atau lebih', Icons.bolt_rounded),
+      ])
+        _Option(
+          icon: icon,
+          title: title,
+          detail: detail,
+          selected: _pace == value,
+          onTap: () => _pick(() => _pace = value),
+        ),
+      const SizedBox(height: 6),
+      GameCard(
+        padding: EdgeInsets.zero,
+        child: SwitchListTile(
+          title: const Text(
+            'Aku lebih nyaman gerakan ringan',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: const Text('Tanpa misi lari. Bisa diubah nanti.'),
+          value: _lowImpact,
+          onChanged: (value) => _pick(() => _lowImpact = value),
+        ),
+      ),
+    ],
+    _ => [
+      Row(
+        children: [
+          for (final (index, kind) in const [
+            'plant',
+            'cat',
+            'cloud',
+          ].indexed) ...[
+            if (index > 0) const SizedBox(width: 10),
+            Expanded(
+              child: _CompanionChoice(
+                kind: kind,
+                name: _names[kind]!,
+                selected: _companion == kind,
+                onTap: () => _pick(() => _companion = kind),
+              ),
+            ),
+          ],
+        ],
+      ),
+      const SizedBox(height: 18),
+      TextField(
+        controller: _alias,
+        maxLength: 20,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _next(),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+        decoration: const InputDecoration(
+          labelText: 'Nama panggilan (alias)',
+          hintText: 'misalnya: daunpagi',
+          helperText: '3–20 karakter, diawali huruf.',
+        ),
+      ),
+    ],
+  };
+}
+
+/// Speech bubble with a small tail pointing at the companion.
+class _Bubble extends StatelessWidget {
+  const _Bubble(this.text);
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(18),
+          topRight: Radius.circular(18),
+          bottomRight: Radius.circular(18),
+          bottomLeft: Radius.circular(4),
+        ),
+        border: Border.all(color: c.border, width: 2),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 18,
+          height: 1.3,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+/// Big tappable answer card (one per option).
+class _Option extends StatelessWidget {
+  const _Option({
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.detail,
+  });
+  final IconData icon;
+  final String title;
+  final String? detail;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: GameCard(
+          onTap: onTap,
+          color: selected ? c.selected : c.card,
+          borderColor: selected ? c.primary : null,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
             children: [
-              const Row(
-                children: [
-                  Text(
-                    'youwell',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                  ),
-                  Spacer(),
-                  ThemeModeButton(),
-                ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: selected ? c.primary : c.raised,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: selected ? c.onPrimary : c.text),
               ),
-              const SizedBox(height: 24),
-              LinearProgressIndicator(
-                value: (_step + 1) / (_lastStep + 1),
-                color: context.colors.accent,
-                backgroundColor: context.colors.raised,
-              ),
-              const SizedBox(height: 28),
-              if (_step == 0) ...[
-                const Text(
-                  'Berapa usiamu?',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Dipakai untuk menyesuaikan isi. Yang disimpan hanya rentang usia.',
-                  style: TextStyle(color: context.colors.muted),
-                ),
-                const SizedBox(height: 22),
-                for (final (value, title) in const [
-                  ('under18', 'Di bawah 18 tahun'),
-                  ('18-20', '18–20 tahun'),
-                  ('21plus', '21 tahun ke atas'),
-                ])
-                  _Choice(
-                    title: title,
-                    detail: '',
-                    value: value,
-                    selected: _ageGroup ?? '',
-                    onTap: (value) => setState(() {
-                      _ageGroup = value;
-                      _error = null;
-                    }),
-                  ),
-                if (_ageGroup == 'under18')
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _guardianConsent,
-                    onChanged: (value) =>
-                        setState(() => _guardianConsent = value == true),
-                    title: const Text(
-                      'Orang tua/wali sudah mengizinkan aku memakai YouWell.',
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-              ] else if (_step == 1) ...[
-                const Text(
-                  'Apa yang ingin kamu bangun?',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Pilih arah awal. Bisa diubah kapan saja.',
-                  style: TextStyle(color: context.colors.muted),
-                ),
-                const SizedBox(height: 22),
-                _Choice(
-                  title: 'Better Daily Rhythm',
-                  detail: 'Energi, gerak, tidur, hidrasi, dan kebiasaan kecil.',
-                  value: 'wellness',
-                  selected: _path,
-                  onTap: (value) => setState(() => _path = value),
-                ),
-                _Choice(
-                  title: _underTwentyOne
-                      ? 'Berhenti rokok / vape'
-                      : 'Kurangi rokok / vape',
-                  detail: _underTwentyOne
-                      ? 'Dukungan untuk berhenti lewat Delay Craving dan Habit Swap, tanpa menghakimi.'
-                      : 'Bangun jeda lewat Delay Craving dan Habit Swap, tanpa menghakimi.',
-                  value: 'reduction',
-                  selected: _path,
-                  onTap: (value) => setState(() => _path = value),
-                ),
-                if (_path == 'reduction')
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _reductionConsent,
-                    onChanged: (value) =>
-                        setState(() => _reductionConsent = value == true),
-                    title: const Text(
-                      'Aku setuju catatan Delay Craving & Habit Swap disimpan '
-                      'untuk fitur ini.',
-                    ),
-                    subtitle: const Text(
-                      'Ini data pribadi yang sensitif. Bisa dihapus kapan saja '
-                      'dari Profil.',
-                    ),
-                  ),
-              ] else if (_step == 2) ...[
-                const Text(
-                  'Atur ritmemu',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Kami mulai ringan dan menyesuaikan dari progresmu.',
-                  style: TextStyle(color: context.colors.muted),
-                ),
-                const SizedBox(height: 22),
-                _Choice(
-                  title: 'Pelan dulu',
-                  detail: 'Tugas sangat ringan dan singkat.',
-                  value: '1',
-                  selected: '$_pace',
-                  onTap: (value) => setState(() => _pace = int.parse(value)),
-                ),
-                _Choice(
-                  title: 'Seimbang',
-                  detail: 'Tantangan ringan dengan sedikit variasi.',
-                  value: '2',
-                  selected: '$_pace',
-                  onTap: (value) => setState(() => _pace = int.parse(value)),
-                ),
-                _Choice(
-                  title: 'Lebih aktif',
-                  detail: 'Tantangan naik bertahap sesuai konsistensimu.',
-                  value: '3',
-                  selected: '$_pace',
-                  onTap: (value) => setState(() => _pace = int.parse(value)),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Mode aktivitas ringan (low-impact)'),
-                  subtitle: const Text(
-                    'Utamakan gerakan lembut. Quest lari tidak akan muncul.',
-                  ),
-                  value: _lowImpact,
-                  onChanged: (value) => setState(() => _lowImpact = value),
-                ),
-              ] else ...[
-                Center(
-                  child: WellnessCompanion(
-                    kind: _companion,
-                    level: 1,
-                    size: 210,
-                  ),
-                ),
-                const Text(
-                  'Pilih teman tumbuh',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _alias,
-                  maxLength: 20,
-                  decoration: const InputDecoration(
-                    labelText: 'Alias',
-                    hintText: 'misalnya: daunpagi',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'plant', label: Text('Mori')),
-                    ButtonSegment(value: 'cat', label: Text('Milo')),
-                    ButtonSegment(value: 'cloud', label: Text('Awan')),
+                    if (detail != null)
+                      Text(detail!, style: TextStyle(color: c.muted)),
                   ],
-                  selected: {_companion},
-                  onSelectionChanged: (value) =>
-                      setState(() => _companion = value.first),
                 ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.redAccent)),
-              ],
-              const SizedBox(height: 28),
-              Row(
-                children: [
-                  if (_step > 0)
-                    TextButton(
-                      onPressed: () => setState(() {
-                        _step--;
-                        _error = null;
-                      }),
-                      child: const Text('Kembali'),
-                    ),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: () async {
-                      final blocked = _stepError();
-                      if (blocked != null) {
-                        setState(() => _error = blocked);
-                        return;
-                      }
-                      if (_step < _lastStep) {
-                        setState(() {
-                          _step++;
-                          _error = null;
-                        });
-                        return;
-                      }
-                      try {
-                        await widget.controller.setup({
-                          'alias': _alias.text,
-                          'path': _path,
-                          'pace': _pace,
-                          'lowImpact': _lowImpact,
-                          'companion': _companion,
-                          'waterGoal': 2000,
-                          'ageGroup': _ageGroup,
-                          if (_ageGroup == 'under18') 'guardianConsent': true,
-                          if (_path == 'reduction') 'reductionConsent': true,
-                        });
-                      } catch (_) {
-                        setState(
-                          () => _error =
-                              'Alias harus 3–20 karakter dan diawali huruf.',
-                        );
-                      }
-                    },
-                    child: Text(_step == _lastStep ? 'Mulai' : 'Lanjut'),
-                  ),
-                ],
               ),
-              const SizedBox(height: 22),
-              Text(
-                'Data masih disimpan lokal selama fase pengembangan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.muted, fontSize: 12),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? c.success : c.border,
+                size: 26,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _Consent extends StatelessWidget {
+  const _Consent({
+    required this.value,
+    required this.text,
+    required this.onChanged,
+  });
+  final bool value;
+  final String text;
+  final ValueChanged<bool> onChanged;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: CheckboxListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      controlAffinity: ListTileControlAffinity.leading,
+      value: value,
+      onChanged: (value) => onChanged(value == true),
+      title: Text(text, style: const TextStyle(fontWeight: FontWeight.w800)),
     ),
   );
 }
 
-class _Choice extends StatelessWidget {
-  const _Choice({
-    required this.title,
-    required this.detail,
-    required this.value,
+class _CompanionChoice extends StatelessWidget {
+  const _CompanionChoice({
+    required this.kind,
+    required this.name,
     required this.selected,
     required this.onTap,
   });
-  final String title, detail, value, selected;
-  final ValueChanged<String> onTap;
+  final String kind, name;
+  final bool selected;
+  final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Material(
-      color: selected == value
-          ? context.colors.selected
-          : context.colors.raised,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: selected == value
-              ? context.colors.accent
-              : context.colors.border,
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Pilih $name',
+      child: GameCard(
+        onTap: onTap,
+        color: selected ? c.selected : c.card,
+        borderColor: selected ? c.primary : null,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          children: [
+            CompanionPreview(kind: kind, stage: 2, size: 72),
+            const SizedBox(height: 4),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ],
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: detail.isEmpty ? null : Text(detail),
-        trailing: Icon(
-          selected == value
-              ? Icons.check_circle_rounded
-              : Icons.circle_outlined,
-          color: context.colors.accent,
-        ),
-        onTap: () => onTap(value),
-      ),
-    ),
-  );
+    );
+  }
 }

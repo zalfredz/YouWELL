@@ -130,6 +130,29 @@ class _MobileCompanionState extends State<MobileCompanion>
   }
 }
 
+/// Still drawing of the companion with any stage or reward, for previews.
+class CompanionPreview extends StatelessWidget {
+  const CompanionPreview({
+    super.key,
+    required this.kind,
+    required this.stage,
+    this.accessory = 'none',
+    this.background = 'natural',
+    this.size = 84,
+  });
+  final String kind, accessory, background;
+  final int stage;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(
+      size: Size.square(size),
+      painter: _PetPainter(kind, stage, accessory, background, false),
+    ),
+  );
+}
+
 class _PetPainter extends CustomPainter {
   _PetPainter(
     this.kind,

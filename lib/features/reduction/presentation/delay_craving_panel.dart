@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 
 const _habitSwaps = [
   'Minum segelas air',
@@ -38,6 +39,14 @@ class _DelayCravingPanelState extends State<DelayCravingPanel> {
   }
 
   bool get _running => _timer != null;
+
+  /// Today's open Delay Craving quest, if any, so its XP is visible here.
+  Map<String, dynamic>? get _quest => widget.controller.quests
+      .where(
+        (task) =>
+            task['activityKind'] == 'delay' && task['status'] != 'completed',
+      )
+      .firstOrNull;
 
   Duration get _elapsed =>
       _elapsedBeforePause +
@@ -160,11 +169,9 @@ class _DelayCravingPanelState extends State<DelayCravingPanel> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [context.colors.selected, context.colors.surface],
-            ),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: context.colors.border),
+            color: context.colors.card,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: context.colors.border, width: 2),
           ),
           child: Column(
             children: [
@@ -175,13 +182,28 @@ class _DelayCravingPanelState extends State<DelayCravingPanel> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                '$minutes:$seconds',
-                style: const TextStyle(
-                  fontSize: 58,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -2,
+              const SizedBox(height: 16),
+              RingProgress(
+                value: _duration == 0 ? 0 : 1 - _remaining / _duration,
+                size: 200,
+                stroke: 14,
+                track: context.colors.border,
+                color: _finished
+                    ? context.colors.success
+                    : context.colors.reduction,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$minutes:$seconds',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1.5,
+                      ),
+                    ),
+                    if (_quest != null) XpPill((_quest!['xp'] as num).toInt()),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),

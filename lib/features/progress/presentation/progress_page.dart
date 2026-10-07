@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/utils/date_key.dart';
-import 'package:youwell/features/home/domain/quest_ladder.dart';
+import 'package:youwell/features/companion/domain/companion_rewards.dart';
 import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/progress/presentation/journey_rewards.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key, required this.controller});
@@ -12,98 +14,107 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rate = controller.compliance(7);
+    final c = context.colors;
+    final text = Theme.of(context).textTheme;
+    final kind = controller.profile?['companion']?.toString() ?? 'plant';
+    final level = controller.level;
+    final inLevel = controller.xp % 100;
+    final badges = visibleBadges(controller).toList();
+    final earned = badges
+        .where((entry) => controller.achievements.containsKey(entry.key))
+        .length;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 12, 22, 42),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
-        const Text(
+        Text(
           'Perjalanan',
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+          style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 4),
         Text(
           'Semua langkah kecil tetap dihitung.',
-          style: TextStyle(color: context.colors.muted),
+          style: TextStyle(color: c.muted),
         ),
-        const SizedBox(height: 22),
-        _Panel(
-          title: 'Companion-mu tumbuh',
+        const SizedBox(height: 16),
+        GameCard(
           child: Column(
             children: [
-              MobileCompanion(controller: controller, size: 180),
-              const SizedBox(height: 6),
-              Text(
-                'Level ${controller.level} • ${controller.xp % 100} / 100 XP ke level berikutnya',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.muted),
+              Row(
+                children: [
+                  MobileCompanion(controller: controller, size: 104),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          companionStageName(kind, companionStage(level)),
+                          style: text.titleLarge,
+                        ),
+                        Text(
+                          'Tahap ${companionStage(level)} dari 5',
+                          style: TextStyle(
+                            color: c.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        XpBar(value: inLevel / 100),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${100 - inLevel} XP lagi ke Level ${level + 1}',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  LevelBadge(level, size: 64),
+                ],
               ),
               const SizedBox(height: 14),
-              LinearProgressIndicator(
-                value: (controller.xp % 100) / 100,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(99),
-                color: context.colors.accent,
-                backgroundColor: context.colors.raised,
+              Row(
+                children: [
+                  Expanded(
+                    child: _Stat(
+                      icon: Icons.bolt_rounded,
+                      value: '${controller.xp}',
+                      label: 'Total XP',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _Stat(
+                      icon: Icons.local_fire_department_rounded,
+                      value: '${controller.activeDaysIn(7)}/7',
+                      label: 'Hari aktif',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _Stat(
+                      icon: Icons.workspace_premium_rounded,
+                      value: '$earned/${badges.length}',
+                      label: 'Lencana',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _Stat(value: '${controller.level}', label: 'Level'),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _Stat(value: '${controller.xp}', label: 'Total XP'),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _Stat(
-                value: '${controller.activeDaysIn(7)}/7',
-                label: 'Hari quest',
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 14),
         JourneyRewards(controller: controller),
-        _Panel(
-          title: 'Minggu ini',
+        const SizedBox(height: 14),
+        GameCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${(rate * 100).round()}%',
-                style: TextStyle(
-                  fontSize: 42,
-                  color: context.colors.accent,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Text(
-                'langkah selesai',
-                style: TextStyle(color: context.colors.muted),
-              ),
-              const SizedBox(height: 14),
-              LinearProgressIndicator(
-                value: rate,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(99),
-                backgroundColor: context.colors.raised,
-                color: context.colors.accent,
-              ),
-            ],
-          ),
-        ),
-        _Panel(
-          title: 'Tangga quest',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              Text('Tangga quest', style: text.titleMedium),
               Text(
                 'Dicek tiap 7 hari. Naik hanya jika kamu setuju.',
-                style: TextStyle(color: context.colors.muted),
+                style: TextStyle(color: c.muted, fontSize: 13),
               ),
               for (final category in ladderCategories(
                 reduction: controller.reduction,
@@ -119,49 +130,45 @@ class ProgressPage extends StatelessWidget {
             ],
           ),
         ),
-        _Panel(
-          title: 'Jejak aktivitas',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${controller.workoutSessions.length} sesi jalan/lari'),
-              const SizedBox(height: 6),
-              Text('${controller.mealCheckIns.length} meal snap'),
-              const SizedBox(height: 6),
-              Text(
-                '${controller.completedCards.length} quest selesai hari ini',
-              ),
-            ],
-          ),
-        ),
-        if (controller.reduction)
-          _Panel(
-            title: controller.reductionLabel,
-            child: Row(
+        if (controller.reduction) ...[
+          const SizedBox(height: 14),
+          GameCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _Stat(
-                    value: '${controller.totalDelayMinutes}',
-                    label: 'menit ditunda\ntotal perjalanan',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _Stat(
-                    value: '${_delayedMinutesThisWeek()}',
-                    label: 'menit ditunda\n7 hari terakhir',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _Stat(
-                    value: '${controller.habitSwapsToday}',
-                    label: 'Habit Swap\nhari ini',
-                  ),
+                Text(controller.reductionLabel, style: text.titleMedium),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Stat(
+                        icon: Icons.hourglass_bottom_rounded,
+                        value: '${controller.totalDelayMinutes}',
+                        label: 'menit ditunda',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _Stat(
+                        icon: Icons.date_range_rounded,
+                        value: '${_delayedMinutesThisWeek()}',
+                        label: 'menit, 7 hari',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _Stat(
+                        icon: Icons.swap_horiz_rounded,
+                        value: '${controller.habitSwapsToday}',
+                        label: 'Habit Swap hari ini',
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+        ],
       ],
     );
   }
@@ -179,62 +186,42 @@ class ProgressPage extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
+  const _Stat({required this.icon, required this.value, required this.label});
+  final IconData icon;
   final String value, label;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: context.colors.raised,
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            color: context.colors.accent,
-            fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: c.raised,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: c.primary, size: 20),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
           ),
-        ),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.colors.muted, fontSize: 11),
-        ),
-      ],
-    ),
-  );
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: c.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.child});
-  final String title;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(top: 14),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: context.colors.surface,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: context.colors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 16),
-        child,
-      ],
-    ),
-  );
-}
-
+/// A ladder drawn as steps: filled blocks up to the current rung.
 class _LadderRow extends StatelessWidget {
   const _LadderRow({
     required this.category,
@@ -247,41 +234,66 @@ class _LadderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final color = c.category(category);
     final step = ((entry?['step'] as num?)?.toInt() ?? 1).clamp(1, maxStep);
     final rung = ladders[category]![step - 1];
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Icon(questIcon({'category': category}), color: color, size: 20),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   ladderLabels[category] ?? category,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
               Text(
-                'Anak tangga $step / $maxStep',
-                style: TextStyle(color: context.colors.accent),
+                'Lv $step / $maxStep',
+                style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: step / maxStep,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(99),
-            color: context.colors.accent,
-            backgroundColor: context.colors.raised,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 30,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var index = 1; index <= maxStep; index++) ...[
+                  if (index > 1) const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      height: 8 + 22 * index / maxStep,
+                      decoration: BoxDecoration(
+                        color: index <= step
+                            ? color
+                            : color.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(5),
+                        border: index == step
+                            ? Border.all(color: c.text, width: 1.5)
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(rung.title),
+          const SizedBox(height: 8),
+          Text(
+            'Sekarang: ${rung.title}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           if (entry?['reason'] != null)
             Text(
               entry!['reason'].toString(),
-              style: TextStyle(color: context.colors.muted, fontSize: 12),
+              style: TextStyle(color: c.muted, fontSize: 12.5),
             ),
         ],
       ),

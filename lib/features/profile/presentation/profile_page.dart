@@ -6,6 +6,9 @@ import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/activity/data/meal_photo_store.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
+import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/features/companion/domain/companion_rewards.dart';
 import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -73,23 +76,21 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Future<void> _switchPath(BuildContext context, bool enabled) async {
-    if (!enabled || controller.profile?['reductionConsent'] == true) {
+  void _switchPath(BuildContext context, bool enabled) =>
       controller.switchPath(enabled);
-      return;
-    }
-    final agreed = await showDialog<bool>(
+
+  @override
+  Widget build(BuildContext context) =>
+      mobileExperience ? _mobileBuild(context) : _webBuild(context);
+
+  Future<void> _confirmReset(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(
-          controller.quitFraming
-              ? 'Aktifkan jalur berhenti rokok / vape?'
-              : 'Aktifkan jalur kurangi rokok / vape?',
-        ),
+        title: const Text('Hapus semua data?'),
         content: const Text(
-          'Catatan Delay Craving & Habit Swap akan disimpan untuk fitur ini. '
-          'Ini data pribadi yang sensitif dan bisa dihapus kapan saja dari '
-          'Profil.',
+          'Profil, progress, dan foto Meal Snap di perangkat ini akan dihapus. '
+          'Ini tidak bisa dibatalkan.',
         ),
         actions: [
           TextButton(
@@ -97,17 +98,247 @@ class ProfilePage extends StatelessWidget {
             child: const Text('Batal'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xffd92d20),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Setuju & aktifkan'),
+            child: const Text('Hapus'),
           ),
         ],
       ),
     );
-    if (agreed == true) controller.switchPath(true, consent: true);
+    if (confirmed == true) {
+      await MealPhotoStore.clear();
+      await controller.reset();
+      if (context.mounted) Navigator.pop(context);
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  /// Optional UAT summary: code, consent, export, and withdrawal.
+  void _researchSheet(BuildContext context) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => AnimatedBuilder(
+      animation: controller,
+      builder: (sheetContext, _) {
+        final joined = controller.researchParticipation;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Ringkasan penelitian',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  joined == null
+                      ? 'Opsional. Kamu tetap bisa memakai aplikasi tanpa ikut penelitian.'
+                      : 'Kode ${joined['code']} · hanya ringkasan angka, tanpa alias, teks, foto, atau lokasi.',
+                  style: TextStyle(color: sheetContext.colors.muted),
+                ),
+                const SizedBox(height: 16),
+                if (joined == null)
+                  FilledButton(
+                    onPressed: () => _researchConsent(sheetContext),
+                    child: const Text('Atur persetujuan & kode'),
+                  )
+                else ...[
+                  FilledButton.icon(
+                    onPressed: () => platform.download(
+                      'youwell-uat-summary.json',
+                      utf8.encode(controller.exportResearchSummary()),
+                      'application/json',
+                    ),
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Ekspor ringkasan'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () => controller.setResearchParticipation(
+                      null,
+                      consent: false,
+                    ),
+                    child: const Text('Tarik persetujuan'),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tidak menarik salinan yang sudah kamu bagikan ke peneliti.',
+                    style: TextStyle(
+                      color: sheetContext.colors.muted,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  Widget _mobileBuild(BuildContext context) {
+    final appearance = AppearanceScope.of(context);
+    final c = context.colors;
+    final profile = controller.profile!;
+    final kind = profile['companion']?.toString() ?? 'plant';
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(title: const Text('Profil')),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.raised,
+                  ),
+                  child: CompanionPreview(
+                    kind: kind,
+                    stage: companionStage(controller.level),
+                    accessory: controller.companionAccessory,
+                    background: controller.companionBackground,
+                    size: 72,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile['alias'].toString(),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      Text(
+                        'Level ${controller.level} · ${controller.xp} XP',
+                        style: TextStyle(
+                          color: c.muted,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const _Heading('Tampilan'),
+            Row(
+              children: [
+                for (final (index, (value, label, icon)) in const [
+                  ('light', 'Terang', Icons.light_mode_rounded),
+                  ('dark', 'Gelap', Icons.dark_mode_rounded),
+                  ('system', 'Sistem', Icons.brightness_auto_rounded),
+                ].indexed) ...[
+                  if (index > 0) const SizedBox(width: 10),
+                  Expanded(
+                    child: _ThemeOption(
+                      label: label,
+                      icon: icon,
+                      selected: appearance.themePreference == value,
+                      onTap: () => appearance.setThemePreference(value),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const _Heading('Preferensi'),
+            _Group(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.smoke_free_rounded),
+                  title: Text(
+                    'Jalur ${controller.reductionLabel.toLowerCase()}',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  value: controller.reduction,
+                  onChanged: (value) => _switchPath(context, value),
+                ),
+                if (controller.reduction)
+                  _Row(
+                    icon: Icons.timer_outlined,
+                    label: 'Buka Delay Craving & Habit Swap',
+                    onTap: () => openReductionSupport(context, controller),
+                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.directions_walk_rounded),
+                  title: const Text(
+                    'Aktivitas ringan (low-impact)',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  subtitle: const Text('Quest lari tidak akan muncul.'),
+                  value: profile['lowImpact'] == true,
+                  onChanged: controller.setLowImpact,
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.animation_rounded),
+                  title: const Text(
+                    'Kurangi animasi',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  value: controller.reduceMotion,
+                  onChanged: controller.setReduceMotion,
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.vibration_rounded),
+                  title: const Text(
+                    'Getaran',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  value: controller.haptics,
+                  onChanged: controller.setHaptics,
+                ),
+              ],
+            ),
+            const _Heading('Data & privasi'),
+            _Group(
+              children: [
+                _Row(
+                  icon: Icons.download_rounded,
+                  label: 'Ekspor data',
+                  onTap: () => platform.download(
+                    'youwell-${controller.today}.json',
+                    utf8.encode(controller.export()),
+                    'application/json',
+                  ),
+                ),
+                _Row(
+                  icon: Icons.science_outlined,
+                  label: 'Ringkasan penelitian (opsional)',
+                  onTap: () => _researchSheet(context),
+                ),
+                _Row(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Hapus data & mulai ulang',
+                  danger: true,
+                  onTap: () => _confirmReset(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Data tersimpan di perangkat ini. Foto Meal Snap tidak pernah diunggah.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.muted, fontSize: 12.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _webBuild(BuildContext context) {
     final appearance = AppearanceScope.of(context);
     final profile = controller.profile!;
     return Scaffold(
@@ -361,4 +592,97 @@ class _Section extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading(this.text);
+  final String text;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 26, 4, 10),
+    child: Text(
+      text,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+    ),
+  );
+}
+
+/// Bordered list group with dividers between rows.
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => GameCard(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Column(
+      children: [
+        for (final (index, child) in children.indexed) ...[
+          if (index > 0) const Divider(indent: 16, endIndent: 16),
+          child,
+        ],
+      ],
+    ),
+  );
+}
+
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.danger = false,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? const Color(0xffd92d20) : context.colors.text;
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.w800),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+      onTap: onTap,
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GameCard(
+        onTap: onTap,
+        color: selected ? c.selected : c.card,
+        borderColor: selected ? c.primary : null,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: selected ? c.success : c.muted),
+            const SizedBox(height: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+      ),
+    );
+  }
 }

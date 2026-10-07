@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/activity/presentation/activity_page.dart';
 import 'package:youwell/features/community/presentation/community_page.dart';
 import 'package:youwell/features/home/presentation/daily_card_draw_dialog.dart';
@@ -94,10 +94,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     ];
     const labels = ['Hari ini', 'Aktivitas', 'Perjalanan', 'Komunitas'];
     const icons = [
-      Icons.home_rounded,
+      Icons.flag_outlined,
       Icons.directions_run_rounded,
-      Icons.route_rounded,
+      Icons.emoji_events_outlined,
       Icons.people_alt_outlined,
+    ];
+    const selectedIcons = [
+      Icons.flag_rounded,
+      Icons.directions_run_rounded,
+      Icons.emoji_events_rounded,
+      Icons.people_alt_rounded,
     ];
     final alias = widget.controller.profile!['alias'].toString();
     return MobileRewardHost(
@@ -108,25 +114,42 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 14, 14, 8),
+                padding: const EdgeInsets.fromLTRB(20, 10, 12, 8),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'youwell',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: context.colors.success,
+                            letterSpacing: -.5,
+                          ),
                     ),
                     const Spacer(),
-                    const ThemeModeButton(),
+                    StatChip(
+                      icon: Icons.local_fire_department_rounded,
+                      color: context.colors.streak,
+                      value: '${widget.controller.activeDaysIn(7)}',
+                      label: 'hari aktif minggu ini',
+                    ),
+                    StatChip(
+                      icon: Icons.bolt_rounded,
+                      color: context.colors.xp,
+                      value: '${widget.controller.xp}',
+                      label: 'XP',
+                    ),
                     if (widget.controller.needsDailyCardDraw)
                       IconButton(
                         tooltip: 'Ambil kartu hari ini',
                         onPressed: _openDailyDraw,
-                        icon: Icon(
-                          Icons.style_rounded,
-                          color: context.colors.accent,
+                        icon: Badge(
+                          smallSize: 9,
+                          backgroundColor: context.colors.primary,
+                          child: Icon(
+                            Icons.style_rounded,
+                            color: context.colors.text,
+                          ),
                         ),
                       ),
                     const SizedBox(width: 4),
@@ -134,17 +157,34 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       button: true,
                       label: 'Buka profil',
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(40),
+                        customBorder: const CircleBorder(),
                         onTap: _openProfile,
-                        child: CircleAvatar(
-                          radius: 21,
-                          backgroundColor: context.colors.raised,
-                          child: Text(
-                            alias[0].toUpperCase(),
-                            style: TextStyle(
-                              color: context.colors.accent,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        child: SizedBox.square(
+                          dimension: 48,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: context.colors.selected,
+                                child: Text(
+                                  alias[0].toUpperCase(),
+                                  style: TextStyle(
+                                    color: context.colors.text,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: -2,
+                                bottom: 0,
+                                child: LevelBadge(
+                                  widget.controller.level,
+                                  size: 24,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -171,6 +211,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             labels.length,
             (index) => NavigationDestination(
               icon: Icon(icons[index]),
+              selectedIcon: Icon(selectedIcons[index]),
               label: labels[index],
             ),
           ),

@@ -702,13 +702,10 @@ class WellnessController extends ChangeNotifier {
     _save();
   }
 
-  /// Turning the reduction path on requires consent for its sensitive data.
-  void switchPath(bool enabled, {bool consent = false}) {
-    if (enabled && !consent && profile?['reductionConsent'] != true) {
-      throw StateError('Persetujuan data rokok/vape diperlukan.');
-    }
+  /// Reduction logs stay on this device for now. Ask for consent again
+  /// before they are ever synced (see CLAUDE.md §2, §6).
+  void switchPath(bool enabled) {
     _data['profile']['path'] = enabled ? 'reduction' : 'wellness';
-    if (enabled) _data['profile']['reductionConsent'] = true;
     _reviewLadders();
     _refreshDraft();
     _save();

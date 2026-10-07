@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/shared/widgets/game_widgets.dart';
 
 /// Foreground-only activity log. Coordinates never enter the local snapshot.
 class WorkoutPage extends StatefulWidget {
@@ -142,6 +143,63 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
     Navigator.of(context).pop();
   }
 
+  /// The open walk/run quest this session counts toward, with live progress.
+  Widget? _questTarget(BuildContext context) {
+    final task = widget.controller.quests
+        .where(
+          (task) =>
+              task['status'] != 'completed' &&
+              (task['activityKind'] == 'walk' ||
+                  task['activityKind'] == 'run' && _kind == 'run'),
+        )
+        .firstOrNull;
+    if (task == null) return null;
+    final c = context.colors;
+    final targetMeters = (task['targetMeters'] as num?)?.toInt();
+    final targetMinutes = (task['durationMinutes'] as num?)?.toInt() ?? 1;
+    final byDistance = targetMeters != null && _gpsEnabled;
+    final progress = byDistance
+        ? _meters / targetMeters
+        : _watch.elapsed.inSeconds / (targetMinutes * 60);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: GameCard(
+        color: c.xpSoft,
+        borderColor: c.xp.withValues(alpha: .5),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.flag_rounded, color: c.onXp),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Misi: ${task['title']}',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                XpPill((task['xp'] as num?)?.toInt() ?? 0),
+              ],
+            ),
+            const SizedBox(height: 10),
+            XpBar(value: progress),
+            const SizedBox(height: 6),
+            Text(
+              progress >= 1
+                  ? 'Target tercapai! Tekan Selesai & simpan.'
+                  : byDistance
+                  ? '${_meters.round()} / $targetMeters m'
+                  : '${_watch.elapsed.inMinutes} / $targetMinutes menit',
+              style: TextStyle(color: c.onXp, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final elapsed = _watch.elapsed;
@@ -186,6 +244,7 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
                   ? null
                   : (value) => setState(() => _kind = value.first),
             ),
+            ?_questTarget(context),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(28),
