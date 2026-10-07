@@ -37,7 +37,7 @@ class HomePage extends StatelessWidget {
         ? 1
         : controller.now.difference(started).inDays + 1;
     Widget questCard(Map<String, dynamic> task) => Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: _QuestCard(
         task: task,
         onComplete: switch (task['activityKind']) {
@@ -46,17 +46,16 @@ class HomePage extends StatelessWidget {
           'habit_swap' => () => openReductionSupport(context, controller),
           _ => onOpenActivity,
         },
-        onRate: (effort) =>
-            controller.rateQuestEffort(task['id'].toString(), effort),
       ),
     );
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       children: [
         Text(
           'Hai, ${controller.profile!['alias']}!',
           style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
         ),
+        const SizedBox(height: 4),
         Text(
           'Hari ke-$dayNumber perjalananmu',
           style: text.bodyMedium?.copyWith(
@@ -64,32 +63,32 @@ class HomePage extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 20),
         _PlayerCard(controller: controller, companionKey: companionKey),
         if (controller.ladderOffers.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _LadderBanner(controller: controller),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         _TodayHeader(controller: controller),
         if (controller.quests.isEmpty && controller.needsDailyCardDraw)
           _DrawPrompt(onOpenDraw: onOpenDraw)
         else ...[
           _FullDayMeter(controller: controller),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
           for (final task in controller.coreQuests) questCard(task),
           if (controller.canDrawBonusCard) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             _BonusOffer(controller: controller),
           ],
           if (controller.bonusQuests.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             const SectionTitle('Kartu Bonus', icon: Icons.star_rounded),
             for (final task in controller.bonusQuests) questCard(task),
           ],
         ],
         if (controller.reduction) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
           ReductionEntryCard(controller: controller),
         ],
       ],
@@ -137,7 +136,7 @@ class _PlayerCardState extends State<_PlayerCard> {
       ),
     );
     return GameCard(
-      padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -153,7 +152,7 @@ class _PlayerCardState extends State<_PlayerCard> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,6 +170,7 @@ class _PlayerCardState extends State<_PlayerCard> {
                         LevelBadge(level, size: 40),
                       ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       controller.dailyProgress == 1
                           ? 'Hari penuh! Keren!'
@@ -180,9 +180,9 @@ class _PlayerCardState extends State<_PlayerCard> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     XpBar(value: controller.levelProgress),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       '${controller.xpToNextLevel} XP lagi ke Level ${level + 1}',
                       style: const TextStyle(
@@ -195,7 +195,7 @@ class _PlayerCardState extends State<_PlayerCard> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Material(
             color: c.raised,
             borderRadius: BorderRadius.circular(14),
@@ -203,13 +203,13 @@ class _PlayerCardState extends State<_PlayerCard> {
               borderRadius: BorderRadius.circular(14),
               onTap: openCompanion,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
+                constraints: const BoxConstraints(minHeight: 52),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     children: [
                       Icon(Icons.card_giftcard_rounded, color: c.reduction),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           next == null
@@ -288,7 +288,7 @@ class _LadderBanner extends StatelessWidget {
           ),
         ),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
@@ -300,7 +300,7 @@ class _LadderBanner extends StatelessWidget {
             ),
             child: Icon(Icons.stairs_rounded, color: c.success),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,6 +312,7 @@ class _LadderBanner extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   offers.map((name) => ladderLabels[name] ?? name).join(' · '),
                   style: TextStyle(
@@ -368,7 +369,7 @@ class _FullDayMeter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         XpBar(value: done / total, height: 16),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Row(
           children: [
             Icon(
@@ -376,7 +377,7 @@ class _FullDayMeter extends StatelessWidget {
               size: 20,
               color: full ? c.success : c.reduction,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 full
@@ -407,13 +408,14 @@ class _BonusOffer extends StatelessWidget {
     return GameCard(
       color: c.xpSoft,
       borderColor: c.xp,
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.star_rounded, color: c.onXp, size: 28),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Masih semangat? Ada Kartu Bonus',
@@ -422,12 +424,16 @@ class _BonusOffer extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             '3 misi ringan, masing-masing +$bonusQuestXp XP. Opsional, sekali sehari.',
-            style: TextStyle(color: c.text, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: c.text,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ChunkyButton(
             label: 'Ambil Kartu Bonus',
             icon: Icons.style_rounded,
@@ -446,22 +452,22 @@ class _DrawPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return GameCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       child: Column(
         children: [
           Icon(Icons.style_rounded, color: c.lifestyle, size: 48),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Kartu misimu menunggu',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Pilih 1 dari 5 kartu. Tiap kartu berisi 3–5 misi.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: c.muted),
+            style: TextStyle(color: c.muted, height: 1.4),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           ChunkyButton(
             label: 'Buka kartu hari ini',
             icon: Icons.auto_awesome_rounded,
@@ -522,12 +528,12 @@ class LadderOfferCard extends StatelessWidget {
             rung.title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             entry['reason'].toString(),
             style: TextStyle(color: c.muted, height: 1.4),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -561,14 +567,9 @@ const _shortLadder = {
 };
 
 class _QuestCard extends StatelessWidget {
-  const _QuestCard({
-    required this.task,
-    required this.onComplete,
-    required this.onRate,
-  });
+  const _QuestCard({required this.task, required this.onComplete});
   final Map<String, dynamic> task;
   final VoidCallback onComplete;
-  final ValueChanged<String> onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -595,7 +596,7 @@ class _QuestCard extends StatelessWidget {
       color: done ? c.successSoft : c.card,
       borderColor: done ? c.success.withValues(alpha: .45) : null,
       onTap: done && !needsEvidence ? null : onComplete,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      padding: const EdgeInsets.all(16),
       child: Semantics(
         button: !done || needsEvidence,
         label: '${task['title']}. $action',
@@ -618,7 +619,7 @@ class _QuestCard extends StatelessWidget {
                     size: 26,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,9 +629,10 @@ class _QuestCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w800,
+                          height: 1.3,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         [
                           done ? 'Selesai' : '${task['durationMinutes']} menit',
@@ -646,7 +648,7 @@ class _QuestCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -666,32 +668,35 @@ class _QuestCard extends StatelessWidget {
               ],
             ),
             if (partial != null) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(99),
-                      child: LinearProgressIndicator(
-                        value: partial,
-                        minHeight: 8,
-                        color: c.xp,
-                        backgroundColor: c.raised,
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(left: 62),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: LinearProgressIndicator(
+                          value: partial,
+                          minHeight: 8,
+                          color: c.xp,
+                          backgroundColor: c.raised,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    task['activityKind'] == 'meal_snap'
-                        ? '${(partial * ((task['photoCount'] as num?) ?? 1)).round()}/${task['photoCount'] ?? 1} foto'
-                        : '${(partial * 100).round()}% tercapai',
-                    style: TextStyle(
-                      color: c.amber,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(width: 10),
+                    Text(
+                      task['activityKind'] == 'meal_snap'
+                          ? '${(partial * ((task['photoCount'] as num?) ?? 1)).round()}/${task['photoCount'] ?? 1} foto'
+                          : '${(partial * 100).round()}% tercapai',
+                      style: TextStyle(
+                        color: c.amber,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
             if (kind == 'meal_snap' && !done)
@@ -707,8 +712,6 @@ class _QuestCard extends StatelessWidget {
                 text:
                     'Bukti sesi tidak dipakai untuk evaluasi. XP tetap tersimpan.',
               ),
-            if (done && !needsEvidence && task['ladder'] != null)
-              _EffortRating(effort: task['effort'], onRate: onRate),
           ],
         ),
       ),
@@ -743,124 +746,27 @@ class _Note extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8),
+    // Lines up with the quest title, past the 48 px icon and its gap.
+    padding: const EdgeInsets.only(top: 10, left: 62),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: context.colors.muted),
-        const SizedBox(width: 6),
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: 16, color: context.colors.muted),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: context.colors.muted, fontSize: 12.5),
+            style: TextStyle(
+              color: context.colors.muted,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
         ),
       ],
     ),
   );
-}
-
-/// One tap after a ladder quest; "berat" feeds the weekly ladder review.
-class _EffortRating extends StatelessWidget {
-  const _EffortRating({required this.effort, required this.onRate});
-  final Object? effort;
-  final ValueChanged<String> onRate;
-
-  static const _options = [
-    ('ringan', 'Ringan', Icons.sentiment_satisfied_rounded),
-    ('pas', 'Pas', Icons.thumb_up_alt_rounded),
-    ('berat', 'Berat', Icons.fitness_center_rounded),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            effort == null ? 'Gimana rasanya?' : 'Terima kasih, tercatat.',
-            style: TextStyle(
-              color: c.muted,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              for (final (index, (value, label, icon)) in _options.indexed) ...[
-                if (index > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _EffortChoice(
-                    label: label,
-                    icon: icon,
-                    selected: effort == value,
-                    dimmed: effort != null && effort != value,
-                    onTap: () => onRate(value),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EffortChoice extends StatelessWidget {
-  const _EffortChoice({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.dimmed,
-    required this.onTap,
-  });
-  final String label;
-  final IconData icon;
-  final bool selected, dimmed;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'Terasa $label',
-      child: Material(
-        color: selected ? c.card : c.card.withValues(alpha: dimmed ? .4 : .85),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: selected ? c.success : c.border,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: SizedBox(
-            height: 44,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 17, color: selected ? c.success : c.muted),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                    color: dimmed ? c.muted : c.text,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

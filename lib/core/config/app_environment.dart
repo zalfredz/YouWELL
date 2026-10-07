@@ -3,7 +3,7 @@
 abstract final class AppEnvironment {
   static const appName = String.fromEnvironment(
     'APP_NAME',
-    defaultValue: 'YouWell',
+    defaultValue: 'YouWELL',
   );
   static const name = String.fromEnvironment(
     'APP_ENV',

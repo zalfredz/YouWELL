@@ -7,7 +7,7 @@ void download(String filename, Uint8List bytes, String mime) {
   unawaited(
     SharePlus.instance.share(
       ShareParams(
-        title: 'YouWell',
+        title: 'YouWELL',
         files: [XFile.fromData(bytes, mimeType: mime)],
         fileNameOverrides: [filename],
       ),

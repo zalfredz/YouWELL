@@ -5,88 +5,18 @@ import 'support/sim.dart';
 
 void main() {
   group('nextStep follows the proposal rule', () {
-    test('up only with ≥ 3 days, ≥ 80% and no heavy rating', () {
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: .8,
-          cardDays: 3,
-          heavyCount: 0,
-          inactiveDays: 0,
-        ),
-        4,
-      );
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: 1,
-          cardDays: 2,
-          heavyCount: 0,
-          inactiveDays: 0,
-        ),
-        3,
-      );
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: .9,
-          cardDays: 5,
-          heavyCount: 1,
-          inactiveDays: 0,
-        ),
-        3,
-      );
+    test('up only with ≥ 3 days and ≥ 80% done', () {
+      expect(nextStep(3, 10, completion: .8, cardDays: 3, inactiveDays: 0), 4);
+      expect(nextStep(3, 10, completion: 1, cardDays: 2, inactiveDays: 0), 3);
+      expect(nextStep(3, 10, completion: .7, cardDays: 5, inactiveDays: 0), 3);
     });
-    test('down below 50% or with two heavy ratings', () {
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: .4,
-          cardDays: 5,
-          heavyCount: 0,
-          inactiveDays: 0,
-        ),
-        2,
-      );
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: .7,
-          cardDays: 5,
-          heavyCount: 2,
-          inactiveDays: 0,
-        ),
-        2,
-      );
+    test('down below 50%, never on how a quest felt', () {
+      expect(nextStep(3, 10, completion: .4, cardDays: 5, inactiveDays: 0), 2);
+      expect(nextStep(3, 10, completion: .5, cardDays: 5, inactiveDays: 0), 3);
     });
     test('inactivity of 5 days steps down, never below 1', () {
-      expect(
-        nextStep(
-          3,
-          10,
-          completion: 1,
-          cardDays: 7,
-          heavyCount: 0,
-          inactiveDays: 5,
-        ),
-        2,
-      );
-      expect(
-        nextStep(
-          1,
-          10,
-          completion: 0,
-          cardDays: 0,
-          heavyCount: 0,
-          inactiveDays: 9,
-        ),
-        1,
-      );
+      expect(nextStep(3, 10, completion: 1, cardDays: 7, inactiveDays: 5), 2);
+      expect(nextStep(1, 10, completion: 0, cardDays: 0, inactiveDays: 9), 1);
     });
   });
 
@@ -118,15 +48,27 @@ void main() {
     expect(sim.controller.ladderOffers, isNot(contains('Body')));
   });
 
-  test('Heavy ratings step down with a stated reason', () async {
+  test('Unfinished quests step down with a stated reason', () async {
     final sim = Sim();
     await sim.start(pace: 3);
-    sim.runWeek((_) => true, effort: (day) => day.isEven ? 'berat' : 'pas');
-    expect(sim.controller.ladderSteps['Body'], 2);
+    final before = sim.controller.ladderSteps['Body']!;
+    sim.runWeek((_) => true);
+    sim.controller.acceptLadderStep('Body');
+    expect(sim.controller.ladderSteps['Body'], before + 1);
+    // A card every day, but the Gerak quest only done on 2 of 7 days.
+    for (var day = 0; day < 7; day++) {
+      if (day == 2 || day == 5) {
+        sim.doLadder();
+      } else {
+        sim.takeCard(category: 'Body');
+      }
+      sim.nextDay();
+    }
+    expect(sim.controller.ladderSteps['Body'], before);
     expect(sim.controller.capacity['Body']!['change'], 'down');
     expect(
       sim.controller.capacity['Body']!['reason'],
-      contains('terasa berat'),
+      startsWith('Turun satu anak tangga karena 2 dari 7'),
     );
   });
 

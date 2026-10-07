@@ -5,7 +5,7 @@
 | Area | Implementasi |
 | --- | --- |
 | Onboarding | Pilih arah wellness/reduction, pace, low-impact, alias, companion |
-| Home mobile | Companion hero animasi/sentuh, feedback XP, 3–5 quest, rating usaha, tawaran tangga |
+| Home mobile | Companion hero animasi/sentuh, feedback XP, 3–5 quest, tawaran tangga |
 | Companion mobile | 5 tahap tumbuh, evolusi visual, lemari aksesori/latar, target hadiah berikutnya |
 | Reward mobile | Bonus Hari Penuh 20 XP sekali per hari, ID persisten, lencana privat |
 | Daily Card | Lima kartu collectible, spin acak, swipe, reveal, satu kali ganti, commit; mobile punya Santai/Normal dan tema |

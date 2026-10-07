@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>YouWell</string>
+	<string>YouWELL</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>YouWell</string>
+	<string>YouWELL</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,11 +27,15 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>YouWell menggunakan kamera untuk mencatat progres wellness yang kamu pilih.</string>
+	<string>YouWELL menggunakan kamera untuk mencatat progres wellness yang kamu pilih.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>YouWell menggunakan foto yang kamu pilih untuk jurnal makan pribadi.</string>
+	<string>YouWELL menggunakan foto yang kamu pilih untuk jurnal makan pribadi.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>YouWell memakai lokasi saat sesi jalan atau lari aktif untuk menghitung jarak. Rute tidak disimpan.</string>
+	<string>YouWELL memakai lokasi selama sesi jalan atau lari aktif untuk menghitung jarak, termasuk saat layar terkunci. Rute tidak disimpan.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

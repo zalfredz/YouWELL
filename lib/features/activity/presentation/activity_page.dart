@@ -22,31 +22,22 @@ class ActivityPage extends StatelessWidget {
     final todayMeals = controller.mealCheckIns
         .where((row) => row['day'] == controller.today)
         .length;
-    final activeMinutes =
-        todayWorkouts.fold<int>(
-          0,
-          (sum, row) => sum + ((row['seconds'] as num?)?.toInt() ?? 0),
-        ) ~/
-        60;
-    // Quests this tab can finish: they hold XP waiting for an activity.
-    final waiting = controller.quests
+    final meters = todayWorkouts.fold<int>(
+      0,
+      (sum, row) => sum + ((row['meters'] as num?)?.toInt() ?? 0),
+    );
+    // The open quest each action below finishes, shown on that action.
+    Map<String, dynamic>? openQuest(Set<String> kinds) => controller.quests
         .where(
           (task) =>
               task['status'] != 'completed' &&
-              const {
-                'walk',
-                'run',
-                'water',
-                'meal_snap',
-              }.contains(task['activityKind']),
+              kinds.contains(task['activityKind']),
         )
-        .toList();
-    final waitingXp = waiting.fold<int>(
-      0,
-      (sum, task) => sum + ((task['xp'] as num?)?.toInt() ?? 0),
-    );
+        .firstOrNull;
+    final moveQuest = openQuest(const {'walk', 'run'});
+    final mealQuest = openQuest(const {'meal_snap'});
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       children: [
         Text(
           'Aktivitas',
@@ -56,37 +47,16 @@ class ActivityPage extends StatelessWidget {
         ),
         Text('Gerak, makan, dan hidrasi.', style: TextStyle(color: c.muted)),
         const SizedBox(height: 16),
-        if (waiting.isNotEmpty) ...[
-          SectionTitle(
-            'XP menunggu di sini',
-            icon: Icons.bolt_rounded,
-            trailing: XpPill(waitingXp),
-          ),
-          for (final task in waiting)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _WaitingQuest(
-                task: task,
-                onTap: () => switch (task['activityKind']) {
-                  'water' => controller.addWater(),
-                  'meal_snap' => _open(
-                    context,
-                    MealSnapPage(controller: controller),
-                  ),
-                  _ => _open(context, WorkoutPage(controller: controller)),
-                },
-              ),
-            ),
-          const SizedBox(height: 10),
-        ],
         Row(
           children: [
             Expanded(
               child: _TodayMetric(
                 icon: Icons.directions_walk_rounded,
                 color: c.body,
-                value: '$activeMinutes mnt',
-                label: 'gerak hari ini',
+                value: meters >= 1000
+                    ? '${(meters / 1000).toStringAsFixed(1).replaceAll('.', ',')} km'
+                    : '$meters m',
+                label: 'jarak hari ini',
               ),
             ),
             const SizedBox(width: 10),
@@ -107,7 +77,8 @@ class ActivityPage extends StatelessWidget {
           icon: Icons.directions_run_rounded,
           color: c.body,
           title: 'Jalan atau lari',
-          detail: 'GPS hitung jarak. Rute tidak disimpan.',
+          detail: 'Boleh kunci layar. Rute tidak disimpan.',
+          quest: moveQuest,
           onTap: () => _open(context, WorkoutPage(controller: controller)),
         ),
         const SizedBox(height: 10),
@@ -116,6 +87,7 @@ class ActivityPage extends StatelessWidget {
           color: c.reduction,
           title: 'Meal Snap',
           detail: 'Foto makan tetap di HP-mu.',
+          quest: mealQuest,
           onTap: () => _open(context, MealSnapPage(controller: controller)),
         ),
         const SizedBox(height: 10),
@@ -130,60 +102,6 @@ class ActivityPage extends StatelessWidget {
               _open(context, ActivityHistoryPage(controller: controller)),
         ),
       ],
-    );
-  }
-}
-
-class _WaitingQuest extends StatelessWidget {
-  const _WaitingQuest({required this.task, required this.onTap});
-  final Map<String, dynamic> task;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final color = c.category(task['category']);
-    final partial = (task['partial'] as num?)?.toDouble();
-    return GameCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .14),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(questIcon(task), color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task['title'].toString(),
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  partial == null
-                      ? task['activityKind'] == 'water'
-                            ? 'Ketuk untuk tambah 250 ml'
-                            : 'Ketuk untuk mulai'
-                      : '${(partial * 100).round()}% tercapai',
-                  style: TextStyle(
-                    color: partial == null ? c.muted : c.amber,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          XpPill((task['xp'] as num?)?.toInt() ?? 0),
-        ],
-      ),
     );
   }
 }
@@ -307,47 +225,74 @@ class _ActivityAction extends StatelessWidget {
     required this.title,
     required this.detail,
     required this.onTap,
+    this.quest,
   });
   final IconData icon;
   final Color color;
   final String title, detail;
   final VoidCallback onTap;
+
+  /// An open quest this action finishes; shown with its XP and progress.
+  final Map<String, dynamic>? quest;
+
   @override
-  Widget build(BuildContext context) => GameCard(
-    onTap: onTap,
-    padding: const EdgeInsets.all(14),
-    child: Row(
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(14),
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final quest = this.quest;
+    final partial = (quest?['partial'] as num?)?.toDouble();
+    return GameCard(
+      onTap: onTap,
+      color: quest == null ? null : c.xpSoft,
+      borderColor: quest == null ? null : c.xp.withValues(alpha: .5),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color),
           ),
-          child: Icon(icon, color: color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                detail,
-                style: TextStyle(color: context.colors.muted, fontSize: 13),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  quest == null
+                      ? detail
+                      : partial == null
+                      ? 'Misi: ${quest['title']}'
+                      : 'Misi: ${quest['title']} · '
+                            '${(partial * 100).round()}%',
+                  style: TextStyle(
+                    color: quest == null ? c.muted : c.text,
+                    fontSize: 13,
+                    fontWeight: quest == null ? null : FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        Icon(Icons.chevron_right_rounded, color: context.colors.muted),
-      ],
-    ),
-  );
+          const SizedBox(width: 8),
+          if (quest != null)
+            XpPill((quest['xp'] as num?)?.toInt() ?? 0)
+          else
+            Icon(Icons.chevron_right_rounded, color: c.muted),
+        ],
+      ),
+    );
+  }
 }

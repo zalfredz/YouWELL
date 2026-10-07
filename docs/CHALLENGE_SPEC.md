@@ -78,9 +78,8 @@ Dasar teori yang dirujuk proposal:
    - Isi kartu: **3 misi tangga** dari kategori kartu itu + **0 - 2 misi tambahan**.
    - **Tempo** tidak lagi menentukan jumlah misi; tempo hanya menandai satu kartu **"Cocok buatmu"** (Santai 3, Sedang 4, Siap gerak 5). Kartu lain tetap boleh dipilih.
 4. **Kerjakan misi.** Validasi mengikuti §7.
-5. **Nilai misi tangga** dengan satu ketukan: *Ringan / Pas / Berat*.
-6. **Hari Penuh.** Semua misi kartu selesai memberi +20 XP (sekali sehari) dan layar "Kerja bagus!".
-7. **Kartu Bonus (opsional).** Setelah Hari Penuh, muncul tawaran 1 Kartu Bonus: 3 misi ringan, masing-masing +15 XP, tanpa misi tangga, tanpa misi berat, dan tidak mengulang misi yang sudah ada hari itu. Maksimal 1× per hari, tanpa bonus Hari Penuh kedua.
+5. **Hari Penuh.** Semua misi kartu selesai memberi +20 XP (sekali sehari) dan layar "Kerja bagus!".
+6. **Kartu Bonus (opsional).** Setelah Hari Penuh, muncul tawaran 1 Kartu Bonus: 3 misi ringan, masing-masing +15 XP, tanpa misi tangga, tanpa misi berat, dan tidak mengulang misi yang sudah ada hari itu. Maksimal 1× per hari, tanpa bonus Hari Penuh kedua.
 
 ---
 
@@ -90,7 +89,7 @@ Setiap kategori punya `maxStep` sendiri. XP misi tangga = **15 + 5 × anak tangg
 
 ### 5.1 🚶 Gerak (maxStep 10; *low-impact* maksimal 4)
 
-**Semua misi dihitung dari jarak GPS.** Waktu saja tidak pernah menyelesaikan misi (tidak ada jalan pintas durasi). Tanpa izin lokasi, misi Gerak tidak bisa selesai; aplikasi meminta lokasi dinyalakan dengan teks "Rute tidak disimpan".
+**Semua misi dihitung dari jarak GPS.** Waktu saja tidak pernah menyelesaikan misi (tidak ada jalan pintas durasi). Tanpa izin lokasi, misi Gerak tidak bisa selesai; aplikasi meminta lokasi dinyalakan dengan teks "Rute tidak disimpan". Sesi tetap menghitung jarak saat layar terkunci atau aplikasi di latar belakang.
 
 | # | Misi | Target jarak | Perkiraan waktu |
 |---|---|---|---|
@@ -245,31 +244,32 @@ Evaluasi berjalan saat ≥ 7 hari sejak evaluasi terakhir kategori itu.
 **Rumus:**
 - `completion` = (misi selesai + jumlah nilai sebagian) ÷ misi yang diambil
 - `cardDays` = jumlah hari **kategori ini** dikerjakan (misi tangganya ada di kartu yang diambil) dalam 7 hari (**bukan** `active_days` di §10)
-- `heavy` = jumlah penilaian "Berat"
+
+Penilaian usaha *Ringan / Pas / Berat* **dihapus** (revisi 7 Okt 2026): tangga dievaluasi hanya dari selesai atau tidaknya misi. Misi yang terlalu berat terlihat dari penyelesaian yang turun (termasuk jarak GPS sebagian), dan kenaikan tetap hanya ditawarkan.
 
 | Kondisi | Hasil |
 |---|---|
 | Tidak menyelesaikan misi apa pun ≥ 5 hari | **Turun 1** + pesan "Selamat datang lagi" |
-| `completion` < 50% **atau** `heavy` ≥ 2 | **Turun 1** |
-| `cardDays` ≥ 3 **dan** `completion` ≥ 80% **dan** `heavy` = 0 | **Tawarkan naik 1** (pengguna memilih "Naik" atau "Tetap di level ini") |
+| `completion` < 50% | **Turun 1** |
+| `cardDays` ≥ 3 **dan** `completion` ≥ 80% | **Tawarkan naik 1** (pengguna memilih "Naik" atau "Tetap di level ini") |
 | Selain itu, atau belum ada misi | **Tahan** |
 
 **Batasan:**
 - Naik maksimal 1 anak tangga per minggu.
 - Tidak boleh kurang dari 1 atau melebihi `maxStep`, termasuk batas *low-impact*.
 - Menerima tawaran naik membuat ulang kartu hari ini, **asalkan** kartu belum diambil.
-- Setiap keputusan menyimpan **alasan** yang tampil di halaman Perjalanan, misalnya "Naik karena 6 dari 7 quest Gerak selesai dan terasa pas."
+- Setiap keputusan menyimpan **alasan** yang tampil di halaman Perjalanan, misalnya "Naik karena 6 dari 7 quest Gerak selesai."
 
 ```dart
 LadderDecision evaluate({
   required int current, required int maxStep,
   required double completion, required int cardDays,
-  required int heavy, required int inactiveDays,
+  required int inactiveDays,
 }) {
   if (inactiveDays >= 5) return LadderDecision.down(current, maxStep, reason: 'welcome_back');
-  if (completion < .5 || heavy >= 2) return LadderDecision.down(current, maxStep, reason: 'too_hard');
+  if (completion < .5) return LadderDecision.down(current, maxStep, reason: 'too_hard');
   // 3, not 4: categories rotate across cards (revisi 7 Okt 2026).
-  if (cardDays >= 3 && completion >= .8 && heavy == 0) {
+  if (cardDays >= 3 && completion >= .8) {
     return LadderDecision.offerUp(current, maxStep, reason: 'ready');
   }
   return LadderDecision.hold(current, reason: cardDays < 3 ? 'need_more_days' : 'steady');
@@ -393,7 +393,7 @@ Semua kasus di bawah dijalankan otomatis di `test/challenge_spec_test.dart`.
 | Hari Santai | Semua kartu 3 misi, anak tangga − 1, ditandai latihan |
 | Kartu memuat Hidrasi / Makan | Tidak ada misi air / makan tambahan |
 | Kategori dikerjakan 2 kali seminggu, semua selesai | **Tahan** (butuh minimal 3 kali) |
-| Kategori dikerjakan 3 kali, semua selesai, 0 "Berat" | **Tawaran naik** |
+| Kategori dikerjakan 3 kali, semua selesai | **Tawaran naik** |
 | *Low-impact* | Berhenti di anak tangga 4, tidak ditawari lari |
 | Jalan 1 jam, 0 meter | Misi tidak selesai |
 | Jalan 400 dari 800 m | Sebagian 50%; 800 m → selesai |

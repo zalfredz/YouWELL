@@ -188,8 +188,8 @@ Setiap kategori punya tangga sendiri: Gerak, Istirahat (sementara; nanti Tidur &
 
 **Aturan, dievaluasi tiap 7 hari per kategori:**
 
-- **Naik** 1 anak tangga (ditawarkan): kategori itu dikerjakan ≥ 3 hari dalam seminggu (`cardDays` ≥ 3, karena kategori diacak per kartu) **dan** penyelesaian ≥ 80% **dan** tidak ada penilaian "Berat".
-- **Turun** 1 anak tangga: penyelesaian < 50% **atau** ≥ 2 kali dinilai "Berat".
+- **Naik** 1 anak tangga (ditawarkan): kategori itu dikerjakan ≥ 3 hari dalam seminggu (`cardDays` ≥ 3, karena kategori diacak per kartu) **dan** penyelesaian ≥ 80%.
+- **Turun** 1 anak tangga: penyelesaian < 50%.
 - **Tahan:** kondisi selain dua di atas.
 - **Tidak aktif ≥ 5 hari:** turun 1 anak tangga, tanpa hukuman.
 
@@ -203,21 +203,19 @@ Setiap kategori punya tangga sendiri: Gerak, Istirahat (sementara; nanti Tidur &
 **Input yang dipakai:**
 
 - Penyelesaian quest.
-- Penilaian usaha 1 ketukan setelah quest: *Ringan / Pas / Berat*.
 - Jarak GPS aktual dibanding target.
 
-Alasan kenaikan/penurunan harus bisa ditampilkan ke pengguna, misalnya "Naik karena 6 dari 7 quest selesai dan terasa pas."
+Alasan kenaikan/penurunan harus bisa ditampilkan ke pengguna, misalnya "Naik karena 6 dari 7 quest selesai." (Penilaian usaha Ringan/Pas/Berat dihapus 7 Okt 2026; perlu dikonfirmasi ke Danar.)
 
 ```dart
 int nextStep(int current, int maxStep, {
   required double completion,   // 0..1, 7 hari terakhir
   required int cardDays,        // hari kategori ini dikerjakan (bukan active_days)
-  required int heavyCount,
   required int inactiveDays,
 }) {
   if (inactiveDays >= 5) return (current - 1).clamp(1, maxStep);
-  if (cardDays >= 3 && completion >= .8 && heavyCount == 0) return (current + 1).clamp(1, maxStep); // ditawarkan
-  if (completion < .5 || heavyCount >= 2) return (current - 1).clamp(1, maxStep);
+  if (cardDays >= 3 && completion >= .8) return (current + 1).clamp(1, maxStep); // ditawarkan
+  if (completion < .5) return (current - 1).clamp(1, maxStep);
   return current;
 }
 ```
@@ -243,6 +241,7 @@ Dasar teori di proposal: *graded tasks* (BCT Ontology, Marques et al., 2024), as
 - Tolak jika kecepatan rata-rata > 20 km/jam (kemungkinan naik kendaraan).
 - Jika tercapai sebagian, catat "selesai sebagian". Data ini masuk ke aturan tangga.
 - Yang disimpan hanya meter & durasi. **Rute tidak disimpan.**
+- Sesi tetap berjalan saat layar terkunci atau aplikasi di latar belakang (Android: foreground service + notifikasi; iOS: `UIBackgroundModes` location + indikator biru). Izin tetap *when in use*, tidak meminta izin lokasi "selalu".
 
 **Delay Craving:**
 

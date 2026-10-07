@@ -357,16 +357,13 @@ int nextStep(
   int maxStep, {
   required double completion,
   required int cardDays,
-  required int heavyCount,
   required int inactiveDays,
 }) {
   if (inactiveDays >= 5) return (current - 1).clamp(1, maxStep);
-  if (cardDays >= minCardDaysToStepUp && completion >= .8 && heavyCount == 0) {
+  if (cardDays >= minCardDaysToStepUp && completion >= .8) {
     return (current + 1).clamp(1, maxStep);
   }
-  if (completion < .5 || heavyCount >= 2) {
-    return (current - 1).clamp(1, maxStep);
-  }
+  if (completion < .5) return (current - 1).clamp(1, maxStep);
   return current;
 }
 
@@ -398,7 +395,6 @@ LadderReview reviewLadder({
       maxStep,
       completion: 0,
       cardDays: 0,
-      heavyCount: 0,
       inactiveDays: inactiveDays,
     );
     return LadderReview(
@@ -426,7 +422,6 @@ LadderReview reviewLadder({
         : sum + ((task['partial'] as num?)?.toDouble() ?? 0),
   );
   final completion = score / total;
-  final heavy = weekQuests.where((task) => task['effort'] == 'berat').length;
   // Days on which a card (and so this ladder quest) was taken.
   final cardDays = weekQuests.map((task) => task['day']).toSet().length;
   final step = nextStep(
@@ -434,7 +429,6 @@ LadderReview reviewLadder({
     maxStep,
     completion: completion,
     cardDays: cardDays,
-    heavyCount: heavy,
     inactiveDays: inactiveDays,
   );
   final summary = '$done dari $total quest $label selesai';
@@ -442,20 +436,17 @@ LadderReview reviewLadder({
     return LadderReview(
       step: step,
       change: 'up',
-      reason: 'Naik karena $summary dan tidak ada yang terasa berat.',
+      reason: 'Naik karena $summary.',
     );
   }
   if (step < current) {
     return LadderReview(
       step: step,
       change: 'down',
-      reason: heavy >= 2
-          ? 'Turun satu anak tangga karena $heavy quest terasa berat. '
-                'Biar lebih pas dulu.'
-          : 'Turun satu anak tangga karena $summary. Biar lebih pas dulu.',
+      reason: 'Turun satu anak tangga karena $summary. Biar lebih pas dulu.',
     );
   }
-  final ready = completion >= .8 && heavy == 0;
+  final ready = completion >= .8;
   return LadderReview(
     step: current,
     change: 'hold',

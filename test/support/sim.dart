@@ -69,25 +69,17 @@ class Sim {
   }
 
   /// Takes a card with [category] and finishes its ladder quests.
-  void doLadder({String category = 'Body', String effort = 'pas'}) {
+  void doLadder({String category = 'Body'}) {
     takeCard(category: category);
     for (final task in controller.coreQuests) {
-      if (task['ladder'] == null) continue;
-      finish(task);
-      controller.rateQuestEffort(task['id'], effort);
+      if (task['ladder'] != null) finish(task);
     }
   }
 
   /// Seven days; [active] decides whether that day's ladder quests are done.
-  void runWeek(
-    bool Function(int day) active, {
-    String category = 'Body',
-    String Function(int day)? effort,
-  }) {
+  void runWeek(bool Function(int day) active, {String category = 'Body'}) {
     for (var day = 0; day < 7; day++) {
-      if (active(day)) {
-        doLadder(category: category, effort: effort?.call(day) ?? 'pas');
-      }
+      if (active(day)) doLadder(category: category);
       nextDay();
     }
   }

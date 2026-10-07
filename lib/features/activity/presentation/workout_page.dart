@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/shared/widgets/game_widgets.dart';
 
-/// Foreground-only activity log. Coordinates never enter the local snapshot.
+/// Walk/run log that keeps counting with the screen locked or the app in the
+/// background (Android foreground service, iOS background location). Only
+/// meters and seconds are kept; coordinates never enter the local snapshot.
+/// The session ends when the user finishes or leaves this page.
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key, required this.controller});
   final WellnessController controller;
@@ -17,7 +21,7 @@ class WorkoutPage extends StatefulWidget {
 }
 
 class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
-  final Stopwatch _watch = Stopwatch();
+  final _watch = _WallStopwatch();
   Timer? _ticker;
   StreamSubscription<Position>? _positions;
   Position? _lastPosition;
@@ -33,9 +37,11 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
+  /// The session keeps running in the background; on return, refresh the
+  /// time and distance at once.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && _watch.isRunning) _pause();
+    if (state == AppLifecycleState.resumed && mounted) setState(() {});
   }
 
   @override
@@ -72,10 +78,7 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
     if (enabled) {
       _positions =
           Geolocator.getPositionStream(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              distanceFilter: 10,
-            ),
+            locationSettings: _backgroundSettings(),
           ).listen(
             (position) {
               if (!mounted || !_watch.isRunning) return;
@@ -241,8 +244,9 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 6),
             Text(
-              'Lokasi hanya dipakai saat sesi berjalan untuk menghitung jarak. '
-              'Rute tidak disimpan. Berhenti jika pusing atau nyeri.',
+              'Setelah mulai, boleh kunci layar atau buka aplikasi lain; '
+              'jarak tetap dihitung. Lokasi hanya dipakai selama sesi dan '
+              'rute tidak disimpan. Berhenti jika pusing atau nyeri.',
               style: TextStyle(color: context.colors.muted, height: 1.4),
             ),
             const SizedBox(height: 24),
@@ -350,5 +354,58 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+}
+
+/// Location updates that continue while the phone is locked or another app
+/// is open. Android shows an ongoing notification (required for a foreground
+/// service); iOS shows its blue location indicator.
+LocationSettings _backgroundSettings() {
+  const accuracy = LocationAccuracy.high;
+  const distanceFilter = 10;
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => AndroidSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: 'YouWELL sedang menghitung jarak',
+        notificationText: 'Sesi jalan/lari aktif. Rute tidak disimpan.',
+        enableWakeLock: true,
+        setOngoing: true,
+      ),
+    ),
+    TargetPlatform.iOS => AppleSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
+      activityType: ActivityType.fitness,
+      pauseLocationUpdatesAutomatically: false,
+      allowBackgroundLocationUpdates: true,
+      showBackgroundLocationIndicator: true,
+    ),
+    _ => const LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
+    ),
+  };
+}
+
+/// Like [Stopwatch], but on the wall clock, so time spent with the screen
+/// locked (when the device may sleep between GPS fixes) is still counted.
+class _WallStopwatch {
+  Duration _banked = Duration.zero;
+  DateTime? _since;
+
+  bool get isRunning => _since != null;
+
+  Duration get elapsed {
+    final since = _since;
+    return since == null ? _banked : _banked + DateTime.now().difference(since);
+  }
+
+  void start() => _since ??= DateTime.now();
+
+  void stop() {
+    _banked = elapsed;
+    _since = null;
   }
 }

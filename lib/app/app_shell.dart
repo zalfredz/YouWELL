@@ -118,7 +118,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 child: Row(
                   children: [
                     Text(
-                      'youwell',
+                      'YouWELL',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontWeight: FontWeight.w900,

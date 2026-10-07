@@ -455,17 +455,6 @@ class WellnessController extends ChangeNotifier {
     _save();
   }
 
-  /// One-tap effort rating after a quest: ringan, pas, or berat.
-  void rateQuestEffort(String id, String effort) {
-    if (!const {'ringan', 'pas', 'berat'}.contains(effort)) return;
-    final tasks = quests;
-    final index = tasks.indexWhere((task) => task['id'] == id);
-    if (index < 0 || tasks[index]['status'] != 'completed') return;
-    tasks[index] = {...tasks[index], 'effort': effort};
-    _data['days'][today]['quests'] = tasks;
-    _save();
-  }
-
   /// Kept as a semantic entry point for both existing web and mobile UI.
   void drawDailyCards() => prepareToday();
 
