@@ -116,11 +116,15 @@ class _DrawStage extends StatelessWidget {
               ),
             ],
           ),
-          if (!mobileExperience)
-            Text(
-              'Satu kartu, 3–5 quest. Swipe lalu buka.',
-              style: TextStyle(color: context.colors.muted),
+          Text(
+            mobileExperience
+                ? 'Pilih fokus tambahan hari ini'
+                : 'Satu kartu, 3–5 quest. Swipe lalu buka.',
+            style: TextStyle(
+              color: context.colors.muted,
+              fontWeight: FontWeight.w700,
             ),
+          ),
           if (mobileExperience &&
               selected == null &&
               controller.passedDailyCardIds.isEmpty) ...[
@@ -609,8 +613,8 @@ class _CardFront extends StatelessWidget {
         : [card];
     final difficulty = (card['difficulty'] as num?)?.toInt() ?? 1;
     final difficultyLabel = switch (difficulty) {
-      2 => 'Seimbang',
-      3 => 'Lebih aktif',
+      2 => 'Sedang',
+      3 => 'Penuh',
       _ => 'Ringan',
     };
     return Center(
@@ -645,12 +649,16 @@ class _CardFront extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (card['recommended'] == true) ...[
+                  _Pill(label: 'Cocok buatmu', color: context.colors.success),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   card['title'].toString(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: context.colors.text,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
                 ),

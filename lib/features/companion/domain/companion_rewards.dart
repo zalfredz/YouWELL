@@ -14,13 +14,13 @@ const companionUnlocks = [
   CompanionUnlock('crown', 'Mahkota daun', 8, false),
 ];
 
-int companionStage(int level) => switch (level) {
-  >= 10 => 5,
-  >= 7 => 4,
-  >= 4 => 3,
-  >= 2 => 2,
-  _ => 1,
-};
+/// Level at which each of the five growth stages starts. Sized so someone
+/// who finishes every mission daily reaches stage 5 by week 4 even at the
+/// slowest pace (Santai, never stepping up ≈ level 9 on day 28).
+const companionStageLevels = [1, 3, 5, 7, 9];
+
+int companionStage(int level) =>
+    companionStageLevels.lastIndexWhere((start) => level >= start) + 1;
 
 String companionStageName(String kind, int stage) {
   final names = switch (kind) {

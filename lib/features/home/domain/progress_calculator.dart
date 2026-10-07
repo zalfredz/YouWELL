@@ -1,3 +1,4 @@
+import 'package:youwell/features/progress/domain/level_curve.dart';
 import 'package:youwell/core/utils/date_key.dart';
 
 /// Pure, pressure-free progress rules used by mobile and web.
@@ -18,7 +19,10 @@ class ProgressCalculator {
   List<String> get completedDays =>
       days.entries
           .where((entry) {
-            final quests = _quests(entry.value);
+            // A full day means the card's missions; Kartu Bonus is extra.
+            final quests = _quests(
+              entry.value,
+            ).where((task) => task['bonus'] != true);
             return quests.isNotEmpty && quests.every(_isCompleted);
           })
           .map((entry) => entry.key)
@@ -33,7 +37,7 @@ class ProgressCalculator {
             .where(_isCompleted)
             .fold<int>(0, (sum, task) => sum + _number(task['xp'], 15)),
   );
-  int get level => 1 + xp ~/ 100;
+  int get level => levelForXp(xp);
 
   int activeDaysIn(int period) {
     final start = dayKey(now.subtract(Duration(days: period - 1)));
@@ -49,7 +53,9 @@ class ProgressCalculator {
       (entry) =>
           entry.key.compareTo(start) >= 0 && entry.key.compareTo(today) <= 0,
     )) {
-      final quests = _quests(entry.value);
+      final quests = _quests(
+        entry.value,
+      ).where((task) => task['bonus'] != true);
       total += quests.length;
       completed += quests.where(_isCompleted).length;
     }

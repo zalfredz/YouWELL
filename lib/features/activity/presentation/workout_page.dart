@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -78,22 +79,37 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
           ).listen(
             (position) {
               if (!mounted || !_watch.isRunning) return;
-              final last = _lastPosition;
-              _lastPosition = position;
-              if (last == null || position.accuracy > 60) return;
+              final anchor = _lastPosition;
+              if (anchor == null) {
+                _lastPosition = position;
+                return;
+              }
+              if (position.accuracy > 40) return;
               final delta = Geolocator.distanceBetween(
-                last.latitude,
-                last.longitude,
+                anchor.latitude,
+                anchor.longitude,
                 position.latitude,
                 position.longitude,
               );
-              if (delta > 0 && delta < 150) setState(() => _meters += delta);
+              // Fixes inside the GPS error circle are noise: sitting still
+              // must not add distance, so keep the anchor until we move out.
+              if (delta < max(position.accuracy, 10)) return;
+              final seconds =
+                  position.timestamp
+                      .difference(anchor.timestamp)
+                      .inMilliseconds /
+                  1000;
+              _lastPosition = position;
+              // Jumps faster than 7 m/s (~25 km/h) are a vehicle or GPS glitch.
+              if (seconds <= 0 || delta / seconds > 7) return;
+              setState(() => _meters += delta);
             },
             onError: (_) {
               if (mounted) {
                 setState(() {
                   _gpsEnabled = false;
-                  _message = 'GPS terputus. Timer tetap berjalan.';
+                  _message =
+                      'GPS terputus. Jarak berhenti dihitung sampai sinyal kembali.';
                 });
               }
             },
@@ -107,7 +123,8 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
       _starting = false;
       if (!enabled) {
         _message =
-            'Lokasi tidak aktif. Waktu tetap tercatat, jarak tidak dihitung.';
+            'Lokasi belum aktif. Misi jalan/lari dihitung dari jarak GPS, '
+            'jadi nyalakan lokasi dulu. Rute tidak disimpan.';
       }
     });
   }
@@ -136,6 +153,9 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
         ? 'Quest selesai: ${result.completed.join(', ')}.'
         : result.partial.isNotEmpty
         ? 'Tercapai sebagian: ${result.partial.join(', ')}. Tetap tercatat.'
+        : _meters < 1
+        ? 'Sesi tercatat, tapi jarak belum terhitung. Misi jalan/lari butuh '
+              'lokasi aktif.'
         : 'Sesi tercatat.';
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -157,7 +177,7 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
     final c = context.colors;
     final targetMeters = (task['targetMeters'] as num?)?.toInt();
     final targetMinutes = (task['durationMinutes'] as num?)?.toInt() ?? 1;
-    final byDistance = targetMeters != null && _gpsEnabled;
+    final byDistance = targetMeters != null;
     final progress = byDistance
         ? _meters / targetMeters
         : _watch.elapsed.inSeconds / (targetMinutes * 60);

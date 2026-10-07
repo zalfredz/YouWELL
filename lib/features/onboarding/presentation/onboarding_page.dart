@@ -20,19 +20,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String _companion = 'plant';
   bool _lowImpact = false;
   String? _ageGroup;
-  bool _guardianConsent = false;
   String? _error;
   final _alias = TextEditingController();
 
   static const _lastStep = 3;
   static const _names = {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'};
-  bool get _underTwentyOne => _ageGroup == 'under18' || _ageGroup == '18-20';
+
+  /// 18–22 spans the PP 28/2024 age-21 line, so it gets quit framing too.
+  bool get _quitFraming => _ageGroup == 'under18' || _ageGroup == '18-22';
 
   /// Blocks "Lanjut" until the current step has what the rules require.
   String? _stepError() => switch (_step) {
     0 when _ageGroup == null => 'Pilih rentang usiamu dulu.',
-    0 when _ageGroup == 'under18' && !_guardianConsent =>
-      'Di bawah 18 tahun perlu izin orang tua/wali.',
     _ => null,
   };
 
@@ -69,7 +68,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
         'companion': _companion,
         'waterGoal': 2000,
         'ageGroup': _ageGroup,
-        if (_ageGroup == 'under18') 'guardianConsent': true,
       });
     } catch (_) {
       setState(
@@ -83,17 +81,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final c = context.colors;
     final name = _names[_companion]!;
     final (question, helper) = switch (_step) {
-      0 => (
-        'Hai! Aku $name, teman tumbuhmu. Umurmu berapa?',
-        'Biar isinya pas buatmu. Yang disimpan cuma rentang usia.',
-      ),
+      0 => ('Hai! Aku $name, teman tumbuhmu. Umurmu berapa?', ''),
       1 => (
         'Oke! Kamu mau fokus ke mana dulu?',
         'Bisa diganti kapan saja di Profil.',
       ),
       2 => (
         'Mau mulai sesantai apa?',
-        'Tenang, misinya naik pelan-pelan kalau kamu siap.',
+        'Tenang, misinya naik pelan-pelan ketika kamu siap.',
       ),
       _ => (
         'Terakhir! Pilih temanmu, lalu kasih tahu mau dipanggil apa.',
@@ -148,14 +143,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           Expanded(child: _Bubble(question)),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        helper,
-                        style: TextStyle(
-                          color: c.muted,
-                          fontWeight: FontWeight.w700,
+                      if (helper.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          helper,
+                          style: TextStyle(
+                            color: c.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 18),
                       ..._stepContent(context),
                     ],
@@ -181,11 +178,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         label: _step == _lastStep ? 'Mulai' : 'Lanjut',
                         onPressed: _next,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Data masih disimpan di perangkat ini.',
-                        style: TextStyle(color: c.muted, fontSize: 12),
-                      ),
                     ],
                   ),
                 ),
@@ -200,21 +192,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
   List<Widget> _stepContent(BuildContext context) => switch (_step) {
     0 => [
       for (final (value, title, icon) in const [
+        ('22plus', 'Di atas 22 tahun', Icons.work_outline_rounded),
+        ('18-22', '18–22 tahun', Icons.school_rounded),
         ('under18', 'Di bawah 18 tahun', Icons.backpack_rounded),
-        ('18-20', '18–20 tahun', Icons.school_rounded),
-        ('21plus', '21 tahun ke atas', Icons.work_outline_rounded),
       ])
         _Option(
           icon: icon,
           title: title,
           selected: _ageGroup == value,
           onTap: () => _pick(() => _ageGroup = value),
-        ),
-      if (_ageGroup == 'under18')
-        _Consent(
-          value: _guardianConsent,
-          text: 'Orang tua/wali sudah mengizinkan aku memakai YouWell.',
-          onChanged: (value) => _pick(() => _guardianConsent = value),
         ),
     ],
     1 => [
@@ -227,10 +213,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ),
       _Option(
         icon: Icons.smoke_free_rounded,
-        title: _underTwentyOne
-            ? 'Berhenti rokok / vape'
-            : 'Kurangi rokok / vape',
-        detail: _underTwentyOne
+        title: _quitFraming ? 'Berhenti rokok / vape' : 'Kurangi rokok / vape',
+        detail: _quitFraming
             ? 'Latih jeda saat ingin, lalu ganti dengan aktivitas lain.'
             : 'Tunda keinginan dan coba aktivitas pengganti, tanpa dihakimi.',
         selected: _path == 'reduction',
@@ -239,9 +223,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ],
     2 => [
       for (final (value, title, detail, icon) in const [
-        (1, 'Santai dulu', 'Sekitar 5 menit sehari', Icons.spa_rounded),
-        (2, 'Sedang', 'Sekitar 10–15 menit sehari', Icons.directions_walk),
-        (3, 'Siap gerak', 'Sekitar 20 menit atau lebih', Icons.bolt_rounded),
+        (
+          1,
+          'Santai dulu',
+          'Mulai dari jalan 400 m · kartu 3 misi',
+          Icons.spa_rounded,
+        ),
+        (
+          2,
+          'Sedang',
+          'Mulai dari jalan 800 m · kartu 4 misi',
+          Icons.directions_walk,
+        ),
+        (
+          3,
+          'Siap gerak',
+          'Mulai dari jalan cepat 1,2 km · kartu 5 misi',
+          Icons.bolt_rounded,
+        ),
       ])
         _Option(
           icon: icon,
@@ -402,28 +401,6 @@ class _Option extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Consent extends StatelessWidget {
-  const _Consent({
-    required this.value,
-    required this.text,
-    required this.onChanged,
-  });
-  final bool value;
-  final String text;
-  final ValueChanged<bool> onChanged;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: CheckboxListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      controlAffinity: ListTileControlAffinity.leading,
-      value: value,
-      onChanged: (value) => onChanged(value == true),
-      title: Text(text, style: const TextStyle(fontWeight: FontWeight.w800)),
-    ),
-  );
 }
 
 class _CompanionChoice extends StatelessWidget {

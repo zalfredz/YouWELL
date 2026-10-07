@@ -1,10 +1,17 @@
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/features/home/domain/quest_ladder.dart';
 
-/// Explainable, rule-based daily packs. Every card carries the user's ladder
-/// quest for each category; light side quests make the five cards differ.
+/// Explainable, rule-based daily cards (CHALLENGE_SPEC §4).
+///
+/// Each of the five cards holds ladder quests from a different mix of
+/// categories (3 random healthy categories, or Jeda + 2 for the
+/// smoking/vaping path), plus 0–2 light side quests, so cards carry 3, 3, 4,
+/// 4 and 5 missions. Categories done least this week appear on most cards.
 class DailyCardGenerator {
   const DailyCardGenerator();
+
+  /// Card sizes for a normal day; a relaxed day only offers 3-mission cards.
+  static const sizes = [3, 3, 4, 4, 5];
 
   List<JsonMap> cardPacks({
     required String today,
@@ -14,46 +21,21 @@ class DailyCardGenerator {
     required bool reduction,
     bool relaxed = false,
     bool mobileThemes = false,
+    bool cameraAvailable = true,
+    int hour = 0,
+    Map<String, int> recentAttempts = const {},
   }) {
-    final sideCount = pace.clamp(1, 2);
-    final catalog = [
-      ..._catalog,
-      ...(mobileThemes ? _mobileCatalog : _webCatalog),
-    ];
-    final eligible = catalog.where((task) {
-      if (task.reductionOnly && !reduction) return false;
-      if (task.difficulty > pace.clamp(1, 3)) return false;
-      return true;
-    }).toList();
-    const names = [
-      'Tunas Baru',
-      'Langkah Segar',
-      'Cahaya Hari',
-      'Ritme Ceria',
-      'Arah Baru',
-    ];
-    const themes = [
-      'Gerak Ringan',
-      'Energi Segar',
-      'Istirahat',
-      'Hidrasi & Makan',
-      'Udara Segar',
-    ];
-    const themedIds = [
-      ['posture', 'stretch', 'fresh-air'],
-      ['sunlight', 'stand-break', 'stretch'],
-      ['screen-break', 'posture', 'stretch'],
-      ['water-glass', 'meal-snap', 'fruit-veg'],
-      ['fresh-air', 'sunlight', 'screen-break'],
-    ];
-    return List.generate(names.length, (index) {
-      // Keep reduction extras reachable, rather than merely present in a pool
-      // that physical theme priorities would always outrank.
-      final preferredIds = reduction && index == 1
-          ? const ['habit-swap', 'trigger', 'swap-plan']
-          : themedIds[index];
+    final combos = _combos(today, reduction, recentAttempts);
+    final order = [...sizes]
+      ..sort((a, b) => _score('$a', today).compareTo(_score('$b', today)));
+    final cardSizes = relaxed ? List.filled(sizes.length, 3) : order;
+    // Tempo only recommends a card; any card can still be taken.
+    final recommendedSize = relaxed ? 3 : (pace + 2).clamp(3, 5);
+    final recommended = cardSizes.indexOf(recommendedSize);
+    return List.generate(sizes.length, (index) {
+      final categories = combos[index % combos.length];
       final ladderTasks = [
-        for (final category in ladderCategories(reduction: reduction))
+        for (final category in categories)
           _ladderTask(
             category,
             ((steps[category] ?? 1) - (relaxed ? 1 : 0)).clamp(
@@ -62,44 +44,35 @@ class DailyCardGenerator {
             ),
             today,
             index,
+            hour: hour,
+            cameraAvailable: cameraAvailable,
+            practice: relaxed,
           ),
       ];
-      final sides = [...eligible]
-        ..sort((a, b) {
-          if (mobileThemes) {
-            final preferredA = preferredIds.contains(a.id) ? 0 : 1;
-            final preferredB = preferredIds.contains(b.id) ? 0 : 1;
-            if (preferredA != preferredB) {
-              return preferredA.compareTo(preferredB);
-            }
-          }
-          return _score(
-            a.id,
-            '$today:$index',
-          ).compareTo(_score(b.id, '$today:$index'));
-        });
+      final sides = _sideQuests(
+        count: cardSizes[index] - ladderTasks.length,
+        categories: categories,
+        reduction: reduction,
+        cameraAvailable: cameraAvailable,
+        salt: '$today:$index',
+      );
       final tasks = [
         ...ladderTasks,
-        for (final (sideIndex, task) in sides.take(sideCount).indexed)
+        for (final (sideIndex, task) in sides.indexed)
           {
             ..._toMap(task, today, 'card-$index-side-$sideIndex'),
             if (mobileThemes) 'xp': 20,
           },
       ];
-      if (relaxed) {
-        for (final task in tasks.where((task) => task['ladder'] != null)) {
-          task['practiceOnly'] = task['step'] != steps[task['ladder']];
-        }
-      }
       return {
         'id': '$today-card-$index',
-        'title': !mobileThemes
-            ? names[index]
-            : reduction && index == 1
-            ? 'Ganti Kebiasaan'
-            : themes[index],
+        'title': categories.map((c) => ladderLabels[c] ?? c).join(' · '),
+        'categories': categories,
         'cardStyle': index,
-        'difficulty': pace.clamp(1, 3),
+        'size': tasks.length,
+        // 1 Ringan · 2 Sedang · 3 Penuh, from the number of missions.
+        'difficulty': (tasks.length - 2).clamp(1, 3),
+        if (index == recommended) 'recommended': true,
         'tasks': tasks,
         'xp': tasks.fold<int>(0, (sum, task) => sum + (task['xp'] as int)),
         'durationMinutes': tasks.fold<int>(
@@ -110,15 +83,135 @@ class DailyCardGenerator {
     });
   }
 
-  JsonMap _ladderTask(String category, int step, String today, int card) {
+  /// Light extras after a full day (§6): no ladder or strenuous quests,
+  /// nothing already on today's list, 15 XP each.
+  List<JsonMap> bonusQuests({
+    required String today,
+    required Iterable<String> takenCatalogIds,
+    required bool reduction,
+    required bool cameraAvailable,
+    required bool hasWaterLadder,
+    bool hasFoodLadder = false,
+    int count = 3,
+  }) {
+    final taken = takenCatalogIds.toSet();
+    final pool =
+        [..._catalog, ..._mobileCatalog].where((task) {
+          if (taken.contains(task.id)) return false;
+          if (task.reductionOnly && !reduction) return false;
+          if (task.difficulty > 1) return false;
+          if (task.activityKind == 'water' && hasWaterLadder) return false;
+          if (_mealSideIds.contains(task.id) && hasFoodLadder) return false;
+          if (task.activityKind == 'meal_snap' && !cameraAvailable) {
+            return false;
+          }
+          return true;
+        }).toList()..sort(
+          (a, b) => _score(
+            a.id,
+            '$today:bonus',
+          ).compareTo(_score(b.id, '$today:bonus')),
+        );
+    return [
+      for (final (index, task) in pool.take(count).indexed)
+        {
+          ..._toMap(task, today, 'bonus-$index'),
+          'xp': bonusQuestXp,
+          'bonus': true,
+        },
+    ];
+  }
+
+  /// Category mixes for the five cards, least-practised categories first.
+  List<List<String>> _combos(
+    String today,
+    bool reduction,
+    Map<String, int> recent,
+  ) {
+    final pool = healthyCategories;
+    final picks = reduction ? ladderQuestsPerCard - 1 : ladderQuestsPerCard;
+    final combos = <List<String>>[];
+    void build(int start, List<String> chosen) {
+      if (chosen.length == picks) {
+        combos.add([if (reduction) 'Reduction', ...chosen]);
+        return;
+      }
+      for (var i = start; i < pool.length; i++) {
+        build(i + 1, [...chosen, pool[i]]);
+      }
+    }
+
+    build(0, []);
+    int weight(List<String> combo) =>
+        combo.fold(0, (sum, c) => sum + (recent[c] ?? 0));
+    combos.sort((a, b) {
+      final byPractice = weight(a).compareTo(weight(b));
+      if (byPractice != 0) return byPractice;
+      return _score(a.join(), today).compareTo(_score(b.join(), today));
+    });
+    return combos;
+  }
+
+  List<_TaskDefinition> _sideQuests({
+    required int count,
+    required List<String> categories,
+    required bool reduction,
+    required bool cameraAvailable,
+    required String salt,
+  }) {
+    if (count <= 0) return const [];
+    final eligible =
+        [..._catalog, ..._mobileCatalog].where((task) {
+          if (task.reductionOnly && !reduction) return false;
+          if (task.difficulty > count + 1) return false;
+          // One +250 ml tap or one photo must not finish two quests.
+          if (task.activityKind == 'water' &&
+              categories.contains('Lifestyle')) {
+            return false;
+          }
+          if (task.category == 'Lifestyle' &&
+              _mealSideIds.contains(task.id) &&
+              categories.contains('Food')) {
+            return false;
+          }
+          if (task.activityKind == 'meal_snap' && !cameraAvailable) {
+            return false;
+          }
+          return true;
+        }).toList()..sort((a, b) {
+          // On the smoking/vaping path, a Habit Swap extra comes first.
+          final swapA = reduction && a.id == 'habit-swap' ? 0 : 1;
+          final swapB = reduction && b.id == 'habit-swap' ? 0 : 1;
+          if (swapA != swapB) return swapA.compareTo(swapB);
+          return _score(a.id, salt).compareTo(_score(b.id, salt));
+        });
+    return eligible.take(count).toList();
+  }
+
+  JsonMap _ladderTask(
+    String category,
+    int step,
+    String today,
+    int card, {
+    required int hour,
+    required bool cameraAvailable,
+    required bool practice,
+  }) {
     final rung = ladders[category]![step - 1];
+    // A meal window that has already passed gets the same-step anytime quest.
+    final windowPassed =
+        rung.photoWindows?.any((window) => window[1] <= hour) ?? false;
+    final anytime = windowPassed && rung.anytimeTitle != null;
+    final photo = rung.activityKind == 'meal_snap';
     return {
       'id': '$today-card-$card-ladder-$category',
       'catalogId': 'ladder-${category.toLowerCase()}',
       'ladder': category,
       'step': step,
-      'title': rung.title,
-      'description': rung.description,
+      'title': anytime ? rung.anytimeTitle : rung.title,
+      'description': anytime
+          ? 'Jam makannya sudah lewat, jadi hari ini cukup ini. Foto tiap porsinya.'
+          : rung.description,
       'category': category,
       'difficulty': step,
       'durationMinutes': rung.durationMinutes,
@@ -126,11 +219,16 @@ class DailyCardGenerator {
       'source': 'card',
       'status': 'available',
       'done': false,
-      'activityKind': ?rung.activityKind,
+      // Without a camera, photo quests are checked off instead (§7).
+      if (!photo || cameraAvailable) 'activityKind': ?rung.activityKind,
       'targetMeters': ?rung.targetMeters,
       'delayMinutes': ?rung.delayMinutes,
       'waterMl': ?rung.waterMl,
+      if (photo && cameraAvailable) 'photoCount': rung.photoCount ?? 1,
+      if (photo && cameraAvailable && !anytime && rung.photoWindows != null)
+        'photoWindows': rung.photoWindows,
       if (rung.strenuous) 'strenuous': true,
+      if (practice) 'practiceOnly': true,
     };
   }
 
@@ -302,60 +400,8 @@ const _mobileCatalog = [
   ),
 ];
 
-/// Existing desktop tasks stay available to the untouched web experience.
-const _webCatalog = [
-  _TaskDefinition(
-    id: 'focus-sprint',
-    title: 'Fokus singkat 10 menit',
-    description: 'Kerjakan satu hal tanpa berpindah.',
-    category: 'Energy',
-    difficulty: 2,
-    durationMinutes: 10,
-    xp: 30,
-  ),
-  _TaskDefinition(
-    id: 'tidy',
-    title: 'Rapikan satu sudut',
-    description: 'Cukup satu area kecil di dekatmu.',
-    category: 'Lifestyle',
-    difficulty: 1,
-    durationMinutes: 3,
-    xp: 20,
-  ),
-  _TaskDefinition(
-    id: 'tomorrow',
-    title: 'Siapkan besok',
-    description: 'Pilih satu hal yang ingin dipermudah.',
-    category: 'Lifestyle',
-    difficulty: 2,
-    durationMinutes: 5,
-    xp: 25,
-  ),
-  _TaskDefinition(
-    id: 'kind-message',
-    title: 'Kirim kabar baik',
-    description: 'Sapa satu orang yang kamu pedulikan.',
-    category: 'Lifestyle',
-    difficulty: 1,
-    durationMinutes: 2,
-    xp: 20,
-  ),
-  _TaskDefinition(
-    id: 'routine-plan',
-    title: 'Rancang rutinitas kecil',
-    description: 'Pilih tiga langkah realistis untuk besok.',
-    category: 'Lifestyle',
-    difficulty: 3,
-    durationMinutes: 10,
-    xp: 40,
-  ),
-  _TaskDefinition(
-    id: 'music',
-    title: 'Satu lagu tanpa layar',
-    description: 'Nikmati satu lagu tanpa membuka aplikasi lain.',
-    category: 'Energy',
-    difficulty: 1,
-    durationMinutes: 4,
-    xp: 20,
-  ),
-];
+/// XP for each Kartu Bonus quest (lower than the 20 XP of a card extra).
+const bonusQuestXp = 15;
+
+/// Side quests that a Makan ladder photo would also finish.
+const _mealSideIds = {'meal-snap', 'fruit-veg'};

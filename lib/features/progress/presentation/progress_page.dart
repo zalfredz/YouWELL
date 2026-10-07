@@ -18,7 +18,7 @@ class ProgressPage extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final kind = controller.profile?['companion']?.toString() ?? 'plant';
     final level = controller.level;
-    final inLevel = controller.xp % 100;
+
     final badges = visibleBadges(controller).toList();
     final earned = badges
         .where((entry) => controller.achievements.containsKey(entry.key))
@@ -58,10 +58,10 @@ class ProgressPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        XpBar(value: inLevel / 100),
+                        XpBar(value: controller.levelProgress),
                         const SizedBox(height: 4),
                         Text(
-                          '${100 - inLevel} XP lagi ke Level ${level + 1}',
+                          '${controller.xpToNextLevel} XP lagi ke Level ${level + 1}',
                           style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,

@@ -138,10 +138,10 @@ extension MobileWellnessRewards on WellnessController {
       gained += amount;
     }
     if (gained == 0) return;
-    final oldLevel = 1 + (xp - gained) ~/ 100;
+    final oldLevel = max(levelFloor, levelForXp(xp - gained));
     var full = false;
-    if (quests.length >= 3 &&
-        completedCards.length == quests.length &&
+    if (coreQuests.length >= 3 &&
+        coreQuests.every((task) => task['status'] == 'completed') &&
         !rewards.containsKey('day:$today')) {
       rewards['day:$today'] = {'day': today, 'bonusXp': 20};
       gained += 20;

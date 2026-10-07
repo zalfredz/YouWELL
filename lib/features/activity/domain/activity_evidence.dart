@@ -31,10 +31,44 @@ abstract final class ActivityEvidence {
         .fold<double>(0, (sum, row) {
           final meters = (row['meters'] as num?)?.toInt() ?? 0;
           final seconds = (row['seconds'] as num?)?.toInt() ?? 0;
+          // Distance quests need real GPS meters; time never stands in.
+          // Only quests saved before distance targets fall back to time.
           return sum +
-              (targetMeters != null && targetMeters > 0 && meters > 0
+              (targetMeters != null && targetMeters > 0
                   ? meters / targetMeters
                   : seconds / targetSeconds);
         });
+  }
+
+  /// How many of a meal quest's photos are covered by today's camera photos.
+  /// With windows, each window needs its own photo taken inside it.
+  static int mealPhotosMatched(
+    JsonMap task,
+    Iterable<JsonMap> meals,
+    String day,
+  ) {
+    final required = (task['photoCount'] as num?)?.toInt() ?? 1;
+    final times = [
+      for (final row in meals)
+        if (row['day'] == day && row['photoPath'] is String)
+          DateTime.tryParse(row['time']?.toString() ?? ''),
+    ].whereType<DateTime>().toList()..sort();
+    final windows = (task['photoWindows'] as List?)
+        ?.map((window) => (window as List).cast<num>())
+        .toList();
+    if (windows == null) return min(times.length, required);
+    final used = <int>{};
+    var matched = 0;
+    for (final window in windows) {
+      for (final (index, time) in times.indexed) {
+        final hour = time.hour + time.minute / 60;
+        if (!used.contains(index) && hour >= window[0] && hour < window[1]) {
+          used.add(index);
+          matched++;
+          break;
+        }
+      }
+    }
+    return matched;
   }
 }

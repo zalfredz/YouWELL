@@ -18,7 +18,7 @@ class CompanionPage extends StatelessWidget {
       final kind = controller.profile?['companion']?.toString() ?? 'plant';
       final level = controller.level;
       final stage = companionStage(level);
-      final inLevel = controller.xp % 100;
+
       final items = [
         const CompanionUnlock('none', 'Tanpa aksesori', 1, false),
         const CompanionUnlock('natural', 'Latar alami', 1, true),
@@ -44,10 +44,10 @@ class CompanionPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            XpBar(value: inLevel / 100),
+            XpBar(value: controller.levelProgress),
             const SizedBox(height: 4),
             Text(
-              '${100 - inLevel} XP lagi ke Level ${level + 1}',
+              '${controller.xpToNextLevel} XP lagi ke Level ${level + 1}',
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
@@ -64,7 +64,7 @@ class CompanionPage extends StatelessWidget {
                         step: step,
                         reached: step <= stage,
                         current: step == stage,
-                        unlockLevel: const [1, 2, 4, 7, 10][step - 1],
+                        unlockLevel: companionStageLevels[step - 1],
                       ),
                     ),
                 ],

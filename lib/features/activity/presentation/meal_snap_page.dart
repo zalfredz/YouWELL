@@ -34,7 +34,7 @@ class _MealSnapPageState extends State<MealSnapPage> {
       final bytes = await image.readAsBytes();
       if (mounted) setState(() => _photo = bytes);
     } catch (_) {
-      // The regular camera/gallery actions remain available.
+      // The camera action remains available.
     }
   }
 
@@ -54,10 +54,13 @@ class _MealSnapPageState extends State<MealSnapPage> {
         });
       }
     } catch (_) {
+      // Denied or missing camera: swap today's photo quest for a check-off.
+      widget.controller.markCameraUnavailable();
       if (mounted) {
         setState(
           () => _error =
-              'Foto belum bisa dibuka. Coba galeri atau periksa izin kamera.',
+              'Kamera belum bisa dibuka. Misi foto hari ini diganti jadi '
+              '"Tambahkan buah atau sayur" yang cukup dicentang.',
         );
       }
     }
@@ -90,11 +93,22 @@ class _MealSnapPageState extends State<MealSnapPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Catat tanpa foto'),
-        content: TextField(
-          controller: note,
-          maxLength: 200,
-          maxLines: 3,
-          decoration: const InputDecoration(hintText: 'Apa yang kamu makan?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Masuk ke jurnal pribadimu. Misi Meal Snap tetap butuh foto.',
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: note,
+              maxLength: 200,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Apa yang kamu makan?',
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -160,24 +174,11 @@ class _MealSnapPageState extends State<MealSnapPage> {
               : Image.memory(_photo!, fit: BoxFit.cover),
         ),
         const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pick(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Kamera'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pick(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Galeri'),
-              ),
-            ),
-          ],
+        // Camera only: a quest photo must be taken now, not picked (§7).
+        OutlinedButton.icon(
+          onPressed: () => _pick(ImageSource.camera),
+          icon: const Icon(Icons.camera_alt_outlined),
+          label: Text(_photo == null ? 'Ambil foto' : 'Foto ulang'),
         ),
         if (_error != null) ...[
           const SizedBox(height: 14),

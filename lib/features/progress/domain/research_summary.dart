@@ -8,9 +8,11 @@ class ResearchSummary {
     required this.week,
     required this.activeDays,
     required this.questsDone,
-    required this.ladderBody,
-    required this.ladderEnergy,
-    required this.ladderReduction,
+    required this.ladderGerak,
+    required this.ladderIstirahat,
+    required this.ladderHidrasi,
+    required this.ladderMakan,
+    required this.ladderJeda,
     required this.delayCravingCount,
     required this.habitSwapCount,
     required this.openedDayCount,
@@ -53,7 +55,9 @@ class ResearchSummary {
           .where(
             (task) =>
                 task['status'] == 'completed' &&
-                task['validationInvalidated'] != true,
+                task['validationInvalidated'] != true &&
+                // Kartu Bonus extras are not Core Quests (§10).
+                task['bonus'] != true,
           )
           .length;
       questsDone += done;
@@ -61,15 +65,17 @@ class ResearchSummary {
     }
     return ResearchSummary(
       week: week,
-      // Research engagement counts opening the app, not finishing a quest.
-      activeDays: opened.length,
+      // "Aktif" (proposal §7): app opened OR at least one quest finished.
+      activeDays: {...opened, ...activity, ...questDays}.length,
       openedDayCount: opened.length,
       activityDayCount: activity.length,
       questDayCount: questDays.length,
       questsDone: questsDone,
-      ladderBody: (historicalSteps?['Body'] as num?)?.toInt(),
-      ladderEnergy: (historicalSteps?['Energy'] as num?)?.toInt(),
-      ladderReduction: (historicalSteps?['Reduction'] as num?)?.toInt(),
+      ladderGerak: (historicalSteps?['Body'] as num?)?.toInt(),
+      ladderIstirahat: (historicalSteps?['Energy'] as num?)?.toInt(),
+      ladderHidrasi: (historicalSteps?['Lifestyle'] as num?)?.toInt(),
+      ladderMakan: (historicalSteps?['Food'] as num?)?.toInt(),
+      ladderJeda: (historicalSteps?['Reduction'] as num?)?.toInt(),
       delayCravingCount: habitDelays.where((row) => inWeek(row['day'])).length,
       habitSwapCount: habitSwaps.where((row) => inWeek(row['day'])).length,
     );
@@ -77,19 +83,26 @@ class ResearchSummary {
 
   final int week, activeDays, questsDone, delayCravingCount, habitSwapCount;
   final int openedDayCount, activityDayCount, questDayCount;
-  final int? ladderBody, ladderEnergy, ladderReduction;
 
-  /// Numeric export fields. Remote storage must adopt this schema later.
+  /// Ladder position per category; null when the category is not in use.
+  final int? ladderGerak, ladderIstirahat, ladderHidrasi, ladderMakan;
+  final int? ladderJeda;
+
+  /// Columns of `research_logs` (CLAUDE.md §3). Internal category keys map
+  /// to research names here: Body → gerak, Energy → istirahat,
+  /// Lifestyle → hidrasi, Food → makan, Reduction → jeda. Tidur is not used
+  /// yet. `quests_done` includes practice quests from relaxed days but not
+  /// Kartu Bonus extras (§10).
   JsonMap toJson() => {
     'week': week,
     'active_days': activeDays,
-    'opened_days': openedDayCount,
-    'activity_days': activityDayCount,
-    'quest_days': questDayCount,
     'quests_done': questsDone,
-    'ladder_body': ladderBody,
-    'ladder_energy': ladderEnergy,
-    'ladder_reduction': ladderReduction,
+    'ladder_gerak': ladderGerak,
+    'ladder_istirahat': ladderIstirahat,
+    'ladder_tidur': null,
+    'ladder_hidrasi': ladderHidrasi,
+    'ladder_makan': ladderMakan,
+    'ladder_jeda': ladderJeda,
     'delay_craving_count': delayCravingCount,
     'habit_swap_count': habitSwapCount,
   };

@@ -74,7 +74,7 @@ void main() {
     await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
     expect(find.text('Pilih rentang usiamu dulu.'), findsOneWidget);
-    await tester.tap(find.text('18–20 tahun'));
+    await tester.tap(find.text('18–22 tahun'));
     await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Berhenti rokok / vape'));

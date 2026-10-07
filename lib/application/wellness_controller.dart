@@ -9,6 +9,7 @@ import 'package:youwell/data/models/wellness_snapshot.dart';
 import 'package:youwell/features/home/domain/daily_card_generator.dart';
 import 'package:youwell/features/home/domain/progress_calculator.dart';
 import 'package:youwell/features/home/domain/quest_ladder.dart';
+import 'package:youwell/features/progress/domain/level_curve.dart';
 import 'package:youwell/features/progress/domain/research_summary.dart';
 import 'package:youwell/features/companion/domain/companion_rewards.dart';
 
@@ -22,6 +23,10 @@ class WellnessController extends ChangeNotifier {
     if (saved != null) {
       try {
         _data = restoreWellnessState(saved);
+        // Snapshots from the flat 100-XP curve keep the level they showed.
+        if (_data['profile'] != null && _data['levelFloor'] == null) {
+          _data['levelFloor'] = legacyLevelForXp(xp);
+        }
       } catch (_) {
         storageError =
             'Preview lokal lama direset untuk memakai versi terbaru.';
@@ -59,8 +64,10 @@ class WellnessController extends ChangeNotifier {
   bool get reduction => profile?['path'] == 'reduction';
 
   /// Under 21 the reduction path speaks about quitting (PP 28/2024 Ps. 434).
+  /// The 18–22 bucket crosses 21, so it is treated as quit framing too;
+  /// '18-20' is kept for profiles made before the buckets changed.
   bool get quitFraming =>
-      const {'under18', '18-20'}.contains(profile?['ageGroup']);
+      const {'under18', '18-22', '18-20'}.contains(profile?['ageGroup']);
   String get reductionLabel =>
       quitFraming ? 'Berhenti rokok / vape' : 'Kurangi rokok / vape';
   Map<String, dynamic> get days => Map<String, dynamic>.from(_data['days']);
@@ -117,6 +124,40 @@ class WellnessController extends ChangeNotifier {
 
   List<JsonMap> get completedCards =>
       quests.where((task) => task['status'] == 'completed').toList();
+
+  /// Missions of today's card; Kartu Bonus quests are listed separately.
+  List<JsonMap> get coreQuests =>
+      quests.where((task) => task['bonus'] != true).toList();
+  List<JsonMap> get bonusQuests =>
+      quests.where((task) => task['bonus'] == true).toList();
+  bool get coreComplete =>
+      hasCommittedDailyCard &&
+      coreQuests.isNotEmpty &&
+      coreQuests.every((task) => task['status'] == 'completed');
+
+  /// One optional Kartu Bonus per day, offered after a full day.
+  bool get canDrawBonusCard =>
+      coreComplete && days[today]?['bonusDrawn'] != true;
+
+  bool drawBonusCard() {
+    if (!canDrawBonusCard) return false;
+    final extras = const DailyCardGenerator().bonusQuests(
+      today: today,
+      takenCatalogIds: quests.map((task) => task['catalogId'].toString()),
+      reduction: reduction,
+      cameraAvailable: !cameraUnavailable,
+      hasWaterLadder: quests.any((task) => task['activityKind'] == 'water'),
+      hasFoodLadder: quests.any((task) => task['ladder'] == 'Food'),
+    );
+    _data['days'][today]['quests'] = [
+      ...quests,
+      for (final task in extras) {...task, 'status': 'committed'},
+    ];
+    _data['days'][today]['bonusDrawn'] = true;
+    _save();
+    return true;
+  }
+
   int get dailyXp =>
       mobileBonusXpToday +
       completedCards.fold<int>(
@@ -131,7 +172,20 @@ class WellnessController extends ChangeNotifier {
   List<String> get completedDays => _progress.completedDays;
   List<String> get activeDays => _progress.activeDays;
   int get xp => _progress.xp + mobileBonusXp;
-  int get level => 1 + xp ~/ 100;
+
+  /// Shown level: never below the highest level ever reached (`levelFloor`).
+  int get level => max(levelFloor, levelForXp(xp));
+  int get levelFloor => (_data['levelFloor'] as num?)?.toInt() ?? 1;
+
+  /// XP still needed for the next level, measured above the shown level.
+  int get xpToNextLevel => max(0, xpForLevel(level + 1) - xp);
+
+  /// 0..1 progress inside the shown level, for XP bars.
+  double get levelProgress {
+    final start = xpForLevel(level), end = xpForLevel(level + 1);
+    return ((xp - start) / (end - start)).clamp(0, 1).toDouble();
+  }
+
   int activeDaysIn(int period) => _progress.activeDaysIn(period);
   double compliance(int period) => _progress.completionRate(period);
 
@@ -193,6 +247,7 @@ class WellnessController extends ChangeNotifier {
   );
 
   Future<void> _save() {
+    if (profile != null && level > levelFloor) _data['levelFloor'] = level;
     if (days[today] is Map && capacity.isNotEmpty) {
       _data['days'][today]['ladderSteps'] = ladderSteps;
     }
@@ -275,6 +330,15 @@ class WellnessController extends ChangeNotifier {
     pace: dailyPace == 'relaxed' ? 1 : (profile?['pace'] as num?)?.toInt() ?? 1,
     relaxed: dailyPace == 'relaxed',
     mobileThemes: _mobileRewardsEnabled,
+    cameraAvailable: !cameraUnavailable,
+    hour: now.hour,
+    recentAttempts: {
+      for (final category in ladderCategories(reduction: reduction))
+        category: _ladderQuestsBefore(
+          category,
+          7,
+        ).map((task) => task['day']).toSet().length,
+    },
     lowImpact: profile?['lowImpact'] == true,
     reduction: reduction,
   );
@@ -342,7 +406,7 @@ class WellnessController extends ChangeNotifier {
                 task['ladder'] == category &&
                 task['practiceOnly'] != true &&
                 task['validationInvalidated'] != true)
-              Map<String, dynamic>.from(task),
+              {...Map<String, dynamic>.from(task), 'day': entry.key},
     ];
   }
 
@@ -555,12 +619,38 @@ class WellnessController extends ChangeNotifier {
       'note': note.trim(),
     });
     _reconcileActivityEvidence(day: today);
-    for (final task in quests) {
-      if (task['activityKind'] == 'meal_snap' &&
-          task['status'] != 'completed') {
-        completeCard(task['id'].toString());
+    // A note is a journal entry; only a camera photo finishes the quest (§7).
+    if (photoPath == null) return;
+    _applyMealPhotos();
+  }
+
+  /// Completes meal quests whose photo count (and time windows) are met,
+  /// and shows the rest as partial, e.g. 1 of 2 photos.
+  void _applyMealPhotos() {
+    final tasks = quests;
+    final finished = <String>[];
+    for (final (index, task) in tasks.indexed) {
+      if (task['activityKind'] != 'meal_snap' ||
+          task['status'] == 'completed') {
+        continue;
+      }
+      final required = (task['photoCount'] as num?)?.toInt() ?? 1;
+      final matched = ActivityEvidence.mealPhotosMatched(
+        task,
+        mealCheckIns,
+        today,
+      );
+      if (matched >= required) {
+        finished.add(task['id'].toString());
+      } else if (matched > 0) {
+        tasks[index] = {...task, 'partial': matched / required};
       }
     }
+    _data['days'][today]['quests'] = tasks;
+    for (final id in finished) {
+      completeCard(id);
+    }
+    _save();
   }
 
   void recordFocusSession(JsonMap value) => _add('focusSessions', value);
@@ -583,6 +673,33 @@ class WellnessController extends ChangeNotifier {
             plannedMinutes >= ((task['delayMinutes'] as num?)?.toInt() ?? 5),
       );
     }
+  }
+
+  bool get cameraUnavailable => _data['cameraUnavailable'] == true;
+
+  /// Camera denied or missing: photo quests become check-off equivalents,
+  /// both in today's open quests and in cards drawn from now on (§7).
+  void markCameraUnavailable() {
+    if (cameraUnavailable) return;
+    _data['cameraUnavailable'] = true;
+    if (days[today] is Map) {
+      _data['days'][today]['quests'] = [
+        for (final task in quests)
+          if (task['activityKind'] != 'meal_snap' ||
+              task['status'] == 'completed')
+            task
+          else if (task['ladder'] != null)
+            // Keep the ladder step; it is simply checked off now.
+            ({...task}
+              ..remove('activityKind')
+              ..remove('photoCount')
+              ..remove('photoWindows'))
+          else
+            ({...task, ..._photoFreeMealQuest}..remove('activityKind')),
+      ];
+    }
+    _refreshDraft();
+    _save();
   }
 
   /// Minutes until another Habit Swap can be logged (one per craving moment).
@@ -827,7 +944,14 @@ class WellnessController extends ChangeNotifier {
             raw['partial'] = ((ratio.clamp(0, .99) * 100).floor()) / 100;
           }
         } else if (completed && task['activityKind'] == 'meal_snap') {
-          raw['validationInvalidated'] = !mealDays.contains(entry.key);
+          raw['validationInvalidated'] =
+              !mealDays.contains(entry.key) ||
+              ActivityEvidence.mealPhotosMatched(
+                    task,
+                    mealCheckIns,
+                    entry.key,
+                  ) <
+                  ((task['photoCount'] as num?)?.toInt() ?? 1);
         }
       }
     }
@@ -871,6 +995,11 @@ class WellnessController extends ChangeNotifier {
 }
 
 const maxCommunityPostLength = 280;
+const _photoFreeMealQuest = {
+  'catalogId': 'fruit-veg',
+  'title': 'Tambahkan buah atau sayur',
+  'description': 'Satu porsi di salah satu makanmu hari ini.',
+};
 const habitSwapCooldown = Duration(minutes: 10);
 
 /// Above this average speed a session was most likely in a vehicle.

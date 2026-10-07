@@ -14,7 +14,7 @@ IconData questIcon(Map<String, dynamic> task) =>
       'delay' => Icons.timer_outlined,
       'habit_swap' => Icons.swap_horiz_rounded,
       'water' || 'water-glass' => Icons.water_drop_rounded,
-      'meal_snap' => Icons.restaurant_rounded,
+      'meal_snap' || 'ladder-food' || 'Food' => Icons.restaurant_rounded,
       'ladder-energy' || 'Energy' => Icons.bedtime_rounded,
       'posture' || 'stand-break' => Icons.accessibility_new_rounded,
       'stretch' => Icons.sports_gymnastics_rounded,
@@ -29,6 +29,7 @@ IconData questIcon(Map<String, dynamic> task) =>
         'Energy' => Icons.bedtime_rounded,
         'Reduction' => Icons.timer_outlined,
         'Lifestyle' => Icons.water_drop_rounded,
+        'Food' => Icons.restaurant_rounded,
         _ => Icons.auto_awesome_rounded,
       },
     };

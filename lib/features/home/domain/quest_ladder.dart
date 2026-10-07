@@ -1,7 +1,7 @@
 import 'package:youwell/core/types/json_map.dart';
 
 /// Graded, rule-based quest ladders (no ML). Each category keeps its own step;
-/// the step decides which ladder quest appears on every daily card.
+/// the step decides which quest of that category appears on a daily card.
 class LadderRung {
   const LadderRung({
     required this.title,
@@ -11,6 +11,9 @@ class LadderRung {
     this.targetMeters,
     this.delayMinutes,
     this.waterMl,
+    this.photoCount,
+    this.photoWindows,
+    this.anytimeTitle,
     this.strenuous = false,
   });
   final String title, description;
@@ -18,61 +21,77 @@ class LadderRung {
   final String? activityKind;
   final int? targetMeters, delayMinutes, waterMl;
 
+  /// Meal photos needed (camera only). With [photoWindows], photo i must be
+  /// taken between hour `start` (inclusive) and `end` (exclusive).
+  final int? photoCount;
+  final List<List<int>>? photoWindows;
+
+  /// Same-step quest without time windows, used when a window has already
+  /// passed when today's cards are made (e.g. breakfast after 10.00).
+  final String? anytimeTitle;
+
   /// Shows "berhenti jika pusing atau nyeri" on the quest.
   final bool strenuous;
 }
 
 const ladderLabels = {
   'Body': 'Gerak',
+  'Food': 'Makan',
+  'Lifestyle': 'Hidrasi',
   'Energy': 'Istirahat',
   'Reduction': 'Jeda rokok/vape',
-  'Lifestyle': 'Hidrasi',
 };
 
 /// Low-impact users never enter the running part of the Body ladder.
 const lowImpactBodyMax = 4;
 
+/// Walk/run quests count GPS distance only; time alone never finishes them.
 const ladders = <String, List<LadderRung>>{
   'Body': [
     LadderRung(
-      title: 'Jalan santai 5 menit',
-      description: 'Berjalan dengan ritmemu sendiri.',
+      title: 'Jalan 400 m',
+      description: 'Sekitar 5 menit. Jarak dihitung lewat GPS.',
       durationMinutes: 5,
       activityKind: 'walk',
+      targetMeters: 400,
     ),
     LadderRung(
-      title: 'Jalan 10 menit',
-      description: 'Pilih rute yang aman dan nyaman.',
+      title: 'Jalan 800 m',
+      description: 'Sekitar 10 menit. Jarak dihitung lewat GPS.',
       durationMinutes: 10,
       activityKind: 'walk',
+      targetMeters: 800,
     ),
     LadderRung(
-      title: 'Jalan cepat 15 menit',
-      description: 'Sedikit lebih cepat, masih bisa bicara.',
+      title: 'Jalan cepat 1,2 km',
+      description: 'Sekitar 15 menit, masih bisa sambil bicara.',
       durationMinutes: 15,
       activityKind: 'walk',
+      targetMeters: 1200,
       strenuous: true,
     ),
     LadderRung(
       title: 'Jalan 1,5 km',
-      description: 'Sekitar 20 menit. Tanpa GPS, dihitung dari waktu.',
+      description: 'Sekitar 20 menit dengan ritmemu sendiri.',
       durationMinutes: 20,
       activityKind: 'walk',
       targetMeters: 1500,
       strenuous: true,
     ),
     LadderRung(
-      title: 'Interval jalan-lari × 5',
-      description: '1 menit lari pelan, 2 menit jalan. Ulangi 5 kali.',
-      durationMinutes: 15,
+      title: 'Interval jalan-lari 2 km',
+      description: '1 menit lari pelan, 2 menit jalan, sampai 2 km.',
+      durationMinutes: 20,
       activityKind: 'run',
+      targetMeters: 2000,
       strenuous: true,
     ),
     LadderRung(
-      title: 'Interval jalan-lari × 8',
-      description: '1 menit lari pelan, 2 menit jalan. Ulangi 8 kali.',
-      durationMinutes: 24,
+      title: 'Interval jalan-lari 2,5 km',
+      description: '1 menit lari pelan, 2 menit jalan, sampai 2,5 km.',
+      durationMinutes: 25,
       activityKind: 'run',
+      targetMeters: 2500,
       strenuous: true,
     ),
     LadderRung(
@@ -108,35 +127,128 @@ const ladders = <String, List<LadderRung>>{
       strenuous: true,
     ),
   ],
+  // Meal quests add, never restrict: no calories, weights, or bans.
+  'Food': [
+    LadderRung(
+      title: 'Sarapan sebelum 10.00',
+      description: 'Foto sarapanmu, apa saja boleh.',
+      durationMinutes: 5,
+      activityKind: 'meal_snap',
+      photoCount: 1,
+      photoWindows: [
+        [4, 10],
+      ],
+      anytimeTitle: 'Tambah 1 porsi buah atau sayur',
+    ),
+    LadderRung(
+      title: 'Makan siang tepat waktu',
+      description: 'Foto makan siangmu sebelum 14.00.',
+      durationMinutes: 5,
+      activityKind: 'meal_snap',
+      photoCount: 1,
+      photoWindows: [
+        [10, 14],
+      ],
+      anytimeTitle: 'Tambah 1 porsi buah atau sayur',
+    ),
+    LadderRung(
+      title: 'Tambah 1 porsi buah atau sayur',
+      description: 'Foto porsinya di salah satu makanmu.',
+      durationMinutes: 5,
+      activityKind: 'meal_snap',
+      photoCount: 1,
+    ),
+    LadderRung(
+      title: 'Sarapan & makan siang tepat waktu',
+      description: 'Foto sarapan sebelum 10.00 dan makan siang sebelum 14.00.',
+      durationMinutes: 10,
+      activityKind: 'meal_snap',
+      photoCount: 2,
+      photoWindows: [
+        [4, 10],
+        [10, 14],
+      ],
+      anytimeTitle: '2 porsi buah atau sayur hari ini',
+    ),
+    LadderRung(
+      title: '2 porsi buah atau sayur hari ini',
+      description: 'Foto tiap porsinya.',
+      durationMinutes: 10,
+      activityKind: 'meal_snap',
+      photoCount: 2,
+    ),
+    LadderRung(
+      title: 'Ganti 1 minuman manis dengan air putih',
+      description: 'Foto air putih yang kamu pilih.',
+      durationMinutes: 5,
+      activityKind: 'meal_snap',
+      photoCount: 1,
+    ),
+    LadderRung(
+      title: 'Makan 3 kali dengan jam teratur',
+      description: 'Foto pagi (sebelum 10.00), siang (10–15), malam (17–21).',
+      durationMinutes: 15,
+      activityKind: 'meal_snap',
+      photoCount: 3,
+      photoWindows: [
+        [4, 10],
+        [10, 15],
+        [17, 21],
+      ],
+      anytimeTitle: '3 porsi buah atau sayur hari ini',
+    ),
+    LadderRung(
+      title: '1 piring "Isi Piringku"',
+      description: 'Setengah piring sayur dan buah. Foto piringmu.',
+      durationMinutes: 10,
+      activityKind: 'meal_snap',
+      photoCount: 1,
+    ),
+    LadderRung(
+      title: '3 porsi buah atau sayur hari ini',
+      description: 'Foto tiap porsinya.',
+      durationMinutes: 15,
+      activityKind: 'meal_snap',
+      photoCount: 3,
+    ),
+    LadderRung(
+      title: '2 piring "Isi Piringku" hari ini',
+      description: 'Setengah piring sayur dan buah, dua kali makan.',
+      durationMinutes: 20,
+      activityKind: 'meal_snap',
+      photoCount: 2,
+    ),
+  ],
+  // Asked about last night: putting the phone down needs no tap at bedtime.
   'Energy': [
     LadderRung(
-      title: 'Layar off 10 menit sebelum tidur',
-      description: 'Taruh HP sebentar sebelum memejamkan mata.',
+      title: 'Semalam: layar off 10 menit sebelum tidur',
+      description: 'Centang hari ini kalau semalam kamu menaruh HP dulu.',
       durationMinutes: 10,
     ),
     LadderRung(
-      title: 'Layar off 15 menit sebelum tidur',
+      title: 'Semalam: layar off 15 menit sebelum tidur',
       description: 'Ganti scroll dengan hal yang menenangkan.',
       durationMinutes: 15,
     ),
     LadderRung(
-      title: 'Layar off 20 menit sebelum tidur',
+      title: 'Semalam: layar off 20 menit sebelum tidur',
       description: 'Redupkan lampu dan beri tubuh tanda istirahat.',
       durationMinutes: 20,
     ),
     LadderRung(
-      title: 'Layar off 30 menit sebelum tidur',
+      title: 'Semalam: layar off 30 menit sebelum tidur',
       description: 'Isi dengan stretching, baca, atau musik pelan.',
       durationMinutes: 30,
     ),
     LadderRung(
-      title: 'Layar off 45 menit sebelum tidur',
-      description: 'Taruh HP di luar jangkauan tempat tidur.',
+      title: 'Semalam: layar off 45 menit sebelum tidur',
+      description: 'HP ditaruh di luar jangkauan tempat tidur.',
       durationMinutes: 45,
     ),
     LadderRung(
-      title: 'Layar off 60 menit & jam tidur tetap',
-      description: 'Tidur di jam yang kurang lebih sama seperti kemarin.',
+      title: 'Semalam: layar off 60 menit & jam tidur tetap',
+      description: 'Tidur di jam yang kurang lebih sama seperti biasanya.',
       durationMinutes: 60,
     ),
   ],
@@ -219,9 +331,16 @@ const ladders = <String, List<LadderRung>>{
   ],
 };
 
-List<String> ladderCategories({required bool reduction}) => reduction
-    ? const ['Body', 'Energy', 'Reduction']
-    : const ['Body', 'Energy', 'Lifestyle'];
+/// Healthy-living categories a card can draw from (§2).
+const healthyCategories = ['Body', 'Food', 'Lifestyle', 'Energy'];
+
+/// Every category with a ladder for this path: all healthy categories, plus
+/// Jeda (always on a card) for the smoking/vaping path.
+List<String> ladderCategories({required bool reduction}) =>
+    reduction ? const ['Reduction', ...healthyCategories] : healthyCategories;
+
+/// Ladder quests per card: 3 random healthy categories, or Jeda + 2 random.
+const ladderQuestsPerCard = 3;
 
 int ladderMax(String category, {required bool lowImpact}) {
   final length = ladders[category]!.length;
@@ -229,15 +348,20 @@ int ladderMax(String category, {required bool lowImpact}) {
 }
 
 /// The rule from the proposal (§4), evaluated per category every 7 days.
+/// Days a category must be done in the week before a step up is offered.
+/// Categories rotate across cards, so this is 3 rather than 4 (§8).
+const minCardDaysToStepUp = 3;
+
 int nextStep(
   int current,
   int maxStep, {
   required double completion,
+  required int cardDays,
   required int heavyCount,
   required int inactiveDays,
 }) {
   if (inactiveDays >= 5) return (current - 1).clamp(1, maxStep);
-  if (completion >= .8 && heavyCount == 0) {
+  if (cardDays >= minCardDaysToStepUp && completion >= .8 && heavyCount == 0) {
     return (current + 1).clamp(1, maxStep);
   }
   if (completion < .5 || heavyCount >= 2) {
@@ -273,6 +397,7 @@ LadderReview reviewLadder({
       current,
       maxStep,
       completion: 0,
+      cardDays: 0,
       heavyCount: 0,
       inactiveDays: inactiveDays,
     );
@@ -302,10 +427,13 @@ LadderReview reviewLadder({
   );
   final completion = score / total;
   final heavy = weekQuests.where((task) => task['effort'] == 'berat').length;
+  // Days on which a card (and so this ladder quest) was taken.
+  final cardDays = weekQuests.map((task) => task['day']).toSet().length;
   final step = nextStep(
     current,
     maxStep,
     completion: completion,
+    cardDays: cardDays,
     heavyCount: heavy,
     inactiveDays: inactiveDays,
   );
@@ -327,11 +455,15 @@ LadderReview reviewLadder({
           : 'Turun satu anak tangga karena $summary. Biar lebih pas dulu.',
     );
   }
+  final ready = completion >= .8 && heavy == 0;
   return LadderReview(
     step: current,
     change: 'hold',
-    reason: current == maxStep && completion >= .8 && heavy == 0
+    reason: ready && current == maxStep
         ? 'Kamu sudah di anak tangga teratas. $summary.'
+        : ready
+        ? 'Tetap dulu: $label dikerjakan $cardDays kali minggu ini. Naik butuh '
+              'minimal $minCardDaysToStepUp kali.'
         : 'Tetap di anak tangga ini: $summary.',
   );
 }

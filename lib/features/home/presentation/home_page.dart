@@ -4,6 +4,7 @@ import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/companion/domain/companion_rewards.dart';
 import 'package:youwell/features/companion/presentation/companion_page.dart';
 import 'package:youwell/features/companion/presentation/mobile_companion.dart';
+import 'package:youwell/features/home/domain/daily_card_generator.dart';
 import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/reduction/presentation/reduction_support_page.dart';
 import 'package:youwell/shared/widgets/game_widgets.dart';
@@ -35,6 +36,20 @@ class HomePage extends StatelessWidget {
     final dayNumber = started == null
         ? 1
         : controller.now.difference(started).inDays + 1;
+    Widget questCard(Map<String, dynamic> task) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _QuestCard(
+        task: task,
+        onComplete: switch (task['activityKind']) {
+          null => () => controller.completeCard(task['id'].toString()),
+          'delay' ||
+          'habit_swap' => () => openReductionSupport(context, controller),
+          _ => onOpenActivity,
+        },
+        onRate: (effort) =>
+            controller.rateQuestEffort(task['id'].toString(), effort),
+      ),
+    );
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
@@ -62,23 +77,16 @@ class HomePage extends StatelessWidget {
         else ...[
           _FullDayMeter(controller: controller),
           const SizedBox(height: 14),
-          for (final task in controller.quests)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _QuestCard(
-                task: task,
-                onComplete: switch (task['activityKind']) {
-                  null => () => controller.completeCard(task['id'].toString()),
-                  'delay' || 'habit_swap' => () => openReductionSupport(
-                    context,
-                    controller,
-                  ),
-                  _ => onOpenActivity,
-                },
-                onRate: (effort) =>
-                    controller.rateQuestEffort(task['id'].toString(), effort),
-              ),
-            ),
+          for (final task in controller.coreQuests) questCard(task),
+          if (controller.canDrawBonusCard) ...[
+            const SizedBox(height: 6),
+            _BonusOffer(controller: controller),
+          ],
+          if (controller.bonusQuests.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const SectionTitle('Kartu Bonus', icon: Icons.star_rounded),
+            for (final task in controller.bonusQuests) questCard(task),
+          ],
         ],
         if (controller.reduction) ...[
           const SizedBox(height: 14),
@@ -118,7 +126,7 @@ class _PlayerCardState extends State<_PlayerCard> {
     final name =
         const {'plant': 'Mori', 'cat': 'Milo', 'cloud': 'Awan'}[kind] ?? 'Mori';
     final level = controller.level;
-    final inLevel = controller.xp % 100;
+
     final next = companionUnlocks
         .where((item) => item.level > level)
         .firstOrNull;
@@ -173,10 +181,10 @@ class _PlayerCardState extends State<_PlayerCard> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    XpBar(value: inLevel / 100),
+                    XpBar(value: controller.levelProgress),
                     const SizedBox(height: 4),
                     Text(
-                      '${100 - inLevel} XP lagi ke Level ${level + 1}',
+                      '${controller.xpToNextLevel} XP lagi ke Level ${level + 1}',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -326,8 +334,9 @@ class _TodayHeader extends StatelessWidget {
   final WellnessController controller;
   @override
   Widget build(BuildContext context) {
-    final total = controller.quests.length;
-    final done = controller.completedCards.length;
+    final core = controller.coreQuests;
+    final total = core.length;
+    final done = core.where((task) => task['status'] == 'completed').length;
     return SectionTitle(
       'Misi hari ini',
       trailing: total == 0
@@ -350,8 +359,9 @@ class _FullDayMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final total = controller.quests.length;
-    final done = controller.completedCards.length;
+    final core = controller.coreQuests;
+    final total = core.length;
+    final done = core.where((task) => task['status'] == 'completed').length;
     if (total == 0) return const SizedBox.shrink();
     final full = done == total;
     return Column(
@@ -383,6 +393,48 @@ class _FullDayMeter extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Optional extra card once today's missions are done (max. once a day).
+class _BonusOffer extends StatelessWidget {
+  const _BonusOffer({required this.controller});
+  final WellnessController controller;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return GameCard(
+      color: c.xpSoft,
+      borderColor: c.xp,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.star_rounded, color: c.onXp, size: 28),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Masih semangat? Ada Kartu Bonus',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '3 misi ringan, masing-masing +$bonusQuestXp XP. Opsional, sekali sehari.',
+            style: TextStyle(color: c.text, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          ChunkyButton(
+            label: 'Ambil Kartu Bonus',
+            icon: Icons.style_rounded,
+            onPressed: controller.drawBonusCard,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -502,6 +554,7 @@ class LadderOfferCard extends StatelessWidget {
 
 const _shortLadder = {
   'Body': 'Gerak',
+  'Food': 'Makan',
   'Energy': 'Istirahat',
   'Reduction': 'Jeda',
   'Lifestyle': 'Hidrasi',
@@ -629,7 +682,9 @@ class _QuestCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${(partial * 100).round()}% tercapai',
+                    task['activityKind'] == 'meal_snap'
+                        ? '${(partial * ((task['photoCount'] as num?) ?? 1)).round()}/${task['photoCount'] ?? 1} foto'
+                        : '${(partial * 100).round()}% tercapai',
                     style: TextStyle(
                       color: c.amber,
                       fontSize: 12.5,
@@ -639,6 +694,8 @@ class _QuestCard extends StatelessWidget {
                 ],
               ),
             ],
+            if (kind == 'meal_snap' && !done)
+              _Note(icon: Icons.photo_camera_rounded, text: _photoRule(task)),
             if (task['strenuous'] == true && !done)
               _Note(
                 icon: Icons.health_and_safety_outlined,
@@ -657,6 +714,27 @@ class _QuestCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Foto sebelum 10.00", "2 foto", or "Foto 10.00–14.00 dan 17.00–21.00".
+String _photoRule(Map<String, dynamic> task) {
+  final count = (task['photoCount'] as num?)?.toInt() ?? 1;
+  final windows = (task['photoWindows'] as List?)
+      ?.map((window) => (window as List).cast<num>())
+      .toList();
+  String hour(num h) => '${h.toInt().toString().padLeft(2, '0')}.00';
+  if (windows == null || windows.isEmpty) {
+    return count > 1
+        ? 'Butuh $count foto dari kamera.'
+        : 'Butuh 1 foto dari kamera.';
+  }
+  final parts = [
+    for (final window in windows)
+      window[0] <= 4
+          ? 'sebelum ${hour(window[1])}'
+          : '${hour(window[0])}–${hour(window[1])}',
+  ];
+  return 'Foto ${parts.join(', ')}.';
 }
 
 class _Note extends StatelessWidget {

@@ -35,6 +35,7 @@ class AppColors extends ThemeExtension<AppColors> {
     this.energy = const Color(0xff7c3aed),
     this.reduction = const Color(0xffea580c),
     this.lifestyle = const Color(0xff0284c7),
+    this.food = const Color(0xffc2620a),
   });
   final Color canvas,
       surface,
@@ -61,7 +62,8 @@ class AppColors extends ThemeExtension<AppColors> {
       body,
       energy,
       reduction,
-      lifestyle;
+      lifestyle,
+      food;
 
   static const light = AppColors(
     canvas: brandCream,
@@ -139,6 +141,7 @@ class AppColors extends ThemeExtension<AppColors> {
     energy: Color(0xffce82ff),
     reduction: Color(0xffff6b6b),
     lifestyle: Color(0xff49c0f8),
+    food: Color(0xffffa94d),
   );
 
   /// Color for a quest category (Body, Energy, Reduction, Lifestyle).
@@ -147,6 +150,7 @@ class AppColors extends ThemeExtension<AppColors> {
     'Energy' => energy,
     'Reduction' => reduction,
     'Lifestyle' => lifestyle,
+    'Food' => food,
     _ => accent,
   };
 
