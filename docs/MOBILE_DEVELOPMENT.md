@@ -46,7 +46,17 @@ Untuk melihat dan mencoba UI mobile tanpa Android SDK atau Mac, jalankan dari
 PowerShell di root project:
 
 ```powershell
-flutter run -d chrome --dart-define=MOBILE_PREVIEW=true --dart-define-from-file=config/env/development.example.json
+.\scripts\preview-mobile.cmd
+```
+
+Tunggu sampai terminal menampilkan `lib\main.dart is being served`, lalu buka
+<http://localhost:8080>. Script memakai port tetap agar alamat tidak berubah
+setiap dijalankan. Kompilasi pertama dapat memerlukan sekitar 1–2 menit.
+
+Port lain dapat dipilih bila `8080` sedang dipakai:
+
+```powershell
+.\scripts\preview-mobile.cmd 8081
 ```
 
 Preview membuka alur mobile yang sama (onboarding, Home, Aktivitas, Perjalanan,
