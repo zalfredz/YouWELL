@@ -65,6 +65,16 @@ bash scripts/preview.sh
 bash scripts/run-mobile.sh -d "NAMA-ATAU-ID-DEVICE"
 ```
 
+Di Windows, preview UI mobile dapat dibuka pada alamat localhost yang tetap:
+
+```powershell
+.\scripts\preview-mobile.cmd
+```
+
+Setelah pesan `lib\main.dart is being served` muncul, buka
+<http://localhost:8080>. Tekan `r` di terminal untuk hot reload dan `q` untuk
+mematikan server. Kompilasi pertama dapat memerlukan sekitar 1–2 menit.
+
 Untuk hot reload, jalankan dari VS Code/terminal lalu tekan `r`, atau simpan
 file saat sesi debug VS Code aktif. Push GitHub tidak diperlukan untuk melihat
 perubahan lokal.

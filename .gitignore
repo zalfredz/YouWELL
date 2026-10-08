@@ -25,3 +25,5 @@ config/env/*.json
 .tools/
 node_modules/
 test-results/
+# Widget Preview related
+.widget_preview/

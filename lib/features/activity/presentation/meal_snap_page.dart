@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:youwell/application/wellness_controller.dart';
@@ -71,12 +70,32 @@ class _MealSnapPageState extends State<MealSnapPage> {
     if (photo == null || _saving) return;
     setState(() => _saving = true);
     try {
-      final path = await MealPhotoStore.save(photo);
-      if (path == null) {
-        throw const FormatException('Penyimpanan foto tidak tersedia.');
+      if (kIsWeb) {
+        // On the web the photo is proof of an in-the-moment check-in only.
+        // Keep no image bytes or path after submission.
+        widget.controller.recordMeal(photoCaptured: true);
+      } else {
+        final path = await MealPhotoStore.save(photo);
+        if (path == null) {
+          throw const FormatException('Penyimpanan foto tidak tersedia.');
+        }
+        widget.controller.recordMeal(photoPath: path);
       }
-      widget.controller.recordMeal(photoPath: path);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                kIsWeb
+                    ? 'Mantap! Meal Snap selesai. Fotonya tidak disimpan.'
+                    : 'Mantap! Meal Snap tersimpan di perangkatmu.',
+              ),
+            ),
+          );
+      }
     } catch (_) {
       if (mounted) {
         setState(() {

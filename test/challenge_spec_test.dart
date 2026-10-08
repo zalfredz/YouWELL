@@ -271,6 +271,17 @@ void main() {
       expect(controller.quests.single['status'], 'committed');
     });
 
+    test('Ephemeral web photo counts without storing a photo path', () {
+      final controller = withQuests([
+        breakfast(),
+      ], () => DateTime(2026, 10, 24, 8, 30));
+      controller.recordMeal(photoCaptured: true);
+
+      expect(controller.quests.single['status'], 'completed');
+      expect(controller.mealCheckIns.single['photoCaptured'], isTrue);
+      expect(controller.mealCheckIns.single, isNot(contains('photoPath')));
+    });
+
     test('Two-photo quest: 1 of 2 is partial', () {
       final controller = withQuests([
         quest(
