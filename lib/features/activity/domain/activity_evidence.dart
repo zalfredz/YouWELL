@@ -50,7 +50,8 @@ abstract final class ActivityEvidence {
     final required = (task['photoCount'] as num?)?.toInt() ?? 1;
     final times = [
       for (final row in meals)
-        if (row['day'] == day && row['photoPath'] is String)
+        if (row['day'] == day &&
+            (row['photoPath'] is String || row['photoCaptured'] == true))
           DateTime.tryParse(row['time']?.toString() ?? ''),
     ].whereType<DateTime>().toList()..sort();
     final windows = (task['photoWindows'] as List?)

@@ -601,15 +601,21 @@ class WellnessController extends ChangeNotifier {
     return WorkoutResult(completed: completed, partial: partial);
   }
 
-  void recordMeal({String? photoPath, String note = ''}) {
-    if (photoPath == null && note.trim().isEmpty) return;
+  void recordMeal({
+    String? photoPath,
+    bool photoCaptured = false,
+    String note = '',
+  }) {
+    final hasPhotoEvidence = photoPath != null || photoCaptured;
+    if (!hasPhotoEvidence && note.trim().isEmpty) return;
     _add('mealCheckIns', {
       if (photoPath != null) 'photoPath': photoPath,
+      if (hasPhotoEvidence) 'photoCaptured': true,
       'note': note.trim(),
     });
     _reconcileActivityEvidence(day: today);
     // A note is a journal entry; only a camera photo finishes the quest (§7).
-    if (photoPath == null) return;
+    if (!hasPhotoEvidence) return;
     _applyMealPhotos();
   }
 

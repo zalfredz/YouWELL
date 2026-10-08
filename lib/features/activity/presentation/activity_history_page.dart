@@ -133,6 +133,8 @@ class _HistoryTile extends StatelessWidget {
     final minutes = ((row['seconds'] as num?)?.toInt() ?? 0) ~/ 60;
     final meters = (row['meters'] as num?)?.toInt() ?? 0;
     final note = row['note']?.toString() ?? '';
+    final storedPhoto = row['photoPath'] is String;
+    final capturedOnly = row['photoCaptured'] == true && !storedPhoto;
     return GameCard(
       onTap: onTap,
       padding: const EdgeInsets.all(12),
@@ -169,7 +171,11 @@ class _HistoryTile extends StatelessWidget {
                 ),
                 Text(
                   meal
-                      ? (note.isEmpty ? 'Ketuk untuk lihat foto' : note)
+                      ? (note.isNotEmpty
+                            ? note
+                            : capturedOnly
+                            ? 'Check-in selesai · foto tidak disimpan'
+                            : 'Ketuk untuk lihat foto')
                       : '$minutes menit · '
                             '${meters >= 1000 ? '${(meters / 1000).toStringAsFixed(2)} km' : '$meters m'}'
                             '${row['countsForQuest'] == false ? ' · tidak dihitung' : ''}',
@@ -263,7 +269,9 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
         title: const Text('Hapus catatan ini?'),
         content: Text(
           _meal
-              ? 'Catatan dan foto lokal dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
+              ? row['photoPath'] is String
+                    ? 'Catatan dan foto lokal dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
+                    : 'Catatan Meal Snap dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
               : 'Sesi dihapus permanen dan tidak lagi menjadi bukti evaluasi tangga atau quest penelitian. XP tetap tersimpan.',
         ),
         actions: [
@@ -329,6 +337,26 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
                                 ),
                               ),
                             ),
+                    ),
+                  ),
+                if (_meal &&
+                    row['photoCaptured'] == true &&
+                    row['photoPath'] is! String)
+                  GameCard(
+                    color: context.colors.reduction.withValues(alpha: .1),
+                    borderColor: context.colors.reduction.withValues(
+                      alpha: .35,
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.check_circle_outline_rounded),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Meal Snap selesai. Foto hanya dipakai saat check-in dan tidak disimpan.',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 if (!_meal) ...[
