@@ -11,7 +11,7 @@ class WellnessProgramCard extends StatelessWidget {
   });
   final WellnessController controller;
 
-  /// Home shows only where you are; Perjalanan explains the week.
+  /// Home shows the day; Perjalanan also shows the week and final recap.
   final bool compact;
 
   @override
@@ -25,14 +25,6 @@ class WellnessProgramCard extends StatelessWidget {
     ];
     final questDays = summaries.fold(0, (sum, row) => sum + row.questDayCount);
     final quests = summaries.fold(0, (sum, row) => sum + row.questsDone);
-    final phase = controller.reduction
-        ? switch (program.week) {
-            1 => 'Siapkan kegiatan yang cocok',
-            2 => 'Ubah satu momen rutin',
-            3 => 'Ulangi yang membantu',
-            _ => 'Jaga ritme yang cocok',
-          }
-        : program.phase;
     if (compact && program.complete) {
       // After day 28 the app keeps working; Home only notes the recap.
       return GameCard(
@@ -58,24 +50,9 @@ class WellnessProgramCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Hari ${program.dayNumber}/28',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    phase,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: c.accent,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              'Hari ${program.dayNumber}/28',
+              style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 10),
             LinearProgressIndicator(
@@ -122,17 +99,6 @@ class WellnessProgramCard extends StatelessWidget {
                 ),
               ),
           ] else ...[
-            Text(
-              phase,
-              style: TextStyle(color: c.accent, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              controller.reduction
-                  ? 'Siapkan kegiatan yang cocok dan coba saat keinginan muncul.'
-                  : program.message,
-            ),
-            const SizedBox(height: 12),
             LinearProgressIndicator(
               value: program.dayNumber / 28,
               color: c.accent,
