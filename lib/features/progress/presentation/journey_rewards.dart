@@ -15,7 +15,7 @@ const badgeVisuals = <String, (IconData, String)>{
     'Aktif 4 hari dalam 7 hari',
   ),
   'hydration-7': (Icons.water_drop_rounded, 'Capai target minum 7 hari'),
-  'first-ladder': (Icons.stairs_rounded, 'Naik 1 anak tangga'),
+  'first-ladder': (Icons.stairs_rounded, 'Naik 1 level'),
 };
 
 /// Badges that apply to this user's path.

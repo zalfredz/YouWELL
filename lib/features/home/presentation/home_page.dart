@@ -218,11 +218,14 @@ class _PlayerCardState extends State<_PlayerCard> {
                     children: [
                       Icon(Icons.card_giftcard_rounded, color: c.reduction),
                       const SizedBox(width: 10),
+                      // One short line: long reward names never wrap.
                       Expanded(
                         child: Text(
                           next == null
-                              ? 'Semua hadiah terbuka. Lihat lemari'
-                              : 'Hadiah berikutnya: ${next.label} (Lv ${next.level})',
+                              ? 'Semua hadiah terbuka'
+                              : '${next.label} · Lv ${next.level}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w800,
@@ -265,7 +268,7 @@ class _LadderBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Siap naik anak tangga?',
+                    'Siap naik level?',
                     style: Theme.of(sheetContext).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 4),
@@ -314,7 +317,7 @@ class _LadderBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${offers.length} anak tangga siap naik',
+                  '${offers.length} kategori siap naik level',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -390,7 +393,7 @@ class _FullDayMeter extends StatelessWidget {
               child: Text(
                 full
                     ? 'Hari Penuh tercapai!'
-                    : 'Selesaikan semua untuk bonus Hari Penuh',
+                    : 'Bonus Hari Penuh',
                 style: TextStyle(
                   fontSize: 13.5,
                   color: full ? c.success : c.text,
@@ -521,7 +524,7 @@ class LadderOfferCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
-                  '${ladderLabels[category]} · anak tangga ${next - 1} → $next',
+                  '${ladderLabels[category]} · level ${next - 1} → $next',
                   style: TextStyle(
                     color: c.text,
                     fontSize: 12.5,

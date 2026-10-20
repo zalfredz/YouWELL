@@ -733,7 +733,7 @@ class WellnessController extends ChangeNotifier {
           'step': step,
           'reviewedOn': today,
           'change': 'start',
-          'reason': 'Mulai dari anak tangga $step sesuai tempo pilihanmu.',
+          'reason': 'Mulai dari level $step.',
         };
         continue;
       }
@@ -832,7 +832,7 @@ class WellnessController extends ChangeNotifier {
       _moments.add(
         RewardMoment(
           serial: ++rewardSerial,
-          ladder: '${ladderLabels[category] ?? category}: anak tangga $offer',
+          ladder: '${ladderLabels[category] ?? category}: level $offer',
           badges: _claimAchievements(),
         ),
       );

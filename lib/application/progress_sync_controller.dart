@@ -261,7 +261,7 @@ class ProgressSyncController extends ChangeNotifier {
         if (current == null) {
           _conflict(null);
           error =
-              'Salinan cloud tidak tersedia. Ekspor cadangan lokal atau pilih progres lokal.';
+              'Salinan cloud tidak tersedia. Pilih progres perangkat ini.';
           _notify();
           return;
         }

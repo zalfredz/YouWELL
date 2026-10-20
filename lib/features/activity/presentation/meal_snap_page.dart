@@ -147,11 +147,6 @@ class _MealSnapPageState extends State<MealSnapPage> {
           'Catat makanmu',
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Jurnal visual pribadi. Tanpa hitung kalori atau penilaian makanan.',
-          style: TextStyle(color: context.colors.muted),
-        ),
         const SizedBox(height: 24),
         TextButton.icon(
           onPressed: _saving ? null : _noteOnly,

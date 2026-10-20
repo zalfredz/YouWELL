@@ -379,17 +379,14 @@ class _WorkoutPageState extends State<WorkoutPage> with WidgetsBindingObserver {
               'Gerak sesuai ritmemu',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
             ),
-            const SizedBox(height: 6),
-            Text(
-              _timed
-                  ? 'Di aplikasi web, misi jalan/lari dihitung dari lama sesi. '
-                        'Setelah mulai, boleh kunci layar; waktunya tetap '
-                        'berjalan. Berhenti jika pusing atau nyeri.'
-                  : 'Setelah mulai, boleh kunci layar atau buka aplikasi lain; '
-                        'jarak tetap dihitung. Lokasi hanya dipakai selama sesi '
-                        'dan rute tidak disimpan. Berhenti jika pusing atau nyeri.',
-              style: TextStyle(color: context.colors.muted, height: 1.4),
-            ),
+            // GPS sessions keep the promise that routes are never stored.
+            if (!_timed) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Boleh kunci layar. Rute tidak disimpan.',
+                style: TextStyle(color: context.colors.muted, height: 1.4),
+              ),
+            ],
             const SizedBox(height: 24),
             SegmentedButton<String>(
               segments: const [

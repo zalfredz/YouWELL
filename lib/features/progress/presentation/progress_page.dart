@@ -301,11 +301,6 @@ class _LadderRow extends StatelessWidget {
             'Sekarang: ${rung.titleFor(timed: timed)}',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-          if (entry?['reason'] != null)
-            Text(
-              entry!['reason'].toString(),
-              style: TextStyle(color: c.muted, fontSize: 12.5),
-            ),
         ],
       ),
     );

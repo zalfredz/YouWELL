@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:youwell/application/app_auth_controller.dart';
 import 'package:youwell/application/progress_sync_controller.dart';
-import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/home/domain/progress_calculator.dart';
 import 'package:youwell/shared/widgets/game_widgets.dart';
@@ -103,9 +101,7 @@ class ProgressSyncPanel extends StatelessWidget {
                 ),
                 _SnapshotLine(label: 'Cloud', payload: sync.conflict?.payload),
                 const SizedBox(height: 8),
-                const Text(
-                  'Tidak digabung otomatis. Salinan lokal sebelum penggantian disimpan sebagai cadangan pemulihan pada perangkat ini.',
-                ),
+                const Text('Pilih salinan yang mau dilanjutkan.'),
                 const SizedBox(height: 8),
                 FilledButton(
                   onPressed: sync.conflict == null
@@ -124,41 +120,6 @@ class ProgressSyncPanel extends StatelessWidget {
                       : sync.syncNow,
                   icon: const Icon(Icons.sync_rounded),
                   label: const Text('Sinkron sekarang'),
-                ),
-              if (sync.recovery != null)
-                TextButton.icon(
-                  onPressed: () {
-                    // Recovery exports never include local filesystem handles.
-                    final raw =
-                        jsonDecode(sync.recovery!) as Map<String, dynamic>;
-                    for (final row
-                        in (raw['mealCheckIns'] as List).whereType<Map>()) {
-                      row.remove('photoPath');
-                    }
-                    platform.download(
-                      'youwell-pemulihan-lokal.json',
-                      utf8.encode(
-                        const JsonEncoder.withIndent('  ').convert(raw),
-                      ),
-                      'application/json',
-                    );
-                  },
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Ekspor cadangan pemulihan'),
-                ),
-              if (sync.cloudRecovery != null)
-                TextButton.icon(
-                  onPressed: () => platform.download(
-                    'youwell-cloud-sebelum-diganti.json',
-                    utf8.encode(
-                      const JsonEncoder.withIndent(
-                        '  ',
-                      ).convert(jsonDecode(sync.cloudRecovery!)),
-                    ),
-                    'application/json',
-                  ),
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Ekspor cloud sebelum diganti'),
                 ),
             ],
           ),

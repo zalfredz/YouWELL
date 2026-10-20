@@ -69,7 +69,7 @@ void main() {
     expect(sim.controller.capacity['Body']!['change'], 'down');
     expect(
       sim.controller.capacity['Body']!['reason'],
-      startsWith('Turun satu anak tangga karena 2 dari 7'),
+      startsWith('Turun satu level karena 2 dari 7'),
     );
   });
 

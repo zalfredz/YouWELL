@@ -430,7 +430,7 @@ LadderReview reviewLadder({
       step: step,
       change: 'rest',
       reason: step < current
-          ? 'Selamat datang lagi. $label turun satu anak tangga supaya mulai '
+          ? 'Selamat datang lagi. $label turun satu level supaya mulai '
                 'lagi terasa ringan.'
           : 'Selamat datang lagi. Mulai lagi dari langkah yang ringan.',
     );
@@ -439,7 +439,7 @@ LadderReview reviewLadder({
     return LadderReview(
       step: current,
       change: 'hold',
-      reason: 'Belum ada quest $label minggu ini, jadi anak tangga tetap.',
+      reason: 'Belum ada quest $label minggu ini, jadi level tetap.',
     );
   }
   final total = weekQuests.length;
@@ -472,7 +472,7 @@ LadderReview reviewLadder({
     return LadderReview(
       step: step,
       change: 'down',
-      reason: 'Turun satu anak tangga karena $summary. Biar lebih pas dulu.',
+      reason: 'Turun satu level karena $summary. Biar lebih pas dulu.',
     );
   }
   final ready = completion >= .8;
@@ -480,10 +480,10 @@ LadderReview reviewLadder({
     step: current,
     change: 'hold',
     reason: ready && current == maxStep
-        ? 'Kamu sudah di anak tangga teratas. $summary.'
+        ? 'Kamu sudah di level teratas. $summary.'
         : ready
         ? 'Tetap dulu: $label dikerjakan $cardDays kali minggu ini. Naik butuh '
               'minimal $minCardDaysToStepUp kali.'
-        : 'Tetap di anak tangga ini: $summary.',
+        : 'Tetap di level ini: $summary.',
   );
 }
