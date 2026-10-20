@@ -10,11 +10,20 @@ import 'package:youwell/shared/widgets/game_widgets.dart';
 /// coba" → "Saya sudah mencoba" → outcome now or later. No countdown. An
 /// open moment survives closing the page and is shown again on return.
 class HabitSwapPanel extends StatefulWidget {
-  const HabitSwapPanel({super.key, required this.controller, this.product});
+  const HabitSwapPanel({
+    super.key,
+    required this.controller,
+    this.product,
+    this.outcomeFor,
+  });
   final WellnessController controller;
 
   /// Preselected from "Saya ingin merokok/vape" on Home.
   final String? product;
+
+  /// Opens straight on "Setelah mencoba, apa yang terjadi?" for this moment
+  /// (from "Saya sudah mencoba" on Home).
+  final String? outcomeFor;
 
   @override
   State<HabitSwapPanel> createState() => _HabitSwapPanelState();
@@ -32,6 +41,7 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
   @override
   void initState() {
     super.initState();
+    _outcomeFor = widget.outcomeFor;
     _product = _products.length == 1
         ? _products.single
         : _products.contains(widget.product)
@@ -42,6 +52,16 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
   void _snack(String text) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(text)));
+
+  /// Each step ends on Home: the activity happens away from the app, and
+  /// Home is where the user comes back to.
+  void _backHome(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).maybePop();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   void _start() {
     final active = c.activeSwapMoment;
@@ -57,6 +77,10 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
       _custom.clear();
       _showAll = false;
     });
+    _backHome(
+      'Momen dimulai. Coba kegiatannya dulu, lalu tekan '
+      '"Saya sudah mencoba" di Home.',
+    );
   }
 
   Future<void> _addCustom() async {
@@ -119,7 +143,7 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
           row: row,
           onDone: (message) {
             setState(() => _outcomeFor = null);
-            if (message != null) _snack(message);
+            _backHome(message ?? 'Tercatat.');
           },
         );
       }
@@ -129,10 +153,10 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
         controller: c,
         moment: moment,
         onTried: (id) => setState(() => _outcomeFor = id),
-        onLater: () {
-          _snack('Momen disimpan. Buka Habit Swap lagi saat siap.');
-          Navigator.of(context).maybePop();
-        },
+        onLater: () => _backHome(
+          'Momen tetap tersimpan. Tekan "Saya sudah mencoba" di Home '
+          'setelah selesai.',
+        ),
         onCancel: () => setState(() {}),
       );
     }
@@ -400,7 +424,7 @@ class _ActiveMomentViewState extends State<_ActiveMomentView> {
       padding: const EdgeInsets.all(22),
       children: [
         Text(
-          'Momen sedang berjalan',
+          'Sedang mencoba',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 4),
@@ -482,7 +506,7 @@ class _ActiveMomentViewState extends State<_ActiveMomentView> {
         const SizedBox(height: 8),
         OutlinedButton(
           onPressed: widget.onLater,
-          child: const Text('Cek hasil nanti'),
+          child: const Text('Kembali ke Home'),
         ),
         const SizedBox(height: 8),
         TextButton(onPressed: _cancel, child: const Text('Batalkan momen ini')),

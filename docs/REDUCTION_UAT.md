@@ -33,7 +33,10 @@ Timer jeda, kenaikan durasi menunggu, dan lencana menit ditunda dihapus.
   langsung membuka bantuan. "Ubah pemicu & kegiatan" tidak mengubah momen lama.
 - Saat keinginan muncul: (keduanya: pilih produk) → "Coba lakukan satu
   kegiatan dulu" dengan pilihan pribadi di atas, "Lihat kegiatan lain",
-  "Tulis kegiatan sendiri" → "Saya akan coba" membuka momen. Momen terbuka
+  "Tulis kegiatan sendiri" → "Saya akan coba" membuka momen dan kembali ke
+  Home, karena kegiatannya dilakukan di luar aplikasi. Kartu Home menjadi
+  "Sedang mencoba" dengan "Saya sudah mencoba" dan "Batalkan". Setelah hasil
+  disimpan (apa pun pilihannya) aplikasi juga kembali ke Home. Momen terbuka
   tersimpan di HP saja, dilanjutkan saat kembali, bisa dibatalkan, dan tidak
   bisa terbuka dua kali. Tidak ada hitung mundur.
 - "Saya sudah mencoba" menyelesaikan misi Habit Swap (XP sekali per misi),

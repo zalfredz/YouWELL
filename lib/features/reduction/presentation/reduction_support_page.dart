@@ -13,6 +13,7 @@ void openReductionSupport(
   WellnessController controller, {
   int initialTab = 0,
   String? product,
+  String? outcomeFor,
 }) {
   Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -20,6 +21,7 @@ void openReductionSupport(
         controller: controller,
         initialTab: initialTab,
         product: product,
+        outcomeFor: outcomeFor,
       ),
     ),
   );
@@ -32,10 +34,11 @@ class ReductionSupportPage extends StatelessWidget {
     required this.controller,
     this.initialTab = 0,
     this.product,
+    this.outcomeFor,
   });
   final WellnessController controller;
   final int initialTab;
-  final String? product;
+  final String? product, outcomeFor;
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -118,6 +121,7 @@ class ReductionSupportPage extends StatelessWidget {
                             HabitSwapPanel(
                               controller: controller,
                               product: product,
+                              outcomeFor: outcomeFor,
                             ),
                             ReductionDiary(controller: controller),
                             ReductionProgress(controller: controller),
@@ -172,15 +176,8 @@ class ReductionEntryCard extends StatelessWidget {
             style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
-          if (controller.activeSwapMoment != null)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => openReductionSupport(context, controller),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Lanjutkan momen'),
-              ),
-            )
+          if (controller.activeSwapMoment case final moment?)
+            _ActiveMomentCard(controller: controller, moment: moment)
           else if (controller.nicotineProduct == null)
             SizedBox(
               width: double.infinity,
@@ -220,6 +217,85 @@ class ReductionEntryCard extends StatelessWidget {
             onPressed: () =>
                 openReductionSupport(context, controller, initialTab: 1),
             child: const Text('Catat konsumsi hari ini'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The open moment on Home: the user did the activity away from the app
+/// and reports back here, without having to find the Habit Swap page.
+class _ActiveMomentCard extends StatelessWidget {
+  const _ActiveMomentCard({required this.controller, required this.moment});
+  final WellnessController controller;
+  final Map<String, dynamic> moment;
+
+  Future<void> _cancel(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Batalkan momen ini?'),
+        content: const Text(
+          'Pakai ini jika momen dimulai tidak sengaja. Tidak ada yang dicatat.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Tidak'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Batalkan momen'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) controller.cancelSwapMoment();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.reduction.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.reduction.withValues(alpha: .35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sedang mencoba',
+            style: TextStyle(color: c.reduction, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            activityNames(moment).join(', '),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                final id = controller.reportSwapTried();
+                if (id != null) {
+                  openReductionSupport(context, controller, outcomeFor: id);
+                }
+              },
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Saya sudah mencoba'),
+            ),
+          ),
+          Center(
+            child: TextButton(
+              onPressed: () => _cancel(context),
+              child: const Text('Batalkan momen'),
+            ),
           ),
         ],
       ),

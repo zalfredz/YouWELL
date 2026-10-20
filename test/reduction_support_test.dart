@@ -87,17 +87,23 @@ void main() {
         expect(find.text('Mulai'), findsNothing);
         await tapIn(tester, 'Jalan santai');
         await tapIn(tester, 'Saya akan coba');
+        // Starting sends the user back Home to actually do the activity.
         expect(controller.activeSwapMoment, isNotNull);
         expect(controller.habitSwaps, isEmpty, reason: 'not tried yet');
+        expect(find.textContaining('Momen dimulai'), findsOneWidget);
+        expect(find.text('Coba lakukan satu kegiatan dulu'), findsNothing);
+        await tester.scrollUntilVisible(find.text('Sedang mencoba'), 150);
+        expect(find.text('Jalan santai'), findsOneWidget);
+
+        // Back from the activity: report it from Home, then the outcome.
         await tapIn(tester, 'Saya sudah mencoba');
         expect(controller.swapAttemptsToday, hasLength(1));
+        expect(find.text('Setelah mencoba, apa yang terjadi?'), findsOneWidget);
         await tapIn(tester, 'Akhirnya tetap merokok');
         await tapIn(tester, 'Simpan hasil');
         expect(controller.habitSwaps.single['outcome'], 'used');
         expect(find.textContaining('Mencoba tetap berarti'), findsOneWidget);
-
-        await tester.pageBack();
-        await tester.pumpAndSettle();
+        expect(find.text('Setelah mencoba, apa yang terjadi?'), findsNothing);
         await tester.scrollUntilVisible(
           find.text('1 kali mencoba kegiatan pengganti hari ini'),
           150,
