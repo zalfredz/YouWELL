@@ -5,13 +5,17 @@ import 'package:youwell/features/reduction/presentation/reduction_diary.dart';
 
 import 'support/sim.dart';
 
-Finder field(String label) => find.byWidgetPredicate(
-  (widget) => widget is TextField && widget.decoration?.labelText == label,
-);
+Future<void> tapTimes(WidgetTester tester, String label, int times) async {
+  for (var i = 0; i < times; i++) {
+    await tester.tap(find.bySemanticsLabel(label));
+    await tester.pump();
+  }
+}
 
 void main() {
   testWidgets(
-    'Daily totals require explicit values; zero and correction persist without XP',
+    'Daily totals are tapped in and saved; zero and correction persist '
+    'without XP',
     (tester) async {
       tester.view.physicalSize = const Size(393, 852);
       tester.view.devicePixelRatio = 1;
@@ -26,54 +30,47 @@ void main() {
           home: Scaffold(body: ReductionDiary(controller: c)),
         ),
       );
-      await tester.scrollUntilVisible(
-        find.text('Simpan total harian'),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Simpan total harian'));
-      await tester.pump();
       expect(c.nicotineDays, isEmpty);
-      await tester.scrollUntilVisible(
-        field('Total batang rokok'),
-        -150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.enterText(field('Total batang rokok'), '0');
-      await tester.enterText(field('Total sesi vape'), '4');
-      await tester.scrollUntilVisible(
-        find.byType(CheckboxListTile),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.byType(CheckboxListTile));
-      await tester.tap(find.text('Simpan total harian'));
+      expect(find.bySemanticsLabel(RegExp('belum diisi')), findsWidgets);
+
+      // Two separate counters; a vape session is never a cigarette.
+      await tapTimes(tester, 'Tambah satu sesi Vape', 4);
+      await tester.tap(find.text('Simpan total hari ini'));
       await tester.pump();
       expect(c.nicotineDay(c.today)!['cigarette'], 0);
       expect(c.nicotineDay(c.today)!['vape'], 4);
+      expect(find.text('Tercatat: 0 batang · 4 sesi'), findsOneWidget);
       expect(c.xp, 0);
-      await tester.scrollUntilVisible(
-        field('Total batang rokok'),
-        -150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.enterText(field('Total batang rokok'), '3');
-      await tester.scrollUntilVisible(
-        find.byType(CheckboxListTile),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.byType(CheckboxListTile));
-      await tester.tap(find.text('Simpan total harian'));
+
+      // Correcting the same day keeps one record.
+      await tapTimes(tester, 'Tambah satu batang Rokok', 3);
+      await tester.tap(find.text('Simpan total hari ini'));
       await tester.pump();
       expect(c.nicotineDays, hasLength(1));
       expect(c.nicotineDay(c.today)!['cigarette'], 3);
       expect(c.xp, 0);
+      expect(find.text('1 hari tercatat'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('Vape-only diary has sessions and no cigarette field', (
+  testWidgets('A saved zero reads as a day without, in green', (tester) async {
+    final sim = Sim();
+    await sim.start(path: 'reduction');
+    sim.controller.setNicotineProduct('cigarette');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ReductionDiary(controller: sim.controller)),
+      ),
+    );
+    await tester.tap(find.text('Simpan total hari ini'));
+    await tester.pump();
+    expect(sim.controller.nicotineDay(sim.controller.today)!['cigarette'], 0);
+    expect(find.text('Tercatat: 0 batang. Mantap!'), findsOneWidget);
+    expect(sim.controller.dayWithoutUse(sim.controller.today), isTrue);
+  });
+
+  testWidgets('Vape-only diary counts sessions and never cigarettes', (
     tester,
   ) async {
     final sim = Sim();
@@ -84,8 +81,9 @@ void main() {
         home: Scaffold(body: ReductionDiary(controller: sim.controller)),
       ),
     );
-    expect(field('Total batang rokok'), findsNothing);
-    expect(field('Total sesi vape'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tambah satu sesi'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('batang')), findsNothing);
+    expect(find.textContaining('batang'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
