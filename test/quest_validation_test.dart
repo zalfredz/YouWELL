@@ -151,7 +151,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Jalan santai'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Saya akan coba'));
+      await tester.tap(find.text('Saya akan coba (1)'));
       await tester.pumpAndSettle();
       expect(_status(controller, 'delay'), 'committed');
       await tester.tap(find.text('Saya sudah mencoba'));

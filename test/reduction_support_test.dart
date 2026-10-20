@@ -83,15 +83,15 @@ void main() {
         expect(controller.swapSetup('cigarette')!['activities'], ['walk']);
 
         // The craving flow puts personal picks first; no countdown.
-        expect(find.text('Coba lakukan satu kegiatan dulu'), findsOneWidget);
+        expect(find.text('Coba satu kegiatan dulu'), findsOneWidget);
         expect(find.text('Mulai'), findsNothing);
         await tapIn(tester, 'Jalan santai');
-        await tapIn(tester, 'Saya akan coba');
+        await tapIn(tester, 'Saya akan coba (1)');
         // Starting sends the user back Home to actually do the activity.
         expect(controller.activeSwapMoment, isNotNull);
         expect(controller.habitSwaps, isEmpty, reason: 'not tried yet');
         expect(find.textContaining('Momen dimulai'), findsOneWidget);
-        expect(find.text('Coba lakukan satu kegiatan dulu'), findsNothing);
+        expect(find.text('Coba satu kegiatan dulu'), findsNothing);
         await tester.scrollUntilVisible(find.text('Sedang mencoba'), 150);
         expect(find.text('Jalan santai'), findsOneWidget);
 

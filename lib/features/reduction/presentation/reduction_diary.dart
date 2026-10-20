@@ -3,6 +3,7 @@ import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/features/reduction/domain/reduction_policy.dart';
+import 'package:youwell/features/reduction/presentation/reduction_widgets.dart';
 
 const _monthNames = [
   'Januari',
@@ -247,7 +248,7 @@ class _BigCounter extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _RoundButton(
+        CountButton(
           size: 64,
           plus: false,
           color: _productColor(colors, product),
@@ -277,7 +278,7 @@ class _BigCounter extends StatelessWidget {
             ],
           ),
         ),
-        _RoundButton(
+        CountButton(
           size: 64,
           plus: true,
           color: _productColor(colors, product),
@@ -328,7 +329,7 @@ class _RowCounter extends StatelessWidget {
             ],
           ),
         ),
-        _RoundButton(
+        CountButton(
           size: 52,
           plus: false,
           color: color,
@@ -348,7 +349,7 @@ class _RowCounter extends StatelessWidget {
             ),
           ),
         ),
-        _RoundButton(
+        CountButton(
           size: 52,
           plus: true,
           color: color,
@@ -356,71 +357,6 @@ class _RowCounter extends StatelessWidget {
           onTap: count < 99 ? () => onChange(1) : null,
         ),
       ],
-    );
-  }
-}
-
-/// A chunky round button that presses down like a game key.
-class _RoundButton extends StatefulWidget {
-  const _RoundButton({
-    required this.size,
-    required this.plus,
-    required this.color,
-    required this.label,
-    required this.onTap,
-  });
-  final double size;
-  final bool plus;
-  final Color color;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  State<_RoundButton> createState() => _RoundButtonState();
-}
-
-class _RoundButtonState extends State<_RoundButton> {
-  bool _down = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final enabled = widget.onTap != null;
-    final fill = widget.plus ? widget.color : colors.raised;
-    final edge = widget.plus
-        ? Color.lerp(widget.color, Colors.black, .25)!
-        : colors.border;
-    final depth = _down ? 0.0 : 4.0;
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: widget.label,
-      child: GestureDetector(
-        onTapDown: enabled ? (_) => setState(() => _down = true) : null,
-        onTapCancel: () => setState(() => _down = false),
-        onTapUp: enabled
-            ? (_) {
-                setState(() => _down = false);
-                widget.onTap!();
-              }
-            : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 90),
-          width: widget.size,
-          height: widget.size,
-          margin: EdgeInsets.only(top: 4 - depth),
-          decoration: BoxDecoration(
-            color: enabled ? fill : fill.withValues(alpha: .4),
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: edge, offset: Offset(0, depth))],
-          ),
-          child: Icon(
-            widget.plus ? Icons.add_rounded : Icons.remove_rounded,
-            size: widget.size * .5,
-            color: widget.plus ? Colors.white : colors.text,
-          ),
-        ),
-      ),
     );
   }
 }
