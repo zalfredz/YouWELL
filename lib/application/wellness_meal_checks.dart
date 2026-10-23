@@ -1,7 +1,7 @@
 part of 'wellness_controller.dart';
 
 /// Meal Snap verification (phase 9): a photo sent for review waits as
-/// 'pending' until an admin, or the AI fallback after 2 hours, approves or
+/// 'pending' until an admin, or the AI fallback after 3 hours, approves or
 /// rejects it. Only approved photos (and photos from before verification)
 /// count; the reward goes to the day the photo was taken.
 extension MealChecks on WellnessController {

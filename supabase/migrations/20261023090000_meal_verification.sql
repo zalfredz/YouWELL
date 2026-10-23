@@ -1,6 +1,6 @@
 -- Phase 9: Meal Snap verification (team decision 23 Oct 2026; the proposal
 -- is being updated). A meal photo is uploaded to a private bucket, an MFA
--- admin approves or rejects it, and after 2 hours without a decision the
+-- admin approves or rejects it, and after 3 hours without a decision the
 -- Edge Function `meal-ai-check` asks Gemini (YA/TIDAK). The photo file is
 -- removed once decided; only the decision stays. Run after phase 8.
 

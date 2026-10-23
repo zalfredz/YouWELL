@@ -39,7 +39,7 @@ class AdminShell extends StatelessWidget {
         bottom: const TabBar(
           tabs: [
             Tab(text: 'Community'),
-            Tab(text: 'Meal Snap'),
+            Tab(text: 'Verif makanan'),
             Tab(text: 'Dashboard peneliti'),
           ],
         ),

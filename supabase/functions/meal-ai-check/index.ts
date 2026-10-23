@@ -1,4 +1,4 @@
-// Supabase Edge Function: Meal Snap fallback after 2 hours without an admin
+// Supabase Edge Function: Meal Snap fallback after 3 hours without an admin
 // decision. Called by the app (the caller's own photos) and the admin page
 // (every photo). Secrets: GEMINI_API_KEY (required), GEMINI_MODEL
 // (optional). SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY
@@ -7,7 +7,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import { encodeBase64 } from 'jsr:@std/encoding@1.0.5/base64';
 import { geminiRequest, readVerdict } from './gemini.ts';
 
-const waitHours = 2;
+const waitHours = 3;
 const batch = 10;
 const cors = {
   'Access-Control-Allow-Origin': '*',

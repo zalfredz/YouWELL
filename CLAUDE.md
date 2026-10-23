@@ -25,7 +25,7 @@ kartu juga dihapus: pengguna memilih langsung dari 5 kartu.
 
 **Meal Snap diverifikasi (23 Okt 2026, proposal sedang diperbarui):** foto
 makan kini diunggah sementara ke bucket privat `meals`. Admin ber-MFA
-menyetujui atau menolak di tab admin **Meal Snap**; setelah 2 jam tanpa
+menyetujui atau menolak di tab admin **Verif makanan**; setelah 3 jam tanpa
 keputusan, Edge Function `meal-ai-check` bertanya ke Gemini apakah foto berisi
 makanan/minuman (jawaban hanya YA/TIDAK, kunci `GEMINI_API_KEY` hanya di
 secret Supabase). Misi baru tercentang setelah disetujui, XP masuk ke hari

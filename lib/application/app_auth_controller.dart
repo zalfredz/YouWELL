@@ -268,7 +268,7 @@ class AppAuthController extends ChangeNotifier {
     }
   }
 
-  /// Fetches decisions for photos still waiting. After 2 hours without an
+  /// Fetches decisions for photos still waiting. After 3 hours without an
   /// admin, asks the AI fallback first (at most every 10 minutes).
   Future<void> pollMeals() async {
     final verifier = meals, controller = wellness;
@@ -281,7 +281,7 @@ class AppAuthController extends ChangeNotifier {
     _pollingMeals = true;
     try {
       final last = _lastOverdueCheck;
-      if (controller.hasMealCheckOlderThan(const Duration(hours: 2)) &&
+      if (controller.hasMealCheckOlderThan(const Duration(hours: 3)) &&
           (last == null ||
               DateTime.now().difference(last) >= const Duration(minutes: 10))) {
         _lastOverdueCheck = DateTime.now();

@@ -88,7 +88,7 @@ class _MealSnapPageState extends State<MealSnapPage> {
     setState(() => _saving = true);
     final verifier = AccountScope.maybeOf(context)?.meals;
     try {
-      // Signed in: the photo is reviewed first (admin, or AI after 2 hours)
+      // Signed in: the photo is reviewed first (admin, or AI after 3 hours)
       // and its server copy is deleted once decided. Re-encoding drops EXIF.
       String? checkId;
       if (verifier != null) {

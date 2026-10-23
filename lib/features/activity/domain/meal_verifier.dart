@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 /// Meal Snap verification (phase 9, team decision 23 Oct 2026): a photo is
 /// reviewed by an MFA admin, or by the Edge Function `meal-ai-check` after
-/// 2 hours without a decision. The file is deleted once decided.
+/// 3 hours without a decision. The file is deleted once decided.
 abstract interface class MealVerifier {
   /// Uploads one PNG for the meal row [clientId] and queues it for review.
   Future<void> submit(String clientId, Uint8List png);
@@ -11,7 +11,7 @@ abstract interface class MealVerifier {
   /// ('pending', 'approved' or 'rejected').
   Future<Map<String, String>> decisions();
 
-  /// Asks the server to check the caller's photos waiting over 2 hours.
+  /// Asks the server to check the caller's photos waiting over 3 hours.
   Future<void> checkOverdue();
 
   /// Admin: photos waiting for a decision, oldest first.
@@ -23,7 +23,7 @@ abstract interface class MealVerifier {
   /// Admin: approves or rejects one photo, then deletes the file.
   Future<void> review(String id, {required bool approve});
 
-  /// Admin: runs the AI check for every photo waiting over 2 hours.
+  /// Admin: runs the AI check for every photo waiting over 3 hours.
   Future<void> checkAllOverdue();
 }
 

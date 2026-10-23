@@ -82,8 +82,8 @@ halaman berikutnya, jadi post lama di luar 100 terbaru tetap bisa dihapus.
 Jalankan setelah tahap 7.
 Tahap 9 (`20261023090000_meal_verification.sql`, keputusan tim 23 Okt 2026)
 menambah **verifikasi Meal Snap**: foto makan diunggah ke bucket privat
-`meals`, admin ber-MFA menyetujui atau menolaknya di tab **Meal Snap**, dan
-setelah 2 jam tanpa keputusan Edge Function `meal-ai-check` bertanya ke Gemini
+`meals`, admin ber-MFA menyetujui atau menolaknya di tab **Verif makanan**, dan
+setelah 3 jam tanpa keputusan Edge Function `meal-ai-check` bertanya ke Gemini
 (jawaban hanya YA/TIDAK). Foto dihapus dari server dan dari HP setelah
 diputuskan; hanya keputusannya yang tersimpan. Misi baru tercentang setelah
 foto disetujui, dan XP masuk ke hari foto diambil. Sebelum tahap 9 dijalankan,
@@ -97,8 +97,8 @@ file dengan isi `supabase/functions/meal-ai-check/index.ts` dan
 Di **Edge Functions → Secrets** tambahkan `GEMINI_API_KEY` (kunci Gemini;
 jangan pernah ditulis ke repo atau app) dan, bila perlu, `GEMINI_MODEL`
 (bawaan `gemini-3.8-flash`). Fungsi dipanggil oleh app peserta (foto miliknya)
-dan oleh tab admin Meal Snap (semua foto) saat ada foto yang menunggu lebih
-dari 2 jam. Jika Gemini sedang sibuk (503) atau jawabannya bukan YA/TIDAK,
+dan oleh tab admin Verif makanan (semua foto) saat ada foto yang menunggu lebih
+dari 3 jam. Jika Gemini sedang sibuk (503) atau jawabannya bukan YA/TIDAK,
 foto tetap menunggu dan dicoba lagi nanti.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
@@ -227,7 +227,7 @@ Pengaturan provider/SQL/Render belum dilakukan otomatis oleh kode.
 7. Uji RLS dengan dua akun setelah migration; client B tidak dapat membaca/mengubah alias A.
 8. Post akun A hanya tampil di B setelah admin menyetujui; reaksi B menambah hitungan; laporan B muncul di admin.
 9. Di Dashboard peneliti, akun yang diberi kode P1–P10 muncul di ringkasan P1–P10 (CSV) tanpa alias.
-10. Foto Meal Snap akun A muncul di tab admin Meal Snap; Setujui mencentang misi di HP A dalam ±2 menit, Tolak menampilkan "Foto ditolak, foto ulang ya"; foto yang menunggu lebih dari 2 jam diputuskan AI.
+10. Foto Meal Snap akun A muncul di tab admin Verif makanan; Setujui mencentang misi di HP A dalam ±2 menit, Tolak menampilkan "Foto ditolak, foto ulang ya"; foto yang menunggu lebih dari 3 jam diputuskan AI.
 11. Hapus akun saat offline gagal tanpa menghapus apa pun; saat online menghapus user di Authentication dan semua barisnya.
 
 Tes otomatis tidak membuktikan Google OAuth callback, RLS pada project remote,

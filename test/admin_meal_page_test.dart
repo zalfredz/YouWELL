@@ -59,8 +59,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('@daunpagi'), findsOneWidget);
-    expect(find.textContaining('AI dalam 1 jam'), findsOneWidget);
-    expect(verifier.aiRuns, 0, reason: 'nothing is past 2 hours yet');
+    expect(find.textContaining('AI dalam 2 jam'), findsOneWidget);
+    expect(verifier.aiRuns, 0, reason: 'nothing is past 3 hours yet');
 
     await tester.tap(find.text('Setujui'));
     await tester.pumpAndSettle();

@@ -5,7 +5,7 @@ import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/activity/domain/meal_verifier.dart';
 import 'package:youwell/features/auth/presentation/account_scope.dart';
 
-/// Admin: approve or reject Meal Snap photos (phase 9). After 2 hours
+/// Admin: approve or reject Meal Snap photos (phase 9). After 3 hours
 /// without a decision the AI fallback decides; the file is deleted either
 /// way. Only the alias is shown, never the account.
 class AdminMealPage extends StatefulWidget {
@@ -19,7 +19,7 @@ class AdminMealPage extends StatefulWidget {
 }
 
 /// Matches the Edge Function's wait before the AI fallback.
-const _aiAfter = Duration(hours: 2);
+const _aiAfter = Duration(hours: 3);
 
 class _AdminMealPageState extends State<AdminMealPage> {
   MealVerifier? _verifier;
@@ -56,7 +56,7 @@ class _AdminMealPageState extends State<AdminMealPage> {
     if (verifier == null) return;
     try {
       var queue = await verifier.queue();
-      // Photos past 2 hours go to the AI, at most every 5 minutes, so they
+      // Photos past 3 hours go to the AI, at most every 5 minutes, so they
       // are decided even when the participant does not open the app.
       final last = _lastAiRun;
       if (queue.any((item) => _waited(item) >= _aiAfter) &&
@@ -121,12 +121,12 @@ class _AdminMealPageState extends State<AdminMealPage> {
         padding: const EdgeInsets.all(30),
         children: [
           const Text(
-            'Meal Snap',
+            'Verif makanan',
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
-            'Setujui jika foto menunjukkan makanan atau minuman. Setelah 2 '
+            'Setujui jika foto menunjukkan makanan atau minuman. Setelah 3 '
             'jam tanpa keputusan, AI yang memeriksa. Foto dihapus dari server '
             'setelah diputuskan.',
             style: TextStyle(color: context.colors.muted),
