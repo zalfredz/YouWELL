@@ -80,6 +80,26 @@ Tahap 8 (`20261020120000_admin_published_search.sql`) membuat tab
 **Community** di admin dapat mencari post tayang menurut alias/isi dan memuat
 halaman berikutnya, jadi post lama di luar 100 terbaru tetap bisa dihapus.
 Jalankan setelah tahap 7.
+Tahap 9 (`20261023090000_meal_verification.sql`, keputusan tim 23 Okt 2026)
+menambah **verifikasi Meal Snap**: foto makan diunggah ke bucket privat
+`meals`, admin ber-MFA menyetujui atau menolaknya di tab **Meal Snap**, dan
+setelah 2 jam tanpa keputusan Edge Function `meal-ai-check` bertanya ke Gemini
+(jawaban hanya YA/TIDAK). Foto dihapus dari server dan dari HP setelah
+diputuskan; hanya keputusannya yang tersimpan. Misi baru tercentang setelah
+foto disetujui, dan XP masuk ke hari foto diambil. Sebelum tahap 9 dijalankan,
+app baru tetap menghitung foto langsung seperti sebelumnya, jadi urutan deploy
+tidak membuat misi macet.
+
+Edge Function (tanpa CLI): di dashboard Supabase buka **Edge Functions →
+Deploy a new function → Via Editor**, beri nama `meal-ai-check`, lalu buat dua
+file dengan isi `supabase/functions/meal-ai-check/index.ts` dan
+`supabase/functions/meal-ai-check/gemini.ts`. Biarkan **Verify JWT** aktif.
+Di **Edge Functions → Secrets** tambahkan `GEMINI_API_KEY` (kunci Gemini;
+jangan pernah ditulis ke repo atau app) dan, bila perlu, `GEMINI_MODEL`
+(bawaan `gemini-3.8-flash`). Fungsi dipanggil oleh app peserta (foto miliknya)
+dan oleh tab admin Meal Snap (semua foto) saat ada foto yang menunggu lebih
+dari 2 jam. Jika Gemini sedang sibuk (503) atau jawabannya bukan YA/TIDAK,
+foto tetap menunggu dan dicoba lagi nanti.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)
@@ -207,7 +227,8 @@ Pengaturan provider/SQL/Render belum dilakukan otomatis oleh kode.
 7. Uji RLS dengan dua akun setelah migration; client B tidak dapat membaca/mengubah alias A.
 8. Post akun A hanya tampil di B setelah admin menyetujui; reaksi B menambah hitungan; laporan B muncul di admin.
 9. Di Dashboard peneliti, akun yang diberi kode P1–P10 muncul di ringkasan P1–P10 (CSV) tanpa alias.
-10. Hapus akun saat offline gagal tanpa menghapus apa pun; saat online menghapus user di Authentication dan semua barisnya.
+10. Foto Meal Snap akun A muncul di tab admin Meal Snap; Setujui mencentang misi di HP A dalam ±2 menit, Tolak menampilkan "Foto ditolak, foto ulang ya"; foto yang menunggu lebih dari 2 jam diputuskan AI.
+11. Hapus akun saat offline gagal tanpa menghapus apa pun; saat online menghapus user di Authentication dan semua barisnya.
 
 Tes otomatis tidak membuktikan Google OAuth callback, RLS pada project remote,
 atau TOTP nyata telah berhasil. Perlu akun uji dan SQL pada project target.
@@ -221,7 +242,9 @@ node scripts/check-supabase-migrations.cjs
 
 Tes ini memakai fixture Auth/Storage tanpa kredensial atau koneksi ke project
 Supabase nyata. Ia memeriksa urutan migrasi, akses foto Community, gerbang
-MFA admin, kode peserta, sinkron nama, dan penghapusan post milik sendiri.
+MFA admin, kode peserta, sinkron nama, penghapusan post milik sendiri, dan
+verifikasi Meal Snap. Parsing jawaban Gemini diuji dengan
+`node scripts/check-meal-ai.mts`.
 
 Referensi resmi: [OAuth Flutter](https://supabase.com/docs/reference/dart/auth-signinwithoauth),
 [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls),

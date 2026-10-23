@@ -17,6 +17,8 @@ class LadderRung {
     this.timedTitle,
     this.timedMinutes,
     this.strenuous = false,
+    this.bedBefore,
+    this.wakeBefore,
   });
   final String title, description;
   final int durationMinutes;
@@ -51,13 +53,17 @@ class LadderRung {
 
   /// Shows "berhenti jika pusing atau nyeri" on the quest.
   final bool strenuous;
+
+  /// Sleep rungs: latest bedtime (minutes after 18.00) and latest wake-up
+  /// (minutes after midnight) for last night to count.
+  final int? bedBefore, wakeBefore;
 }
 
 const ladderLabels = {
   'Body': 'Gerak',
   'Food': 'Makan',
   'Lifestyle': 'Hidrasi',
-  'Energy': 'Istirahat',
+  'Energy': 'Tidur',
   'Reduction': 'Ganti kebiasaan',
 };
 
@@ -263,37 +269,41 @@ const ladders = <String, List<LadderRung>>{
       photoCount: 2,
     ),
   ],
-  // Asked about last night: putting the phone down needs no tap at bedtime.
+  // Sleep, from last night's check-in and check-out (decision 23 Oct 2026),
+  // stepping towards bed by 23.00 and up by 06.00. Times are minutes:
+  // bedtime counted from 18.00, waking from midnight.
   'Energy': [
     LadderRung(
-      title: 'Semalam: layar off 10 menit sebelum tidur',
-      description: 'Centang hari ini kalau semalam kamu menaruh HP dulu.',
-      durationMinutes: 10,
+      title: 'Tidur sebelum 00.30, bangun sebelum 07.30',
+      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
+      durationMinutes: 0,
+      activityKind: 'sleep',
+      bedBefore: 390,
+      wakeBefore: 450,
     ),
     LadderRung(
-      title: 'Semalam: layar off 15 menit sebelum tidur',
-      description: 'Ganti scroll dengan hal yang menenangkan.',
-      durationMinutes: 15,
+      title: 'Tidur sebelum 00.00, bangun sebelum 07.00',
+      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
+      durationMinutes: 0,
+      activityKind: 'sleep',
+      bedBefore: 360,
+      wakeBefore: 420,
     ),
     LadderRung(
-      title: 'Semalam: layar off 20 menit sebelum tidur',
-      description: 'Redupkan lampu dan beri tubuh tanda istirahat.',
-      durationMinutes: 20,
+      title: 'Tidur sebelum 23.30, bangun sebelum 06.30',
+      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
+      durationMinutes: 0,
+      activityKind: 'sleep',
+      bedBefore: 330,
+      wakeBefore: 390,
     ),
     LadderRung(
-      title: 'Semalam: layar off 30 menit sebelum tidur',
-      description: 'Isi dengan stretching, baca, atau musik pelan.',
-      durationMinutes: 30,
-    ),
-    LadderRung(
-      title: 'Semalam: layar off 45 menit sebelum tidur',
-      description: 'HP ditaruh di luar jangkauan tempat tidur.',
-      durationMinutes: 45,
-    ),
-    LadderRung(
-      title: 'Semalam: layar off 60 menit & jam tidur tetap',
-      description: 'Tidur di jam yang kurang lebih sama seperti biasanya.',
-      durationMinutes: 60,
+      title: 'Tidur sebelum 23.00, bangun sebelum 06.00',
+      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
+      durationMinutes: 0,
+      activityKind: 'sleep',
+      bedBefore: 300,
+      wakeBefore: 360,
     ),
   ],
   'Reduction': [
@@ -439,7 +449,7 @@ LadderReview reviewLadder({
     return LadderReview(
       step: current,
       change: 'hold',
-      reason: 'Belum ada quest $label minggu ini, jadi level tetap.',
+      reason: 'Belum ada misi $label minggu ini, jadi level tetap.',
     );
   }
   final total = weekQuests.length;
@@ -460,7 +470,7 @@ LadderReview reviewLadder({
     cardDays: cardDays,
     inactiveDays: inactiveDays,
   );
-  final summary = '$done dari $total quest $label selesai';
+  final summary = '$done dari $total misi $label selesai';
   if (step > current) {
     return LadderReview(
       step: step,

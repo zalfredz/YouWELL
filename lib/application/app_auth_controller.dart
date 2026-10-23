@@ -9,6 +9,8 @@ import 'wellness_controller.dart';
 import 'progress_sync_controller.dart';
 import 'package:youwell/features/sync/domain/cloud_progress.dart';
 import 'package:youwell/features/community/domain/community_store.dart';
+import 'package:youwell/features/activity/data/meal_photo_store.dart';
+import 'package:youwell/features/activity/domain/meal_verifier.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
 
 enum AuthStage {
@@ -29,6 +31,7 @@ class AppAuthController extends ChangeNotifier {
     required this.surface,
     this.progressStore,
     this.communityStore,
+    this.mealVerifier,
     this.researchStore,
     this.timeout = const Duration(seconds: 12),
   });
@@ -38,12 +41,19 @@ class AppAuthController extends ChangeNotifier {
   final Duration timeout;
   final ProgressCloudStore Function(String userId)? progressStore;
   final CommunityStore Function(String userId)? communityStore;
+  final MealVerifier Function(String userId)? mealVerifier;
   /// Researcher dashboard data (admin web only; the server checks MFA).
   final ResearchStore? researchStore;
   ProgressSyncController? progress;
 
   /// Server Community for the signed-in account; null in local previews.
   CommunityStore? community;
+
+  /// Meal Snap verification for the signed-in account; null in local
+  /// previews, where photos count immediately as before phase 9.
+  MealVerifier? meals;
+  DateTime? _lastOverdueCheck;
+  bool _pollingMeals = false;
   StreamSubscription<AuthIdentity?>? _subscription;
   Timer? _loginTimer;
   AuthStage stage = AuthStage.loading;
@@ -109,6 +119,7 @@ class AppAuthController extends ChangeNotifier {
       progress?.dispose();
       progress = null;
       community = null;
+      meals = null;
       wellness?.dispose();
       wellness = null;
     }
@@ -182,6 +193,7 @@ class AppAuthController extends ChangeNotifier {
     progress?.dispose();
     progress = null;
     community = communityStore?.call(userId);
+    meals = mealVerifier?.call(userId);
     // Moderator and framed UI-preview data must never become participant progress.
     final store = surface == AppSurface.mobile
         ? progressStore?.call(userId)
@@ -253,6 +265,38 @@ class AppAuthController extends ChangeNotifier {
       if (!_disposed && generation == _generation) {
         _fail('Progres belum dapat dihubungkan. Salinan lama tetap tersimpan.');
       }
+    }
+  }
+
+  /// Fetches decisions for photos still waiting. After 2 hours without an
+  /// admin, asks the AI fallback first (at most every 10 minutes).
+  Future<void> pollMeals() async {
+    final verifier = meals, controller = wellness;
+    if (verifier == null ||
+        controller == null ||
+        _pollingMeals ||
+        controller.pendingMealChecks.isEmpty) {
+      return;
+    }
+    _pollingMeals = true;
+    try {
+      final last = _lastOverdueCheck;
+      if (controller.hasMealCheckOlderThan(const Duration(hours: 2)) &&
+          (last == null ||
+              DateTime.now().difference(last) >= const Duration(minutes: 10))) {
+        _lastOverdueCheck = DateTime.now();
+        await verifier.checkOverdue().timeout(const Duration(seconds: 60));
+      }
+      final verdicts = await verifier.decisions().timeout(timeout);
+      if (identical(meals, verifier) && identical(wellness, controller)) {
+        for (final path in controller.applyMealVerdicts(verdicts)) {
+          await MealPhotoStore.delete(path);
+        }
+      }
+    } catch (_) {
+      // Offline or not set up yet: photos stay pending and are asked again.
+    } finally {
+      _pollingMeals = false;
     }
   }
 

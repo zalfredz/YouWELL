@@ -350,19 +350,27 @@ void main() {
     });
   });
 
-  group('Istirahat: about last night (§5.2a)', () {
-    test('Screen-off quest is about last night and can be done at 08.00', () {
-      expect(
-        ladders['Energy']!.every((rung) => rung.title.startsWith('Semalam:')),
-        isTrue,
-      );
+  group('Tidur: check-in and check-out (decision 23 Oct 2026)', () {
+    test('An open screen-off quest becomes the sleep level', () {
       final controller = withQuests([
         quest(
           'energy',
-          extra: {'catalogId': 'ladder-energy', 'ladder': 'Energy'},
+          extra: {
+            'catalogId': 'ladder-energy',
+            'ladder': 'Energy',
+            'step': 2,
+            'title': 'Semalam: layar off 15 menit sebelum tidur',
+          },
         ),
       ], () => DateTime(2026, 10, 24, 8));
-      expect(controller.completeCard('energy'), isTrue);
+      final task = controller.quests.single;
+      expect(task['activityKind'], 'sleep');
+      expect(task['title'], ladders['Energy']![1].title);
+      // A sleep quest is never ticked by hand.
+      expect(
+        ladders['Energy']!.every((r) => r.activityKind == 'sleep'),
+        isTrue,
+      );
     });
   });
 

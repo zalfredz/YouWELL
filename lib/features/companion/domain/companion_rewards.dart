@@ -52,5 +52,5 @@ const achievementNames = {
   'full-day': 'Hari penuh pertama',
   'weekly-rhythm': 'Ritme 4 hari',
   'hydration-7': '7 hari hidrasi',
-  'first-ladder': 'Anak tangga baru',
+  'first-ladder': 'Level baru',
 };

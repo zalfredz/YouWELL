@@ -165,3 +165,18 @@ class ParticipantOverview {
     reached: reached.length,
   );
 }
+
+/// P1, P2 … P10 by number (text order would put P10 after P1); accounts
+/// without a code come after the coded ones.
+int compareParticipantCodes(String? a, String? b) {
+  int? number(String? code) =>
+      code == null ? null : int.tryParse(code.replaceFirst('P', ''));
+  final x = number(a), y = number(b);
+  if (x == null && y == null) return 0;
+  if (x == null) return 1;
+  if (y == null) return -1;
+  return x.compareTo(y);
+}
+
+int byParticipantCode(ParticipantOverview a, ParticipantOverview b) =>
+    compareParticipantCodes(a.code, b.code);

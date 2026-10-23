@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/activity/data/meal_photo_store.dart';
+import 'package:youwell/features/activity/domain/meal_verifier.dart';
+import 'package:youwell/features/auth/presentation/account_scope.dart';
+import 'package:youwell/features/community/data/community_photo.dart';
 import 'package:youwell/shared/widgets/ui_helpers.dart';
 
 class MealSnapPage extends StatefulWidget {
@@ -83,17 +86,31 @@ class _MealSnapPageState extends State<MealSnapPage> {
     final photo = _photo;
     if (photo == null || _saving) return;
     setState(() => _saving = true);
+    final verifier = AccountScope.maybeOf(context)?.meals;
     try {
+      // Signed in: the photo is reviewed first (admin, or AI after 2 hours)
+      // and its server copy is deleted once decided. Re-encoding drops EXIF.
+      String? checkId;
+      if (verifier != null) {
+        final id = randomUuid();
+        try {
+          await verifier.submit(id, await prepareCommunityPhoto(photo));
+          checkId = id;
+        } on MealVerifierException catch (error) {
+          // Server without phase 9 yet: the photo counts right away.
+          if (!error.unsupported) rethrow;
+        }
+      }
       if (kIsWeb) {
         // On the web the photo is proof of an in-the-moment check-in only.
-        // Keep no image bytes or path after submission.
-        widget.controller.recordMeal(photoCaptured: true);
+        // Keep no image bytes or path on the device after submission.
+        widget.controller.recordMeal(photoCaptured: true, checkId: checkId);
       } else {
         final path = await MealPhotoStore.save(photo);
         if (path == null) {
           throw const FormatException('Penyimpanan foto tidak tersedia.');
         }
-        widget.controller.recordMeal(photoPath: path);
+        widget.controller.recordMeal(photoPath: path, checkId: checkId);
       }
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
@@ -103,20 +120,27 @@ class _MealSnapPageState extends State<MealSnapPage> {
           ..showSnackBar(
             SnackBar(
               content: Text(
-                kIsWeb
-                    ? 'Mantap! Meal Snap selesai. Fotonya tidak disimpan.'
-                    : 'Mantap! Meal Snap tersimpan di perangkatmu.',
+                checkId != null
+                    ? 'Foto terkirim. Misi tercentang setelah foto '
+                          'diverifikasi.'
+                    : 'Mantap! Meal Snap tersimpan.',
               ),
             ),
           );
       }
+    } on MealVerifierException catch (error) {
+      _failSave(error.message);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-          _error = 'Foto belum bisa disimpan di perangkat ini. Coba lagi.';
-        });
-      }
+      _failSave('Foto belum bisa disimpan. Coba lagi.');
+    }
+  }
+
+  void _failSave(String message) {
+    if (mounted) {
+      setState(() {
+        _saving = false;
+        _error = message;
+      });
     }
   }
 
@@ -186,7 +210,7 @@ class _MealSnapPageState extends State<MealSnapPage> {
         FilledButton.icon(
           onPressed: _photo == null || _saving ? null : _save,
           icon: const Icon(Icons.check_rounded),
-          label: Text(_saving ? 'Menyimpan...' : 'Simpan momen'),
+          label: Text(_saving ? 'Mengirim...' : 'Simpan momen'),
         ),
       ],
     ),

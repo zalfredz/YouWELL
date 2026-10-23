@@ -41,6 +41,12 @@ abstract final class ActivityEvidence {
         });
   }
 
+  /// A camera photo that is verified, or was saved before verification
+  /// (phase 9) existed. Photos waiting for review or rejected do not count.
+  static bool countsAsMealPhoto(Map row) =>
+      (row['photoPath'] is String || row['photoCaptured'] == true) &&
+      (row['verification'] == null || row['verification'] == 'approved');
+
   /// How many of a meal quest's photos are covered by today's camera photos.
   /// With windows, each window needs its own photo taken inside it.
   static int mealPhotosMatched(
@@ -51,8 +57,7 @@ abstract final class ActivityEvidence {
     final required = (task['photoCount'] as num?)?.toInt() ?? 1;
     final times = [
       for (final row in meals)
-        if (row['day'] == day &&
-            (row['photoPath'] is String || row['photoCaptured'] == true))
+        if (row['day'] == day && countsAsMealPhoto(row))
           DateTime.tryParse(row['time']?.toString() ?? ''),
     ].whereType<DateTime>().toList()..sort();
     final windows = (task['photoWindows'] as List?)

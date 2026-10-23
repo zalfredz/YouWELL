@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/core/utils/date_key.dart';
+import 'package:youwell/core/utils/date_label.dart';
 import 'package:youwell/features/reduction/domain/reduction_policy.dart';
 import 'package:youwell/features/reduction/presentation/reduction_widgets.dart';
 import 'package:youwell/features/reduction/presentation/swap_setup_flow.dart';
@@ -57,7 +58,9 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
   /// Home is where the user comes back to.
   void _backHome(String message) {
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).maybePop();
+    // pop, not maybePop: the result screen blocks only the user's own back.
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
@@ -173,7 +176,7 @@ class _HabitSwapPanelState extends State<HabitSwapPanel> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _PendingBanner(
-              text: 'Hasil momen ${_timeOf(row)} belum diisi',
+              text: 'Hasil momen ${_timeOf(row, c.now)} belum diisi',
               onTap: () => setState(() => _outcomeFor = row['id'].toString()),
             ),
           ),
@@ -369,14 +372,16 @@ class _BigButton extends StatelessWidget {
   );
 }
 
-String _timeOf(Map row) {
+/// "Hari ini 14.10", "Kemarin 20.00" or "Kam, 30 Okt 09.40".
+String _timeOf(Map row, DateTime now) {
+  final day = dayLabel(row['day'].toString(), now);
   final time = DateTime.tryParse(
     (row['startedAt'] ?? row['time'] ?? '').toString(),
   );
-  if (time == null) return row['day'].toString();
+  if (time == null) return day;
   final hh = time.hour.toString().padLeft(2, '0');
   final mm = time.minute.toString().padLeft(2, '0');
-  return '${row['day']} $hh.$mm';
+  return '$day $hh.$mm';
 }
 
 /// The open moment: what was picked, then "Saya sudah mencoba".
@@ -447,7 +452,7 @@ class _ActiveMomentViewState extends State<_ActiveMomentView> {
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
       children: [
         Text(
-          '${cravingLabel(product)} · mulai ${_timeOf({'day': c.today, ...widget.moment}).split(' ').last}',
+          '${cravingLabel(product)} · mulai ${_timeOf({'day': c.today, ...widget.moment}, c.now).split(' ').last}',
           style: TextStyle(color: color, fontWeight: FontWeight.w800),
         ),
         Text(
@@ -579,115 +584,123 @@ class _OutcomeViewState extends State<_OutcomeView> {
     final styles = {
       'skipped': (Icons.check_rounded, colors.success),
       'used': (Icons.remove_rounded, colors.cyan),
-      'later': (Icons.schedule_rounded, colors.amber),
     };
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-      children: [
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: colors.xpSoft,
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.bolt_rounded, size: 18, color: colors.onXp),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    mission == null
-                        ? 'Kegiatan tercatat'
-                        : '+${mission['xp']} XP · Misi Habit Swap selesai',
-                    style: TextStyle(
-                      color: colors.onXp,
-                      fontWeight: FontWeight.w900,
+    // A result must be chosen: back is blocked until one is saved.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Pilih salah satu hasil dulu ya.')),
+          );
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+        children: [
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.xpSoft,
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt_rounded, size: 18, color: colors.onXp),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      mission == null
+                          ? 'Kegiatan tercatat'
+                          : '+${mission['xp']} XP · Misi Habit Swap selesai',
+                      style: TextStyle(
+                        color: colors.onXp,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Kamu sudah mencoba: ${activityNames(widget.row).join(', ')}',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.muted, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Setelah mencoba, apa yang terjadi?',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 16),
+          for (final option in const ['skipped', 'used'])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ChoiceTile(
+                horizontal: true,
+                icon: styles[option]!.$1,
+                label: outcomeLabel(option, product),
+                selected: _outcome == option,
+                color: styles[option]!.$2,
+                onTap: () => setState(() {
+                  _outcome = option;
+                  _used = option == 'used' ? product : null;
+                }),
+              ),
+            ),
+          if (_outcome == 'used' && both) ...[
+            const Text(
+              'Yang akhirnya dipakai',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final kind in const ['cigarette', 'vape'])
+                  ChoiceChip(
+                    label: Text(nicotineProductLabels[kind]!),
+                    selected: _used == kind,
+                    onSelected: (_) => setState(() => _used = kind),
+                  ),
               ],
             ),
+            const SizedBox(height: 12),
+          ],
+          Text(
+            'Apa pun hasilnya, mencoba tetap dihitung.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.muted, fontWeight: FontWeight.w700),
           ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          'Kamu sudah mencoba: ${activityNames(widget.row).join(', ')}',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: colors.muted, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Setelah mencoba, apa yang terjadi?',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 16),
-        for (final option in const ['skipped', 'used', 'later'])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: ChoiceTile(
-              horizontal: true,
-              icon: styles[option]!.$1,
-              label: outcomeLabel(option, product),
-              selected: _outcome == option,
-              color: styles[option]!.$2,
-              onTap: () => setState(() {
-                _outcome = option;
-                _used = option == 'used' ? product : null;
-              }),
-            ),
+          const SizedBox(height: 16),
+          _BigButton(
+            icon: Icons.check_rounded,
+            label: 'Simpan hasil',
+            onTap: _outcome == null
+                ? null
+                : () {
+                    c.recordSwapOutcome(
+                      widget.row['id'].toString(),
+                      _outcome!,
+                      usedProduct: _outcome == 'used' ? _used : null,
+                    );
+                    widget.onDone(
+                      _outcome == 'skipped'
+                          ? 'Tercatat. Momen ini terlewati.'
+                          : 'Tercatat. Mencoba tetap berarti.',
+                    );
+                  },
           ),
-        if (_outcome == 'used' && both) ...[
-          const Text(
-            'Yang akhirnya dipakai',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final kind in const ['cigarette', 'vape'])
-                ChoiceChip(
-                  label: Text(nicotineProductLabels[kind]!),
-                  selected: _used == kind,
-                  onSelected: (_) => setState(() => _used = kind),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
         ],
-        Text(
-          'Apa pun hasilnya, mencoba tetap dihitung.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: colors.muted, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 16),
-        _BigButton(
-          icon: Icons.check_rounded,
-          label: 'Simpan hasil',
-          onTap: _outcome == null
-              ? null
-              : () {
-                  if (_outcome == 'later') {
-                    return widget.onDone('Oke, hasilnya bisa diisi nanti.');
-                  }
-                  c.recordSwapOutcome(
-                    widget.row['id'].toString(),
-                    _outcome!,
-                    usedProduct: _outcome == 'used' ? _used : null,
-                  );
-                  widget.onDone(
-                    _outcome == 'skipped'
-                        ? 'Tercatat. Momen ini terlewati.'
-                        : 'Tercatat. Mencoba tetap berarti.',
-                  );
-                },
-        ),
-      ],
+      ),
     );
   }
 }
@@ -717,8 +730,9 @@ class _TodaySummary extends StatelessWidget {
             value: switch (free) {
               null => '?',
               true => '0',
-              false => '✓',
+              false => '',
             },
+            icon: free == false ? Icons.check_rounded : null,
             label: switch (free) {
               null => 'total hari ini belum dicatat',
               true => 'total hari ini',

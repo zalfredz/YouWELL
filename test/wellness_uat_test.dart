@@ -511,7 +511,7 @@ void main() {
     },
   );
 
-  testWidgets('Recommended card can be opened before a blind draw', (
+  testWidgets('The draw relies on the five cards; switching shows once open', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(393, 852);
@@ -521,7 +521,6 @@ void main() {
     final sim = Sim();
     await sim.start(pace: 1);
     sim.controller.setReduceMotion(true);
-    final recommended = sim.controller.recommendedDailyCard!['id'];
     await tester.pumpWidget(
       MaterialApp(
         home: DailyCardDrawDialog(
@@ -531,10 +530,17 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Buka rekomendasi · 3 misi'));
+    expect(find.textContaining('Buka rekomendasi'), findsNothing);
+    expect(find.textContaining('Ketuk kartu tengah'), findsNothing);
+    expect(find.textContaining('x ganti'), findsNothing);
+    expect(find.text('Cocok buatmu'), findsNothing);
+    // The shuffle starts after a short delay.
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(sim.controller.selectedDailyCardId, recommended);
-    expect(find.text('Cocok buatmu'), findsOneWidget);
+    await tester.tapAt(tester.getCenter(find.byType(PageView)));
+    await tester.pumpAndSettle();
+    expect(sim.controller.selectedDailyCardId, isNotNull);
+    expect(find.text('Pilih kartu lain (1)'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

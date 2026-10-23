@@ -41,7 +41,8 @@ Timer jeda, kenaikan durasi menunggu, dan lencana menit ditunda dihapus.
   bisa terbuka dua kali. Tidak ada hitung mundur.
 - "Saya sudah mencoba" menyelesaikan misi Habit Swap (XP sekali per misi),
   lalu "Setelah mencoba, apa yang terjadi?": tidak jadi pada momen ini /
-  akhirnya tetap memakai / belum tahu, isi nanti. Pengguna keduanya dapat
+  akhirnya tetap memakai (wajib dipilih; pilihan "isi nanti" dihapus 23 Okt
+  2026). Pengguna keduanya dapat
   mencatat produk yang ternyata dipakai. Memilih kegiatan atau menekan
   "Saya akan coba" belum menyelesaikan misi.
 - "Tidak jadi pada momen ini" bukan hari bebas. Hari bebas hanya bila total

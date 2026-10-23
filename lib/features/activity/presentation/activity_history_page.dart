@@ -270,7 +270,7 @@ class _ActivityDetailPageState extends State<_ActivityDetailPage> {
               ? row['photoPath'] is String
                     ? 'Catatan dan foto lokal dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
                     : 'Catatan Meal Snap dihapus permanen. XP yang sudah diperoleh tetap tersimpan.'
-              : 'Sesi dihapus permanen dan tidak lagi menjadi bukti evaluasi tangga atau quest penelitian. XP tetap tersimpan.',
+              : 'Sesi dihapus permanen dan tidak lagi menjadi bukti evaluasi level atau quest penelitian. XP tetap tersimpan.',
         ),
         actions: [
           TextButton(

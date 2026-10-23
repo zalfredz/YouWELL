@@ -346,6 +346,8 @@ class DailyCardGenerator {
       if (!timed) 'targetMeters': ?rung.targetMeters,
       if (timed) 'timed': true,
       'waterMl': ?rung.waterMl,
+      'bedBefore': ?rung.bedBefore,
+      'wakeBefore': ?rung.wakeBefore,
       if (photo && cameraAvailable) 'photoCount': rung.photoCount ?? 1,
       if (photo && cameraAvailable && !anytime && rung.photoWindows != null)
         'photoWindows': rung.photoWindows,
@@ -422,7 +424,7 @@ const _catalog = [
   _TaskDefinition(
     id: 'meal-snap',
     title: 'Catat satu momen makan',
-    description: 'Foto untuk jurnal makan pribadimu. Foto tetap di HP.',
+    description: 'Foto makanmu. Misi tercentang setelah foto diverifikasi.',
     category: 'Lifestyle',
     difficulty: 1,
     durationMinutes: 1,
@@ -439,9 +441,9 @@ const _catalog = [
     xp: 15,
   ),
   _TaskDefinition(
-    id: 'screen-break',
-    title: 'Jeda layar',
-    description: 'Alihkan pandangan dari layar.',
+    id: 'micro-break',
+    title: 'Jeda mikro',
+    description: 'Berdiri dan regangkan badan 2 menit di sela belajar.',
     category: 'Energy',
     difficulty: 1,
     durationMinutes: 2,

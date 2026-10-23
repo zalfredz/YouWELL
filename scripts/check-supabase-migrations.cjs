@@ -121,6 +121,15 @@ async function main() {
       assert.equal((await db.query('select public.save_youwell_progress($1, 0) as result', [payload])).rows[0].result.saved, true);
       payload.profile.alias = 'renamed';
       assert.equal((await db.query('select public.save_youwell_progress($1, 1) as result', [payload])).rows[0].result.saved, true);
+      // Fields added on 23 Oct (sleep quests, Meal Snap verification) pass.
+      const newer = {
+        ...payload,
+        days: { '2026-10-23': { quests: [{ id: 'q1', ladder: 'Energy', activityKind: 'sleep', bedBefore: 390, wakeBefore: 450, status: 'committed' }] } },
+        mealCheckIns: [{ id: 'm1', day: '2026-10-23', time: '2026-10-23T08:00:00', checkId: 'c1', verification: 'pending', photoCaptured: true }],
+      };
+      assert.equal((await db.query('select public.save_youwell_progress($1, 2) as result', [newer])).rows[0].result.saved, true);
+      payload.days = newer.days;
+      payload.mealCheckIns = newer.mealCheckIns;
       await assert.rejects(
         () => db.query('select public.react_youwell_post($1, $2)', [approved, '👏']),
         error => error.code === 'P0002',
@@ -179,6 +188,49 @@ async function main() {
       assert.equal((await page('menunggu', null, 30)).length, 0);
     });
     console.log('Published search passed: MFA only, newest first, cursor pages, text search, approved only.');
+
+    // Phase 9: meal photos are sent by their owner and decided once by an MFA admin.
+    const mealPath = `${owner}/11111111-2222-4333-8444-555555555555.png`;
+    await db.exec(`insert into storage.objects(bucket_id, name) values ('meals', '${mealPath}');`);
+    await asUser(reader, 'aal1', async () => {
+      await assert.rejects(
+        () => db.query('select public.submit_youwell_meal($1, $2)', ['m1', mealPath]),
+        error => error.code === '22023',
+      );
+    });
+    let mealId;
+    await asUser(owner, 'aal1', async () => {
+      mealId = (await db.query('select public.submit_youwell_meal($1, $2) as id', ['m1', mealPath])).rows[0].id;
+      const mine = (await db.query('select public.youwell_my_meal_checks() as r')).rows[0].r;
+      assert.deepEqual(mine.map(m => [m.client_id, m.status]), [['m1', 'pending']]);
+      await denied(() => db.query('select public.youwell_meal_queue()'));
+      await denied(() => db.query('select public.review_youwell_meal($1, true)', [mealId]));
+      await denied(() => db.query('select * from public.youwell_meal_checks'));
+    });
+    await asUser(admin, 'aal1', async () => {
+      await denied(() => db.query('select public.youwell_meal_queue()'));
+    });
+    await asUser(admin, 'aal2', async () => {
+      const queue = (await db.query('select public.youwell_meal_queue() as q')).rows[0].q;
+      assert.deepEqual(queue.map(q => q.alias), ['renamed']);
+      assert.equal((await db.query('select public.review_youwell_meal($1, false) as p', [mealId])).rows[0].p, mealPath);
+      await assert.rejects(() => db.query('select public.review_youwell_meal($1, true)', [mealId]), error => error.code === 'P0002');
+      const recent = (await db.query('select public.youwell_meal_recent() as r')).rows[0].r;
+      assert.deepEqual(recent.map(r => [r.status, r.reviewer]), [['rejected', 'admin']]);
+    });
+    await asUser(owner, 'aal1', async () => {
+      const mine = (await db.query('select public.youwell_my_meal_checks() as r')).rows[0].r;
+      assert.equal(mine[0].status, 'rejected');
+      // A new photo for the same meal goes back to pending.
+      const again = `${owner}/66666666-7777-4888-8999-000000000000.png`;
+      await db.exec('reset role');
+      await db.exec(`insert into storage.objects(bucket_id, name) values ('meals', '${again}');`);
+      await db.exec('set role authenticated');
+      await db.query('select public.submit_youwell_meal($1, $2)', ['m1', again]);
+      const after = (await db.query('select public.youwell_my_meal_checks() as r')).rows[0].r;
+      assert.equal(after[0].status, 'pending');
+    });
+    console.log('Meal verification passed: owner-only upload, MFA admin decision once, retake goes back to pending.');
   } finally { await db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

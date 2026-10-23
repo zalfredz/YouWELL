@@ -13,6 +13,7 @@ import 'package:youwell/features/auth/presentation/auth_page.dart';
 import 'youwell_app.dart';
 import 'package:youwell/features/sync/data/supabase_progress_store.dart';
 import 'package:youwell/features/community/data/supabase_community_store.dart';
+import 'package:youwell/features/activity/data/supabase_meal_verifier.dart';
 import 'package:youwell/features/progress/data/supabase_research_store.dart';
 
 class AuthenticatedApp extends StatefulWidget {
@@ -34,9 +35,12 @@ class _AuthenticatedAppState extends State<AuthenticatedApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    var tick = 0;
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         unawaited(_auth?.progress?.syncNow());
+        // Meal Snap decisions every 2 minutes.
+        if (++tick % 4 == 0) unawaited(_auth?.pollMeals());
       }
     });
     unawaited(_connect());
@@ -88,6 +92,12 @@ class _AuthenticatedAppState extends State<AuthenticatedApp>
           url: url.toString(),
           publishableKey: AppEnvironment.supabasePublishableKey,
         ),
+        mealVerifier: (userId) => SupabaseMealVerifier(
+          client: sdk.client,
+          userId: userId,
+          url: url.toString(),
+          publishableKey: AppEnvironment.supabasePublishableKey,
+        ),
       );
       setState(() => _auth = auth);
       auth.start();
@@ -115,6 +125,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_auth?.progress?.syncNow());
+      unawaited(_auth?.pollMeals());
     }
   }
 

@@ -76,7 +76,7 @@ class ProgressSyncPanel extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 sync.error ??
-                    'Profil, kartu, quest, XP, companion, dan log aktivitas tersinkron ke akunmu. Foto, rute, catatan pribadi dan data komunitas tidak ikut.',
+                    'Misi, XP, dan ringkasan aktivitas tersinkron ke akunmu. Catatan pribadi tetap di HP ini; foto makan dihapus dari server setelah diverifikasi.',
               ),
               if (sync.stage == SyncStage.offline)
                 if (sync.errorDetail case final detail?) ...[

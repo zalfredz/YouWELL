@@ -78,11 +78,18 @@ class SupabaseAuthGateway implements AuthGateway {
   }
 
   /// Storage files are not removed by deleting the auth user, so this
-  /// account's Community photos go first. A failure aborts the deletion.
+  /// account's Community and waiting Meal Snap photos go first. A failure
+  /// aborts the deletion.
   Future<void> _deleteOwnPhotos() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
-    final photos = client.storage.from('community');
+    for (final bucket in const ['community', 'meals']) {
+      await _deleteFolder(bucket, userId);
+    }
+  }
+
+  Future<void> _deleteFolder(String bucket, String userId) async {
+    final photos = client.storage.from(bucket);
     // list() returns up to 100 files per call; the round cap only stops a
     // loop if a removal were silently refused.
     for (var round = 0; round < 20; round++) {
@@ -90,7 +97,7 @@ class SupabaseAuthGateway implements AuthGateway {
       try {
         files = await photos.list(path: userId);
       } on StorageException catch (error) {
-        // Before the phase 5 migration there is no bucket and no photo.
+        // Before the phase 5/9 migration there is no bucket and no photo.
         if (error.statusCode == '404' ||
             error.message.toLowerCase().contains('not found')) {
           return;
@@ -100,6 +107,6 @@ class SupabaseAuthGateway implements AuthGateway {
       if (files.isEmpty) return;
       await photos.remove([for (final file in files) '$userId/${file.name}']);
     }
-    throw StateError('Community photos could not be removed');
+    throw StateError('Photos in $bucket could not be removed');
   }
 }

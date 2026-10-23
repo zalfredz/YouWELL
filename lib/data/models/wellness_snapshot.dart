@@ -26,6 +26,7 @@ JsonMap createEmptyWellnessState() => {
   'reductionTargets': <dynamic>[],
   'reductionPlans': <String, dynamic>{},
   'reductionSetup': <String, dynamic>{},
+  'sleepLogs': <dynamic>[],
   'openedDays': <dynamic>[],
   'capacity': <String, dynamic>{},
   'workoutSessions': <dynamic>[],

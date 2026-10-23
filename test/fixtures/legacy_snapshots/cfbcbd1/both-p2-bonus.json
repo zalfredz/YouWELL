@@ -1,0 +1,2335 @@
+{
+  "version": 3,
+  "dayOffset": 0,
+  "themeMode": "system",
+  "mobileRewards": {
+    "quest:2026-10-20-card-2-ladder-Reduction": {
+      "day": "2026-10-20",
+      "questXp": 20
+    },
+    "quest:2026-10-20-card-2-ladder-Body": {
+      "day": "2026-10-20",
+      "questXp": 25
+    },
+    "quest:2026-10-20-card-2-ladder-Energy": {
+      "day": "2026-10-20",
+      "questXp": 25
+    },
+    "quest:2026-10-20-card-2-side-0-water-glass": {
+      "day": "2026-10-20",
+      "questXp": 20
+    },
+    "day:2026-10-20": {
+      "day": "2026-10-20",
+      "bonusXp": 20
+    },
+    "quest:2026-10-20-bonus-0-fruit-veg": {
+      "day": "2026-10-20",
+      "questXp": 15
+    },
+    "quest:2026-10-20-bonus-1-screen-break": {
+      "day": "2026-10-20",
+      "questXp": 15
+    },
+    "quest:2026-10-20-bonus-2-sunlight": {
+      "day": "2026-10-20",
+      "questXp": 15
+    },
+    "quest:2026-10-21-card-0-ladder-Reduction": {
+      "day": "2026-10-21",
+      "questXp": 20
+    },
+    "quest:2026-10-21-card-0-ladder-Food": {
+      "day": "2026-10-21",
+      "questXp": 20
+    },
+    "quest:2026-10-21-card-0-ladder-Lifestyle": {
+      "day": "2026-10-21",
+      "questXp": 20
+    },
+    "day:2026-10-21": {
+      "day": "2026-10-21",
+      "bonusXp": 20
+    },
+    "quest:2026-10-21-bonus-0-stand-break": {
+      "day": "2026-10-21",
+      "questXp": 15
+    },
+    "quest:2026-10-21-bonus-1-fresh-air": {
+      "day": "2026-10-21",
+      "questXp": 15
+    },
+    "quest:2026-10-21-bonus-2-posture": {
+      "day": "2026-10-21",
+      "questXp": 15
+    },
+    "quest:2026-10-22-card-0-ladder-Reduction": {
+      "day": "2026-10-22",
+      "questXp": 20
+    },
+    "quest:2026-10-22-card-0-ladder-Lifestyle": {
+      "day": "2026-10-22",
+      "questXp": 25
+    },
+    "quest:2026-10-22-card-0-ladder-Energy": {
+      "day": "2026-10-22",
+      "questXp": 25
+    },
+    "quest:2026-10-22-card-0-side-0-fruit-veg": {
+      "day": "2026-10-22",
+      "questXp": 20
+    },
+    "day:2026-10-22": {
+      "day": "2026-10-22",
+      "bonusXp": 20
+    },
+    "quest:2026-10-22-bonus-0-sunlight": {
+      "day": "2026-10-22",
+      "questXp": 15
+    },
+    "quest:2026-10-22-bonus-1-stand-break": {
+      "day": "2026-10-22",
+      "questXp": 15
+    },
+    "quest:2026-10-22-bonus-2-screen-break": {
+      "day": "2026-10-22",
+      "questXp": 15
+    },
+    "quest:2026-10-23-card-0-ladder-Reduction": {
+      "day": "2026-10-23",
+      "questXp": 20
+    },
+    "quest:2026-10-23-card-0-ladder-Body": {
+      "day": "2026-10-23",
+      "questXp": 25
+    },
+    "quest:2026-10-23-card-0-ladder-Food": {
+      "day": "2026-10-23",
+      "questXp": 25
+    },
+    "day:2026-10-23": {
+      "day": "2026-10-23",
+      "bonusXp": 20
+    }
+  },
+  "achievements": {
+    "first-quest": "2026-10-20",
+    "full-day": "2026-10-20",
+    "weekly-rhythm": "2026-10-23"
+  },
+  "activityDays": [
+    "2026-10-20",
+    "2026-10-21",
+    "2026-10-22",
+    "2026-10-23"
+  ],
+  "reduceMotion": false,
+  "haptics": true,
+  "researchParticipation": null,
+  "companionAccessory": "none",
+  "companionBackground": "natural",
+  "profile": {
+    "alias": "preview",
+    "path": "reduction",
+    "pace": 2,
+    "lowImpact": false,
+    "companion": "plant",
+    "ageGroup": "18-22",
+    "started": "2026-10-20"
+  },
+  "days": {
+    "2026-10-20": {
+      "ladderSteps": {
+        "Reduction": 1,
+        "Body": 2,
+        "Food": 2,
+        "Lifestyle": 2,
+        "Energy": 2
+      },
+      "quests": [
+        {
+          "id": "2026-10-20-card-2-ladder-Reduction",
+          "catalogId": "ladder-reduction",
+          "ladder": "Reduction",
+          "step": 1,
+          "title": "Coba satu aktivitas pengganti",
+          "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+          "category": "Reduction",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "habit_swap"
+        },
+        {
+          "id": "2026-10-20-card-2-ladder-Body",
+          "catalogId": "ladder-body",
+          "ladder": "Body",
+          "step": 2,
+          "title": "Jalan 800 m",
+          "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+          "category": "Body",
+          "difficulty": 2,
+          "durationMinutes": 10,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "walk",
+          "targetMeters": 800,
+          "validationInvalidated": false
+        },
+        {
+          "id": "2026-10-20-card-2-ladder-Energy",
+          "catalogId": "ladder-energy",
+          "ladder": "Energy",
+          "step": 2,
+          "title": "Semalam: layar off 15 menit sebelum tidur",
+          "description": "Ganti scroll dengan hal yang menenangkan.",
+          "category": "Energy",
+          "difficulty": 2,
+          "durationMinutes": 15,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true
+        },
+        {
+          "id": "2026-10-20-card-2-side-0-water-glass",
+          "catalogId": "water-glass",
+          "title": "Satu gelas air",
+          "description": "Minum sesuai kebutuhanmu, lalu catat di Hidrasi.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "water",
+          "waterMl": 250
+        },
+        {
+          "id": "2026-10-20-bonus-0-fruit-veg",
+          "catalogId": "fruit-veg",
+          "title": "Tambahkan buah atau sayur",
+          "description": "Pilih buah atau sayur yang tersedia saat makan.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 2,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-20-bonus-1-screen-break",
+          "catalogId": "screen-break",
+          "title": "Jeda layar",
+          "description": "Alihkan pandangan dari layar.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 2,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-20-bonus-2-sunlight",
+          "catalogId": "sunlight",
+          "title": "Cari cahaya pagi",
+          "description": "Keluar atau duduk dekat jendela.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 3,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        }
+      ],
+      "cardPacks": [
+        {
+          "id": "2026-10-20-card-0",
+          "title": "Ganti kebiasaan · Gerak · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Lifestyle"
+          ],
+          "cardStyle": 0,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-20-card-0-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-20-card-0-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-20-card-0-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 16,
+          "activeMinutes": 15,
+          "categoryUsage": 0
+        },
+        {
+          "id": "2026-10-20-card-1",
+          "title": "Ganti kebiasaan · Makan · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Lifestyle"
+          ],
+          "cardStyle": 1,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-20-card-1-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-20-card-1-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-20-card-1-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 11,
+          "activeMinutes": 10,
+          "categoryUsage": 0
+        },
+        {
+          "id": "2026-10-20-card-2",
+          "title": "Ganti kebiasaan · Gerak · Istirahat",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Energy"
+          ],
+          "cardStyle": 2,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-20-card-2-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-20-card-2-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-20-card-2-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-20-card-2-side-0-water-glass",
+              "catalogId": "water-glass",
+              "title": "Satu gelas air",
+              "description": "Minum sesuai kebutuhanmu, lalu catat di Hidrasi.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 1,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 250
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 31,
+          "activeMinutes": 15,
+          "categoryUsage": 0,
+          "recommended": true
+        },
+        {
+          "id": "2026-10-20-card-3",
+          "title": "Ganti kebiasaan · Makan · Istirahat",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Energy"
+          ],
+          "cardStyle": 3,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-20-card-3-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-20-card-3-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-20-card-3-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-20-card-3-side-0-sunlight",
+              "catalogId": "sunlight",
+              "title": "Cari cahaya pagi",
+              "description": "Keluar atau duduk dekat jendela.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 3,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 28,
+          "activeMinutes": 13,
+          "categoryUsage": 0
+        },
+        {
+          "id": "2026-10-20-card-4",
+          "title": "Ganti kebiasaan · Gerak · Makan",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Food"
+          ],
+          "cardStyle": 4,
+          "size": 5,
+          "difficulty": 3,
+          "tasks": [
+            {
+              "id": "2026-10-20-card-4-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-20-card-4-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-20-card-4-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-20-card-4-side-0-sunlight",
+              "catalogId": "sunlight",
+              "title": "Cari cahaya pagi",
+              "description": "Keluar atau duduk dekat jendela.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 3,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-20-card-4-side-1-fresh-air",
+              "catalogId": "fresh-air",
+              "title": "Cari udara segar",
+              "description": "Keluar sebentar dan ubah suasana.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 110,
+          "durationMinutes": 28,
+          "activeMinutes": 28,
+          "categoryUsage": 0
+        }
+      ],
+      "water": 250.0,
+      "cardDraw": {
+        "selectedCardId": "2026-10-20-card-2",
+        "passedCardIds": [],
+        "deckStartIndex": 3,
+        "committedCardId": "2026-10-20-card-2"
+      },
+      "bonusDrawn": true
+    },
+    "2026-10-21": {
+      "ladderSteps": {
+        "Reduction": 1,
+        "Body": 2,
+        "Food": 2,
+        "Lifestyle": 2,
+        "Energy": 2
+      },
+      "quests": [
+        {
+          "id": "2026-10-21-card-0-ladder-Reduction",
+          "catalogId": "ladder-reduction",
+          "ladder": "Reduction",
+          "step": 1,
+          "title": "Coba satu aktivitas pengganti",
+          "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+          "category": "Reduction",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "habit_swap",
+          "practiceOnly": true
+        },
+        {
+          "id": "2026-10-21-card-0-ladder-Food",
+          "catalogId": "ladder-food",
+          "ladder": "Food",
+          "step": 1,
+          "title": "Tambah 1 porsi buah atau sayur",
+          "description": "Jam makannya sudah lewat, jadi hari ini cukup ini. Foto tiap porsinya.",
+          "category": "Food",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "meal_snap",
+          "photoCount": 1,
+          "practiceOnly": true,
+          "validationInvalidated": false
+        },
+        {
+          "id": "2026-10-21-card-0-ladder-Lifestyle",
+          "catalogId": "ladder-lifestyle",
+          "ladder": "Lifestyle",
+          "step": 1,
+          "title": "Minum 1.000 ml hari ini",
+          "description": "Catat setiap gelas di Aktivitas.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "water",
+          "waterMl": 1000,
+          "practiceOnly": true
+        },
+        {
+          "id": "2026-10-21-bonus-0-stand-break",
+          "catalogId": "stand-break",
+          "title": "Ubah posisi sebentar",
+          "description": "Berdiri atau regangkan tubuh sambil duduk senyamanmu.",
+          "category": "Body",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-21-bonus-1-fresh-air",
+          "catalogId": "fresh-air",
+          "title": "Cari udara segar",
+          "description": "Keluar sebentar dan ubah suasana.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-21-bonus-2-posture",
+          "catalogId": "posture",
+          "title": "Rapikan postur",
+          "description": "Lepaskan bahu dan rapikan posisi duduk.",
+          "category": "Body",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        }
+      ],
+      "cardPacks": [
+        {
+          "id": "2026-10-21-card-0",
+          "title": "Ganti kebiasaan · Makan · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Lifestyle"
+          ],
+          "cardStyle": 0,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-21-card-0-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap",
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-0-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 1,
+              "title": "Tambah 1 porsi buah atau sayur",
+              "description": "Jam makannya sudah lewat, jadi hari ini cukup ini. Foto tiap porsinya.",
+              "category": "Food",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-0-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 1,
+              "title": "Minum 1.000 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 1,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1000,
+              "practiceOnly": true
+            }
+          ],
+          "xp": 60,
+          "durationMinutes": 11,
+          "activeMinutes": 10,
+          "categoryUsage": 1,
+          "recommended": true
+        },
+        {
+          "id": "2026-10-21-card-1",
+          "title": "Ganti kebiasaan · Makan · Istirahat",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Energy"
+          ],
+          "cardStyle": 1,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-21-card-1-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap",
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-1-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 1,
+              "title": "Tambah 1 porsi buah atau sayur",
+              "description": "Jam makannya sudah lewat, jadi hari ini cukup ini. Foto tiap porsinya.",
+              "category": "Food",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-1-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 1,
+              "title": "Semalam: layar off 10 menit sebelum tidur",
+              "description": "Centang hari ini kalau semalam kamu menaruh HP dulu.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 10,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "practiceOnly": true
+            }
+          ],
+          "xp": 60,
+          "durationMinutes": 20,
+          "activeMinutes": 10,
+          "categoryUsage": 2
+        },
+        {
+          "id": "2026-10-21-card-2",
+          "title": "Ganti kebiasaan · Gerak · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Lifestyle"
+          ],
+          "cardStyle": 2,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-21-card-2-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap",
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-2-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 1,
+              "title": "Jalan 400 m",
+              "description": "Sekitar 5 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 400,
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-2-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 1,
+              "title": "Minum 1.000 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 1,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1000,
+              "practiceOnly": true
+            }
+          ],
+          "xp": 60,
+          "durationMinutes": 11,
+          "activeMinutes": 10,
+          "categoryUsage": 2
+        },
+        {
+          "id": "2026-10-21-card-3",
+          "title": "Ganti kebiasaan · Hidrasi · Istirahat",
+          "categories": [
+            "Reduction",
+            "Lifestyle",
+            "Energy"
+          ],
+          "cardStyle": 3,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-21-card-3-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap",
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-3-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 1,
+              "title": "Minum 1.000 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 1,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1000,
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-3-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 1,
+              "title": "Semalam: layar off 10 menit sebelum tidur",
+              "description": "Centang hari ini kalau semalam kamu menaruh HP dulu.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 10,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "practiceOnly": true
+            }
+          ],
+          "xp": 60,
+          "durationMinutes": 16,
+          "activeMinutes": 5,
+          "categoryUsage": 2
+        },
+        {
+          "id": "2026-10-21-card-4",
+          "title": "Ganti kebiasaan · Gerak · Makan",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Food"
+          ],
+          "cardStyle": 4,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-21-card-4-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap",
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-4-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 1,
+              "title": "Jalan 400 m",
+              "description": "Sekitar 5 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 400,
+              "practiceOnly": true
+            },
+            {
+              "id": "2026-10-21-card-4-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 1,
+              "title": "Tambah 1 porsi buah atau sayur",
+              "description": "Jam makannya sudah lewat, jadi hari ini cukup ini. Foto tiap porsinya.",
+              "category": "Food",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "practiceOnly": true
+            }
+          ],
+          "xp": 60,
+          "durationMinutes": 15,
+          "activeMinutes": 15,
+          "categoryUsage": 2
+        }
+      ],
+      "water": 1000.0,
+      "cardDraw": {
+        "selectedCardId": "2026-10-21-card-0",
+        "passedCardIds": [],
+        "deckStartIndex": 2,
+        "committedCardId": "2026-10-21-card-0"
+      },
+      "dailyPace": "relaxed",
+      "bonusDrawn": true
+    },
+    "2026-10-22": {
+      "ladderSteps": {
+        "Reduction": 1,
+        "Body": 2,
+        "Food": 2,
+        "Lifestyle": 2,
+        "Energy": 2
+      },
+      "quests": [
+        {
+          "id": "2026-10-22-card-0-ladder-Reduction",
+          "catalogId": "ladder-reduction",
+          "ladder": "Reduction",
+          "step": 1,
+          "title": "Coba satu aktivitas pengganti",
+          "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+          "category": "Reduction",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "habit_swap"
+        },
+        {
+          "id": "2026-10-22-card-0-ladder-Lifestyle",
+          "catalogId": "ladder-lifestyle",
+          "ladder": "Lifestyle",
+          "step": 2,
+          "title": "Minum 1.250 ml hari ini",
+          "description": "Catat setiap gelas di Aktivitas.",
+          "category": "Lifestyle",
+          "difficulty": 2,
+          "durationMinutes": 1,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "water",
+          "waterMl": 1250
+        },
+        {
+          "id": "2026-10-22-card-0-ladder-Energy",
+          "catalogId": "ladder-energy",
+          "ladder": "Energy",
+          "step": 2,
+          "title": "Semalam: layar off 15 menit sebelum tidur",
+          "description": "Ganti scroll dengan hal yang menenangkan.",
+          "category": "Energy",
+          "difficulty": 2,
+          "durationMinutes": 15,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true
+        },
+        {
+          "id": "2026-10-22-card-0-side-0-fruit-veg",
+          "catalogId": "fruit-veg",
+          "title": "Tambahkan buah atau sayur",
+          "description": "Pilih buah atau sayur yang tersedia saat makan.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 2,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true
+        },
+        {
+          "id": "2026-10-22-bonus-0-sunlight",
+          "catalogId": "sunlight",
+          "title": "Cari cahaya pagi",
+          "description": "Keluar atau duduk dekat jendela.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 3,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-22-bonus-1-stand-break",
+          "catalogId": "stand-break",
+          "title": "Ubah posisi sebentar",
+          "description": "Berdiri atau regangkan tubuh sambil duduk senyamanmu.",
+          "category": "Body",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-22-bonus-2-screen-break",
+          "catalogId": "screen-break",
+          "title": "Jeda layar",
+          "description": "Alihkan pandangan dari layar.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 2,
+          "xp": 15,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "bonus": true
+        }
+      ],
+      "cardPacks": [
+        {
+          "id": "2026-10-22-card-0",
+          "title": "Ganti kebiasaan · Hidrasi · Istirahat",
+          "categories": [
+            "Reduction",
+            "Lifestyle",
+            "Energy"
+          ],
+          "cardStyle": 0,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-22-card-0-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-22-card-0-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            },
+            {
+              "id": "2026-10-22-card-0-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-22-card-0-side-0-fruit-veg",
+              "catalogId": "fruit-veg",
+              "title": "Tambahkan buah atau sayur",
+              "description": "Pilih buah atau sayur yang tersedia saat makan.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 2,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 23,
+          "activeMinutes": 7,
+          "categoryUsage": 4,
+          "recommended": true
+        },
+        {
+          "id": "2026-10-22-card-1",
+          "title": "Ganti kebiasaan · Gerak · Makan",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Food"
+          ],
+          "cardStyle": 1,
+          "size": 5,
+          "difficulty": 3,
+          "tasks": [
+            {
+              "id": "2026-10-22-card-1-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-22-card-1-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-22-card-1-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-22-card-1-side-0-fresh-air",
+              "catalogId": "fresh-air",
+              "title": "Cari udara segar",
+              "description": "Keluar sebentar dan ubah suasana.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-22-card-1-side-1-posture",
+              "catalogId": "posture",
+              "title": "Rapikan postur",
+              "description": "Lepaskan bahu dan rapikan posisi duduk.",
+              "category": "Body",
+              "difficulty": 1,
+              "durationMinutes": 1,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 110,
+          "durationMinutes": 26,
+          "activeMinutes": 26,
+          "categoryUsage": 4
+        },
+        {
+          "id": "2026-10-22-card-2",
+          "title": "Ganti kebiasaan · Gerak · Istirahat",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Energy"
+          ],
+          "cardStyle": 2,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-22-card-2-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-22-card-2-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-22-card-2-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 30,
+          "activeMinutes": 15,
+          "categoryUsage": 4
+        },
+        {
+          "id": "2026-10-22-card-3",
+          "title": "Ganti kebiasaan · Gerak · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Lifestyle"
+          ],
+          "cardStyle": 3,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-22-card-3-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-22-card-3-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-22-card-3-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 16,
+          "activeMinutes": 15,
+          "categoryUsage": 4
+        },
+        {
+          "id": "2026-10-22-card-4",
+          "title": "Ganti kebiasaan · Makan · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Lifestyle"
+          ],
+          "cardStyle": 4,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-22-card-4-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-22-card-4-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-22-card-4-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            },
+            {
+              "id": "2026-10-22-card-4-side-0-screen-break",
+              "catalogId": "screen-break",
+              "title": "Jeda layar",
+              "description": "Alihkan pandangan dari layar.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 2,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 13,
+          "activeMinutes": 12,
+          "categoryUsage": 4
+        }
+      ],
+      "water": 1250.0,
+      "cardDraw": {
+        "selectedCardId": "2026-10-22-card-0",
+        "passedCardIds": [],
+        "deckStartIndex": 0,
+        "committedCardId": "2026-10-22-card-0"
+      },
+      "bonusDrawn": true
+    },
+    "2026-10-23": {
+      "ladderSteps": {
+        "Reduction": 1,
+        "Body": 2,
+        "Food": 2,
+        "Lifestyle": 2,
+        "Energy": 2
+      },
+      "quests": [
+        {
+          "id": "2026-10-23-card-0-ladder-Reduction",
+          "catalogId": "ladder-reduction",
+          "ladder": "Reduction",
+          "step": 1,
+          "title": "Coba satu aktivitas pengganti",
+          "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+          "category": "Reduction",
+          "difficulty": 1,
+          "durationMinutes": 5,
+          "xp": 20,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "habit_swap"
+        },
+        {
+          "id": "2026-10-23-card-0-ladder-Body",
+          "catalogId": "ladder-body",
+          "ladder": "Body",
+          "step": 2,
+          "title": "Jalan 800 m",
+          "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+          "category": "Body",
+          "difficulty": 2,
+          "durationMinutes": 10,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "walk",
+          "targetMeters": 800,
+          "validationInvalidated": false
+        },
+        {
+          "id": "2026-10-23-card-0-ladder-Food",
+          "catalogId": "ladder-food",
+          "ladder": "Food",
+          "step": 2,
+          "title": "Makan siang tepat waktu",
+          "description": "Foto makan siangmu sebelum 14.00.",
+          "category": "Food",
+          "difficulty": 2,
+          "durationMinutes": 5,
+          "xp": 25,
+          "source": "card",
+          "status": "completed",
+          "done": true,
+          "activityKind": "meal_snap",
+          "photoCount": 1,
+          "photoWindows": [
+            [
+              10,
+              14
+            ]
+          ]
+        },
+        {
+          "id": "2026-10-23-bonus-0-screen-break",
+          "catalogId": "screen-break",
+          "title": "Jeda layar",
+          "description": "Alihkan pandangan dari layar.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 2,
+          "xp": 15,
+          "source": "card",
+          "status": "committed",
+          "done": false,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-23-bonus-1-water-glass",
+          "catalogId": "water-glass",
+          "title": "Satu gelas air",
+          "description": "Minum sesuai kebutuhanmu, lalu catat di Hidrasi.",
+          "category": "Lifestyle",
+          "difficulty": 1,
+          "durationMinutes": 1,
+          "xp": 15,
+          "source": "card",
+          "status": "committed",
+          "done": false,
+          "activityKind": "water",
+          "waterMl": 250,
+          "bonus": true
+        },
+        {
+          "id": "2026-10-23-bonus-2-sunlight",
+          "catalogId": "sunlight",
+          "title": "Cari cahaya pagi",
+          "description": "Keluar atau duduk dekat jendela.",
+          "category": "Energy",
+          "difficulty": 1,
+          "durationMinutes": 3,
+          "xp": 15,
+          "source": "card",
+          "status": "committed",
+          "done": false,
+          "bonus": true
+        }
+      ],
+      "cardPacks": [
+        {
+          "id": "2026-10-23-card-0",
+          "title": "Ganti kebiasaan · Gerak · Makan",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Food"
+          ],
+          "cardStyle": 0,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-23-card-0-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-23-card-0-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-23-card-0-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 20,
+          "activeMinutes": 20,
+          "categoryUsage": 5
+        },
+        {
+          "id": "2026-10-23-card-1",
+          "title": "Ganti kebiasaan · Makan · Istirahat",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Energy"
+          ],
+          "cardStyle": 1,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-23-card-1-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-23-card-1-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-23-card-1-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-23-card-1-side-0-screen-break",
+              "catalogId": "screen-break",
+              "title": "Jeda layar",
+              "description": "Alihkan pandangan dari layar.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 2,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 27,
+          "activeMinutes": 12,
+          "categoryUsage": 6
+        },
+        {
+          "id": "2026-10-23-card-2",
+          "title": "Ganti kebiasaan · Gerak · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Lifestyle"
+          ],
+          "cardStyle": 2,
+          "size": 4,
+          "difficulty": 2,
+          "tasks": [
+            {
+              "id": "2026-10-23-card-2-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-23-card-2-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-23-card-2-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            },
+            {
+              "id": "2026-10-23-card-2-side-0-fresh-air",
+              "catalogId": "fresh-air",
+              "title": "Cari udara segar",
+              "description": "Keluar sebentar dan ubah suasana.",
+              "category": "Lifestyle",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 90,
+          "durationMinutes": 21,
+          "activeMinutes": 20,
+          "categoryUsage": 6,
+          "recommended": true
+        },
+        {
+          "id": "2026-10-23-card-3",
+          "title": "Ganti kebiasaan · Makan · Hidrasi",
+          "categories": [
+            "Reduction",
+            "Food",
+            "Lifestyle"
+          ],
+          "cardStyle": 3,
+          "size": 5,
+          "difficulty": 3,
+          "tasks": [
+            {
+              "id": "2026-10-23-card-3-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-23-card-3-ladder-Food",
+              "catalogId": "ladder-food",
+              "ladder": "Food",
+              "step": 2,
+              "title": "Makan siang tepat waktu",
+              "description": "Foto makan siangmu sebelum 14.00.",
+              "category": "Food",
+              "difficulty": 2,
+              "durationMinutes": 5,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "meal_snap",
+              "photoCount": 1,
+              "photoWindows": [
+                [
+                  10,
+                  14
+                ]
+              ]
+            },
+            {
+              "id": "2026-10-23-card-3-ladder-Lifestyle",
+              "catalogId": "ladder-lifestyle",
+              "ladder": "Lifestyle",
+              "step": 2,
+              "title": "Minum 1.250 ml hari ini",
+              "description": "Catat setiap gelas di Aktivitas.",
+              "category": "Lifestyle",
+              "difficulty": 2,
+              "durationMinutes": 1,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "water",
+              "waterMl": 1250
+            },
+            {
+              "id": "2026-10-23-card-3-side-0-sunlight",
+              "catalogId": "sunlight",
+              "title": "Cari cahaya pagi",
+              "description": "Keluar atau duduk dekat jendela.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 3,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            },
+            {
+              "id": "2026-10-23-card-3-side-1-screen-break",
+              "catalogId": "screen-break",
+              "title": "Jeda layar",
+              "description": "Alihkan pandangan dari layar.",
+              "category": "Energy",
+              "difficulty": 1,
+              "durationMinutes": 2,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 110,
+          "durationMinutes": 16,
+          "activeMinutes": 15,
+          "categoryUsage": 6
+        },
+        {
+          "id": "2026-10-23-card-4",
+          "title": "Ganti kebiasaan · Gerak · Istirahat",
+          "categories": [
+            "Reduction",
+            "Body",
+            "Energy"
+          ],
+          "cardStyle": 4,
+          "size": 3,
+          "difficulty": 1,
+          "tasks": [
+            {
+              "id": "2026-10-23-card-4-ladder-Reduction",
+              "catalogId": "ladder-reduction",
+              "ladder": "Reduction",
+              "step": 1,
+              "title": "Coba satu aktivitas pengganti",
+              "description": "Saat keinginan muncul, coba kegiatan pengganti lalu laporkan di Habit Swap.",
+              "category": "Reduction",
+              "difficulty": 1,
+              "durationMinutes": 5,
+              "xp": 20,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "habit_swap"
+            },
+            {
+              "id": "2026-10-23-card-4-ladder-Body",
+              "catalogId": "ladder-body",
+              "ladder": "Body",
+              "step": 2,
+              "title": "Jalan 800 m",
+              "description": "Sekitar 10 menit. Jarak dihitung lewat GPS.",
+              "category": "Body",
+              "difficulty": 2,
+              "durationMinutes": 10,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false,
+              "activityKind": "walk",
+              "targetMeters": 800
+            },
+            {
+              "id": "2026-10-23-card-4-ladder-Energy",
+              "catalogId": "ladder-energy",
+              "ladder": "Energy",
+              "step": 2,
+              "title": "Semalam: layar off 15 menit sebelum tidur",
+              "description": "Ganti scroll dengan hal yang menenangkan.",
+              "category": "Energy",
+              "difficulty": 2,
+              "durationMinutes": 15,
+              "xp": 25,
+              "source": "card",
+              "status": "available",
+              "done": false
+            }
+          ],
+          "xp": 70,
+          "durationMinutes": 30,
+          "activeMinutes": 15,
+          "categoryUsage": 6
+        }
+      ],
+      "water": 0,
+      "cardDraw": {
+        "selectedCardId": "2026-10-23-card-0",
+        "passedCardIds": [],
+        "deckStartIndex": 2,
+        "committedCardId": "2026-10-23-card-0"
+      },
+      "bonusDrawn": true
+    }
+  },
+  "focusSessions": [],
+  "habitDelays": [],
+  "habitSwaps": [
+    {
+      "eventId": "moment-0",
+      "product": "cigarette",
+      "trigger": "after_meal",
+      "activity": "walk",
+      "swap": "Jalan santai",
+      "outcome": "used",
+      "id": "1792468800000000-8792",
+      "day": "2026-10-20",
+      "time": "2026-10-20T11:00:00.000"
+    },
+    {
+      "eventId": "moment-1",
+      "product": "cigarette",
+      "trigger": "after_meal",
+      "activity": "walk",
+      "swap": "Jalan santai",
+      "outcome": "used",
+      "id": "1792555200000000-3002",
+      "day": "2026-10-21",
+      "time": "2026-10-21T11:00:00.000"
+    },
+    {
+      "eventId": "moment-2",
+      "product": "cigarette",
+      "trigger": "after_meal",
+      "activity": "walk",
+      "swap": "Jalan santai",
+      "outcome": "used",
+      "id": "1792641600000000-3110",
+      "day": "2026-10-22",
+      "time": "2026-10-22T11:00:00.000"
+    },
+    {
+      "eventId": "moment-3",
+      "product": "cigarette",
+      "trigger": "after_meal",
+      "activity": "walk",
+      "swap": "Jalan santai",
+      "outcome": "used",
+      "id": "1792728000000000-7625",
+      "day": "2026-10-23",
+      "time": "2026-10-23T11:00:00.000"
+    }
+  ],
+  "reductionSettings": {
+    "product": "both"
+  },
+  "nicotineDays": [],
+  "reductionTargets": [],
+  "reductionPlans": {},
+  "reductionSetup": {},
+  "openedDays": [
+    "2026-10-20",
+    "2026-10-21",
+    "2026-10-22",
+    "2026-10-23"
+  ],
+  "capacity": {
+    "Reduction": {
+      "step": 1,
+      "reviewedOn": "2026-10-20",
+      "change": "start",
+      "reason": "Mulai dari level 1."
+    },
+    "Body": {
+      "step": 2,
+      "reviewedOn": "2026-10-20",
+      "change": "start",
+      "reason": "Mulai dari level 2."
+    },
+    "Food": {
+      "step": 2,
+      "reviewedOn": "2026-10-20",
+      "change": "start",
+      "reason": "Mulai dari level 2."
+    },
+    "Lifestyle": {
+      "step": 2,
+      "reviewedOn": "2026-10-20",
+      "change": "start",
+      "reason": "Mulai dari level 2."
+    },
+    "Energy": {
+      "step": 2,
+      "reviewedOn": "2026-10-20",
+      "change": "start",
+      "reason": "Mulai dari level 2."
+    }
+  },
+  "workoutSessions": [
+    {
+      "kind": "walk",
+      "seconds": 636,
+      "meters": 800,
+      "id": "1792468800000000-4184",
+      "day": "2026-10-20",
+      "time": "2026-10-20T11:00:00.000"
+    },
+    {
+      "kind": "walk",
+      "seconds": 636,
+      "meters": 800,
+      "id": "1792728000000000-2773",
+      "day": "2026-10-23",
+      "time": "2026-10-23T11:00:00.000"
+    }
+  ],
+  "mealCheckIns": [
+    {
+      "photoCaptured": true,
+      "note": "",
+      "id": "1792555200000000-2696",
+      "day": "2026-10-21",
+      "time": "2026-10-21T11:00:00.000"
+    },
+    {
+      "photoCaptured": true,
+      "note": "",
+      "id": "1792728000000000-449",
+      "day": "2026-10-23",
+      "time": "2026-10-23T11:00:00.000"
+    }
+  ],
+  "communityPosts": [],
+  "communityReactions": [],
+  "communityReports": [],
+  "squad": null,
+  "buddy": null,
+  "levelFloor": 4
+}

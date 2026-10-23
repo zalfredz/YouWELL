@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:youwell/features/home/presentation/sleep_card.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
@@ -42,9 +43,11 @@ class HomePage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: _QuestCard(
         task: task,
+        verification: controller.mealVerificationFor(task),
         onComplete: switch (task['activityKind']) {
           null => () => controller.completeCard(task['id'].toString()),
           'habit_swap' => () => openReductionSupport(context, controller),
+          'sleep' => () => openSleepSheet(context, controller),
           _ => onOpenActivity,
         },
       ),
@@ -77,6 +80,11 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 16),
           _LadderBanner(controller: controller),
         ],
+        // Evening check-in, morning check-out; hidden in the afternoon.
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: SleepCard(controller: controller),
+        ),
         ...[
           const SizedBox(height: 32),
           _TodayHeader(controller: controller),
@@ -524,7 +532,8 @@ class LadderOfferCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
-                  '${ladderLabels[category]} · level ${next - 1} → $next',
+                  // Nunito has no arrow glyph, so say it in words.
+                  '${ladderLabels[category]} · naik ke level $next',
                   style: TextStyle(
                     color: c.text,
                     fontSize: 12.5,
@@ -558,7 +567,11 @@ class LadderOfferCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => controller.declineLadderStep(category),
-                  child: const Text('Tetap di level ini'),
+                  // One line on narrow phones instead of wrapping.
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Tetap di level ini', maxLines: 1),
+                  ),
                 ),
               ),
             ],
@@ -572,15 +585,22 @@ class LadderOfferCard extends StatelessWidget {
 const _shortLadder = {
   'Body': 'Gerak',
   'Food': 'Makan',
-  'Energy': 'Istirahat',
+  'Energy': 'Tidur',
   'Reduction': 'Habit Swap',
   'Lifestyle': 'Hidrasi',
 };
 
 class _QuestCard extends StatelessWidget {
-  const _QuestCard({required this.task, required this.onComplete});
+  const _QuestCard({
+    required this.task,
+    required this.onComplete,
+    this.verification,
+  });
   final Map<String, dynamic> task;
   final VoidCallback onComplete;
+
+  /// 'pending' or 'rejected' for a Meal Snap photo under review.
+  final String? verification;
 
   @override
   Widget build(BuildContext context) {
@@ -600,6 +620,10 @@ class _QuestCard extends StatelessWidget {
         ? 'Tandai selesai'
         : kind == 'habit_swap'
         ? 'Pilih Habit Swap'
+        : kind == 'sleep'
+        ? 'Catat waktu tidur dan bangun'
+        : verification == 'pending'
+        ? 'Menunggu verifikasi'
         : 'Buka Aktivitas untuk menyelesaikan';
     return GameCard(
       color: done ? c.successSoft : c.card,
@@ -714,7 +738,22 @@ class _QuestCard extends StatelessWidget {
               ),
             ],
             if (kind == 'meal_snap' && !done)
-              _Note(icon: Icons.photo_camera_rounded, text: _photoRule(task)),
+              switch (verification) {
+                'pending' => _Note(
+                  icon: Icons.hourglass_top_rounded,
+                  text: 'Menunggu verifikasi foto.',
+                  color: c.xp,
+                ),
+                'rejected' => _Note(
+                  icon: Icons.replay_rounded,
+                  text: 'Foto ditolak, foto ulang ya.',
+                  color: c.amber,
+                ),
+                _ => _Note(
+                  icon: Icons.photo_camera_rounded,
+                  text: _photoRule(task),
+                ),
+              },
             if (task['strenuous'] == true && !done)
               _Note(
                 icon: Icons.health_and_safety_outlined,
@@ -755,9 +794,10 @@ String _photoRule(Map<String, dynamic> task) {
 }
 
 class _Note extends StatelessWidget {
-  const _Note({required this.icon, required this.text});
+  const _Note({required this.icon, required this.text, this.color});
   final IconData icon;
   final String text;
+  final Color? color;
   @override
   Widget build(BuildContext context) => Padding(
     // Lines up with the quest title, past the 48 px icon and its gap.
@@ -767,16 +807,17 @@ class _Note extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 1),
-          child: Icon(icon, size: 16, color: context.colors.muted),
+          child: Icon(icon, size: 16, color: color ?? context.colors.muted),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              color: context.colors.muted,
+              color: color ?? context.colors.muted,
               fontSize: 12.5,
               height: 1.4,
+              fontWeight: color == null ? null : FontWeight.w700,
             ),
           ),
         ),

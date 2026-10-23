@@ -63,6 +63,13 @@ class Sim {
               : (meters / 5000 * 3600).round() + 60,
           meters: meters,
         );
+      case 'sleep':
+        // Last night: in bed by 22.30, up at 05.30 (meets every level).
+        final now = controller.now;
+        controller.recordSleep(
+          bedAt: DateTime(now.year, now.month, now.day - 1, 22, 30),
+          wakeAt: DateTime(now.year, now.month, now.day, 5, 30),
+        );
       case 'water':
         while (controller.water < (task['waterMl'] as int)) {
           controller.addWater();

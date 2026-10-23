@@ -212,7 +212,7 @@ extension ReductionSupport on WellnessController {
   List<JsonMap> get swapsAwaitingOutcome =>
       habitSwaps.where(awaitingOutcome).toList();
 
-  /// [outcome] is 'skipped' or 'used'; "isi nanti" simply leaves it open.
+  /// [outcome] is 'skipped' or 'used'. Older moments may still wait for one.
   /// With both products, [usedProduct] records what was actually used.
   bool recordSwapOutcome(
     String swapId,

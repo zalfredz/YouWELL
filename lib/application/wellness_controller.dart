@@ -21,6 +21,8 @@ import 'package:youwell/features/community/domain/community_store.dart'
 
 part 'wellness_gamification.dart';
 part 'wellness_reduction.dart';
+part 'wellness_sleep.dart';
+part 'wellness_meal_checks.dart';
 
 /// Single local-first state boundary shared by mobile and web.
 /// Remote auth and sync can later replace [persist] without changing the UI.
@@ -43,10 +45,12 @@ class WellnessController extends ChangeNotifier {
           _data['levelFloor'] = legacyLevelForXp(xp);
         }
       } catch (_) {
-        storageError = 'Data lokal tidak bisa dibaca, jadi aplikasi mulai baru.';
+        storageError =
+            'Data lokal tidak bisa dibaca, jadi aplikasi mulai baru.';
       }
       _replaceRetiredDelayQuests();
       _matchWorkoutMethod();
+      _retireScreenOffQuests();
       _reconcileActivityEvidence();
       _refreshPendingLadderOffers();
     }
@@ -181,8 +185,7 @@ class WellnessController extends ChangeNotifier {
   }
 
   bool get hasCommittedDailyCard => dailyCardDraw?['committedCardId'] != null;
-  bool get needsDailyCardDraw =>
-      profile != null && !hasCommittedDailyCard;
+  bool get needsDailyCardDraw => profile != null && !hasCommittedDailyCard;
   int get dailyCardSwitchesRemaining =>
       (1 - passedDailyCardIds.length).clamp(0, 1);
   bool get canChooseAnotherDailyCard =>
@@ -319,6 +322,7 @@ class WellnessController extends ChangeNotifier {
     for (final entry in ((_data['capacity'] ?? const {}) as Map).entries)
       entry.key.toString(): Map<String, dynamic>.from(entry.value as Map),
   };
+
   /// Steps of the active path only: a category left behind by a path switch
   /// keeps its saved step but is reported as unused (null) in research logs.
   Map<String, int> get ladderSteps {
@@ -329,10 +333,11 @@ class WellnessController extends ChangeNotifier {
           entry.key: (entry.value['step'] as num?)?.toInt() ?? 1,
     };
   }
+
   List<String> get ladderOffers => [
-          for (final category in ladderCategories(reduction: reduction))
-            if (capacity[category]?['offerStep'] != null) category,
-        ];
+    for (final category in ladderCategories(reduction: reduction))
+      if (capacity[category]?['offerStep'] != null) category,
+  ];
 
   ResearchSummary researchSummary(int week) => ResearchSummary.forWeek(
     week: week,
@@ -552,6 +557,9 @@ class WellnessController extends ChangeNotifier {
           ratio =
               ActivityEvidence.mealPhotosMatched(task, mealCheckIns, today) /
               target;
+        case 'sleep':
+          final night = lastNightSleep;
+          ratio = night != null && sleepMeets(task, night) ? 1 : 0;
       }
       if (ratio >= 1) {
         task['status'] = 'completed';
@@ -711,6 +719,76 @@ class WellnessController extends ChangeNotifier {
             adaptCard(card),
         ];
       }
+    }
+  }
+
+  /// Open "layar off" and "Jeda layar" quests become the sleep check-in
+  /// level and "Jeda mikro" (decision 23 Oct 2026). Finished ones keep
+  /// their history and XP.
+  void _retireScreenOffQuests() {
+    final rungs = ladders['Energy']!;
+    JsonMap adapt(Map raw) {
+      final task = Map<String, dynamic>.from(raw);
+      if (task['status'] == 'completed') return task;
+      if (task['ladder'] == 'Energy' && task['activityKind'] != 'sleep') {
+        final step = ((task['step'] as num?)?.toInt() ?? 1).clamp(
+          1,
+          rungs.length,
+        );
+        final rung = rungs[step - 1];
+        return {
+          ...task,
+          'step': step,
+          'difficulty': step,
+          'title': rung.title,
+          'description': rung.description,
+          'durationMinutes': rung.durationMinutes,
+          'activityKind': 'sleep',
+          'bedBefore': rung.bedBefore,
+          'wakeBefore': rung.wakeBefore,
+        };
+      }
+      if (task['catalogId'] == 'screen-break') {
+        return {
+          ...task,
+          'catalogId': 'micro-break',
+          'title': 'Jeda mikro',
+          'description': 'Berdiri dan regangkan badan 2 menit di sela belajar.',
+        };
+      }
+      return task;
+    }
+
+    for (final entry in (_data['days'] as Map).entries) {
+      if (entry.key.toString().compareTo(today) < 0 || entry.value is! Map) {
+        continue;
+      }
+      final day = entry.value as Map;
+      day['quests'] = [
+        for (final task in (day['quests'] ?? const []) as List)
+          if (task is Map) adapt(task),
+      ];
+      for (final key in ['cardPacks', 'bonusCards']) {
+        if (day[key] is! List) continue;
+        day[key] = [
+          for (final card in (day[key] as List).whereType<Map>())
+            card['tasks'] is List
+                ? {
+                    ...card,
+                    'tasks': [
+                      for (final task
+                          in (card['tasks'] as List).whereType<Map>())
+                        adapt(task),
+                    ],
+                  }
+                : adapt(card),
+        ];
+      }
+    }
+    final energy = (_data['capacity'] as Map?)?['Energy'];
+    if (energy is Map &&
+        ((energy['step'] as num?)?.toInt() ?? 1) > rungs.length) {
+      energy['step'] = rungs.length;
     }
   }
 
@@ -1035,10 +1113,13 @@ class WellnessController extends ChangeNotifier {
     return WorkoutResult(completed: completed, partial: partial);
   }
 
+  /// [checkId] marks a photo sent for verification: it counts for the
+  /// quest only after [applyMealVerdicts] approves it.
   void recordMeal({
     String? photoPath,
     bool photoCaptured = false,
     String note = '',
+    String? checkId,
   }) {
     final hasPhotoEvidence = photoPath != null || photoCaptured;
     if (!hasPhotoEvidence && note.trim().isEmpty) return;
@@ -1046,6 +1127,10 @@ class WellnessController extends ChangeNotifier {
     _add('mealCheckIns', {
       if (photoPath != null) 'photoPath': photoPath,
       if (hasPhotoEvidence) 'photoCaptured': true,
+      if (hasPhotoEvidence && checkId != null) ...{
+        'checkId': checkId,
+        'verification': 'pending',
+      },
       'note': note.trim(),
     });
     _reconcileActivityEvidence(day: today);
@@ -1055,8 +1140,37 @@ class WellnessController extends ChangeNotifier {
   }
 
   /// Completes meal quests whose photo count (and time windows) are met,
-  /// and shows the rest as partial, e.g. 1 of 2 photos.
-  void _applyMealPhotos() {
+  /// and shows the rest as partial, e.g. 1 of 2 photos. A past [day] (a
+  /// photo approved later) is rewarded on that day.
+  void _applyMealPhotos({String? day}) {
+    if (day != null && day != today) {
+      final before = _questsOn(day);
+      final tasks = _questsOn(day);
+      for (final (index, task) in tasks.indexed) {
+        if (task['activityKind'] != 'meal_snap' ||
+            task['status'] == 'completed') {
+          continue;
+        }
+        final required = (task['photoCount'] as num?)?.toInt() ?? 1;
+        final matched = ActivityEvidence.mealPhotosMatched(
+          task,
+          mealCheckIns,
+          day,
+        );
+        tasks[index] = matched >= required
+            ? {
+                ...task,
+                'status': 'completed',
+                'done': true,
+                'validationInvalidated': false,
+              }
+            : {...task, if (matched > 0) 'partial': matched / required};
+      }
+      if (days[day] is Map) _data['days'][day]['quests'] = tasks;
+      _rewardCompletions(before, day: day);
+      _save();
+      return;
+    }
     final tasks = quests;
     final finished = <String>[];
     for (final (index, task) in tasks.indexed) {
@@ -1377,7 +1491,7 @@ class WellnessController extends ChangeNotifier {
         updated.remove('offerStep');
         updated['change'] = 'hold';
         updated['reason'] =
-            'Bukti sesi diperbarui. Anak tangga tetap sampai peninjauan berikutnya.';
+            'Bukti sesi diperbarui. Level tetap sampai peninjauan berikutnya.';
       }
       _data['capacity'][category] = updated;
     }

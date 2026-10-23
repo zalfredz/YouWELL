@@ -155,7 +155,9 @@ class ChoiceTile extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: selected ? color.withValues(alpha: .35) : colors.border,
+                  color: selected
+                      ? color.withValues(alpha: .35)
+                      : colors.border,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -216,10 +218,14 @@ class StatTile extends StatelessWidget {
     required this.label,
     required this.color,
     this.dashed = false,
+    this.icon,
   });
   final String value, label;
   final Color color;
   final bool dashed;
+
+  /// Shown instead of [value] (Nunito has no check mark glyph).
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -247,15 +253,18 @@ class StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 30,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              color: color,
+          if (icon != null)
+            Icon(icon, size: 30, color: color)
+          else
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 30,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
             ),
-          ),
           const SizedBox(height: 4),
           Text(
             label,

@@ -43,10 +43,17 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
       final rows = await store.progressOverview();
       if (!mounted) return;
       setState(() {
-        _people = [
+        final people = [
           for (final row in rows)
             ?ParticipantOverview.fromRow(row, now: widget.now),
         ];
+        // Ties keep the server order (newest first), so the sort is stable.
+        final position = {for (final (i, person) in people.indexed) person: i};
+        _people = people
+          ..sort((a, b) {
+            final byCode = byParticipantCode(a, b);
+            return byCode != 0 ? byCode : position[a]!.compareTo(position[b]!);
+          });
         _error = null;
       });
     } catch (_) {
@@ -212,7 +219,7 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
               DataColumn(label: Text('Aktif 7 hr'), numeric: true),
               DataColumn(label: Text('Minggu 1–4')),
               DataColumn(label: Text('Habit Swap'), numeric: true),
-              DataColumn(label: Text('Tangga')),
+              DataColumn(label: Text('Level')),
               DataColumn(label: Text('Sinkron')),
               DataColumn(label: Text('Data')),
             ],

@@ -376,7 +376,7 @@ class ProfilePage extends StatelessWidget {
             Text(
               AccountScope.maybeOf(context)?.progress == null
                   ? 'Data tersimpan di perangkat ini. Foto Meal Snap tidak pernah diunggah.'
-                  : 'Progres disinkronkan ke Supabase saat terhubung. Foto dan catatan pribadi tetap di perangkat; rute tidak diunggah.',
+                  : 'Progres disinkronkan ke Supabase saat terhubung. Catatan pribadi tetap di perangkat, foto Meal Snap dihapus dari server setelah diverifikasi, dan rute tidak diunggah.',
               textAlign: TextAlign.center,
               style: TextStyle(color: c.muted, fontSize: 12.5),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
+import 'package:youwell/core/utils/date_label.dart';
 import 'package:youwell/features/reduction/domain/reduction_policy.dart';
 import 'package:youwell/features/reduction/presentation/reduction_widgets.dart';
 
@@ -114,7 +115,7 @@ class ReductionProgress extends StatelessWidget {
                   ),
           ],
         const SizedBox(height: 16),
-        _MomentList(rows: c.habitSwaps.reversed.take(12).toList()),
+        _MomentList(rows: c.habitSwaps.reversed.take(12).toList(), now: c.now),
       ],
     );
   }
@@ -463,12 +464,14 @@ class _LimitCardState extends State<_LimitCard> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => _set(null),
-                  child: const Text('Tanpa batas'),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Tanpa batas', maxLines: 1),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                flex: 2,
                 child: FilledButton(
                   onPressed: () => _set(_limit),
                   child: const Text('Pakai batas ini'),
@@ -485,8 +488,9 @@ class _LimitCardState extends State<_LimitCard> {
 /// The latest moments: activity, when, and a small outcome badge. Older
 /// records without an outcome say so; nothing is guessed.
 class _MomentList extends StatelessWidget {
-  const _MomentList({required this.rows});
+  const _MomentList({required this.rows, required this.now});
   final List<Map<String, dynamic>> rows;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
@@ -505,7 +509,7 @@ class _MomentList extends StatelessWidget {
               'Belum ada momen. Mulai dari tombol "Saya ingin …" di Home.',
               style: TextStyle(color: colors.muted),
             ),
-          for (final row in rows) _MomentRow(row: row),
+          for (final row in rows) _MomentRow(row: row, now: now),
         ],
       ),
     );
@@ -513,8 +517,9 @@ class _MomentList extends StatelessWidget {
 }
 
 class _MomentRow extends StatelessWidget {
-  const _MomentRow({required this.row});
+  const _MomentRow({required this.row, required this.now});
   final Map<String, dynamic> row;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
@@ -541,7 +546,7 @@ class _MomentRow extends StatelessWidget {
       (row['startedAt'] ?? row['time'] ?? '').toString(),
     );
     final when = [
-      row['day'].toString(),
+      dayLabel(row['day'].toString(), now),
       if (time != null)
         '${time.hour.toString().padLeft(2, '0')}.${time.minute.toString().padLeft(2, '0')}',
     ].join(' · ');

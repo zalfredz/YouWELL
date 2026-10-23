@@ -101,8 +101,15 @@ class ActivityPage extends StatelessWidget {
           icon: Icons.photo_camera_rounded,
           color: c.reduction,
           title: 'Meal Snap',
-          detail: 'Foto makan tetap di HP-mu.',
+          detail: 'Foto dicek dulu, lalu dihapus dari server.',
           quest: mealQuest,
+          status: switch (mealQuest == null
+              ? null
+              : controller.mealVerificationFor(mealQuest)) {
+            'pending' => 'menunggu verifikasi',
+            'rejected' => 'foto ditolak, foto ulang ya',
+            _ => null,
+          },
           onTap: () => _open(context, MealSnapPage(controller: controller)),
         ),
         const SizedBox(height: 10),
@@ -178,7 +185,7 @@ class _HydrationCard extends StatelessWidget {
                   ),
                 if (goal < top)
                   Text(
-                    'Puncak tangga: $top ml',
+                    'Level tertinggi: $top ml',
                     style: TextStyle(color: c.muted, fontSize: 12),
                   ),
                 const SizedBox(height: 10),
@@ -248,6 +255,7 @@ class _ActivityAction extends StatelessWidget {
     required this.detail,
     required this.onTap,
     this.quest,
+    this.status,
   });
   final IconData icon;
   final Color color;
@@ -256,6 +264,9 @@ class _ActivityAction extends StatelessWidget {
 
   /// An open quest this action finishes; shown with its XP and progress.
   final Map<String, dynamic>? quest;
+
+  /// Why [quest] is not finished yet, e.g. a photo under review.
+  final String? status;
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +305,8 @@ class _ActivityAction extends StatelessWidget {
                 Text(
                   quest == null
                       ? detail
+                      : status != null
+                      ? 'Misi: ${quest['title']} · $status'
                       : partial == null
                       ? 'Misi: ${quest['title']}'
                       : 'Misi: ${quest['title']} · '

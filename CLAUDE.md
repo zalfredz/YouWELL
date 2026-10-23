@@ -6,7 +6,36 @@ Dokumen ini merangkum keputusan desain YouWell yang sudah dikunci di proposal pe
 
 ---
 
-## Keputusan terbaru: 20 Oktober 2026
+## Keputusan terbaru: 23 Oktober 2026
+
+Tangga Istirahat (kunci `Energy`, kolom riset `tangga_istirahat`) diganti dari
+"layar off sebelum tidur" menjadi **Tidur & bangun** dengan check-in tidur dan
+check-out bangun, karena peserta UAT (mahasiswa Fasilkom) sulit menjauhi
+layar. Level 1–4: tidur sebelum 00.30/00.00/23.30/23.00 dan bangun sebelum
+07.30/07.00/06.30/06.00. Quest dinilai dari malam yang berakhir pagi itu;
+waktunya diambil saat tombol ditekan (tidak bisa
+diisi manual); lupa menekan berarti malam itu tidak tercapai. Jam tidur mentah hanya di HP.
+Quest pelengkap "Jeda layar" diganti **Jeda mikro** (berdiri/peregangan
+2 menit). Quest terbuka yang lama dikonversi; riwayat dan XP tetap. Tim
+metode perlu tahu: isi `tangga_istirahat` sebelum dan sesudah 23 Okt berbeda.
+Istilah "anak tangga" di UI diganti "level" (nama kolom ekspor tetap).
+Setelah "Saya sudah mencoba", hasil momen wajib dipilih (tidak jadi / tetap
+memakai); pilihan "isi nanti" dihapus. Pilihan Santai/Normal di layar pilih
+kartu juga dihapus: pengguna memilih langsung dari 5 kartu.
+
+**Meal Snap diverifikasi (23 Okt 2026, proposal sedang diperbarui):** foto
+makan kini diunggah sementara ke bucket privat `meals`. Admin ber-MFA
+menyetujui atau menolak di tab admin **Meal Snap**; setelah 2 jam tanpa
+keputusan, Edge Function `meal-ai-check` bertanya ke Gemini apakah foto berisi
+makanan/minuman (jawaban hanya YA/TIDAK, kunci `GEMINI_API_KEY` hanya di
+secret Supabase). Misi baru tercentang setelah disetujui, XP masuk ke hari
+foto diambil; ditolak berarti foto ulang. Foto dihapus dari server dan HP
+setelah diputuskan. Ini menggantikan "foto tetap di HP, tidak pernah
+diunggah" dan "tanpa penyaringan AI" di §1, §2, dan §5 untuk Meal Snap saja;
+lembar persetujuan peserta perlu menyebutkannya. Foto lama dan pratinjau
+lokal tanpa server tetap dihitung langsung.
+
+## Keputusan sebelumnya: 20 Oktober 2026
 
 UAT berjalan 20 Oktober – 20 November 2026 (termasuk buffer). Setelah hari
 ke-28 aplikasi **tetap bisa dipakai penuh** (kartu harian, aktivitas, Habit

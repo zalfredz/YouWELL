@@ -142,16 +142,25 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 padding: const EdgeInsets.fromLTRB(20, 10, 12, 8),
                 child: Row(
                   children: [
-                    Text(
-                      'YouWELL',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: context.colors.success,
-                            letterSpacing: -.5,
+                    // The logo shrinks before the chips overflow, e.g. with
+                    // four-digit XP and the draw icon on a narrow phone.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'YouWELL',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: context.colors.success,
+                                  letterSpacing: -.5,
+                                ),
                           ),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
                     StatChip(
                       icon: Icons.local_fire_department_rounded,
                       color: context.colors.streak,

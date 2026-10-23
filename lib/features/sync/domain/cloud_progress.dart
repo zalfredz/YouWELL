@@ -51,6 +51,11 @@ abstract final class CloudProgress {
     'reductionSettings',
     'reductionPlans',
     'reductionSetup',
+    // Raw sleep times stay on the device (CLAUDE.md §6).
+    'sleepLogs',
+    'openSleep',
+    'bedAt',
+    'wakeAt',
     'activeSwapMoment',
     'customTriggers',
     'customActivities',
@@ -110,7 +115,7 @@ abstract final class CloudProgress {
       'mealCheckIns': [
         for (final row in (source['mealCheckIns'] as List).whereType<Map>())
           {
-            ..._pick(row, ['id', 'day', 'time']),
+            ..._pick(row, ['id', 'day', 'time', 'checkId', 'verification']),
             'photoCaptured':
                 row['photoCaptured'] == true || row['photoPath'] is String,
           },

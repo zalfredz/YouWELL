@@ -193,7 +193,7 @@ class ProgressSyncController extends ChangeNotifier {
       errorDetail = _describe(error);
       _set(
         SyncStage.offline,
-        'Belum tersinkron. Periksa koneksi atau jalankan migration progres, lalu coba lagi.',
+        'Progres aman di HP, tetapi belum tersinkron. Periksa koneksi lalu coba lagi.',
       );
     } finally {
       _busy = false;

@@ -39,7 +39,6 @@ String cravingLabel(String product) => 'Saya ingin ${useVerb(product)}';
 String outcomeLabel(String outcome, String product) => switch (outcome) {
   'skipped' => 'Tidak jadi ${useVerb(product)} pada momen ini',
   'used' => 'Akhirnya tetap ${useVerb(product)}',
-  'later' => 'Belum tahu, saya isi nanti',
   _ => swapOutcomeLabels[outcome] ?? 'Hasil belum dicatat',
 };
 

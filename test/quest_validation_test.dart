@@ -157,12 +157,17 @@ void main() {
       await tester.tap(find.text('Saya sudah mencoba'));
       await tester.pumpAndSettle();
       expect(_status(controller, 'delay'), 'completed');
-      await tester.tap(find.text('Belum tahu, saya isi nanti'));
+      expect(find.text('Belum tahu, saya isi nanti'), findsNothing);
+      // Back is blocked until a result is chosen.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Pilih salah satu hasil dulu ya.'), findsOneWidget);
+      await tester.tap(find.text('Akhirnya tetap merokok'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Simpan hasil'));
       await tester.pumpAndSettle();
-      expect(controller.swapsAwaitingOutcome, hasLength(1));
-      expect(find.text('Isi hasil'), findsOneWidget);
+      expect(controller.swapsAwaitingOutcome, isEmpty);
+      expect(controller.habitSwaps.single['outcome'], 'used');
       expect(controller.habitDelays, isEmpty);
       expect(tester.takeException(), isNull);
     },

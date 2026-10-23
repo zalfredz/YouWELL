@@ -210,7 +210,9 @@ Anak tangga 3 ke atas diberi catatan "berhenti jika pusing atau nyeri".
 
 ### 5.2a 🌙 Istirahat (sementara, berlaku sampai Tidur & Bangun siap)
 
-Tangga Istirahat: layar off 10 → 15 → 20 → 30 → 45 → 60 menit sebelum tidur, lalu jam tidur tetap.
+**Diganti 23 Okt 2026:** level Tidur memakai check-in tidur dan check-out bangun: tidur sebelum 00.30/00.00/23.30/23.00 dan bangun sebelum 07.30/07.00/06.30/06.00 (level 1–4). Quest pelengkap "Jeda layar" diganti "Jeda mikro". Ketentuan layar off di bawah hanya arsip.
+
+Tangga Istirahat (arsip): layar off 10 → 15 → 20 → 30 → 45 → 60 menit sebelum tidur, lalu jam tidur tetap.
 - Misi selalu **tentang semalam**: "Semalam: layar off 15 menit sebelum tidur". Pengguna tidak perlu memegang HP menjelang tidur untuk mencentang.
 - Bisa dicentang **kapan saja di hari itu** (idealnya pagi). Tidak ada kunci jam.
 - Misi tetap milik kartu hari itu.

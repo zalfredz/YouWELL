@@ -117,7 +117,7 @@ class ProgressPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Tangga quest', style: text.titleMedium),
+              Text('Level misi', style: text.titleMedium),
               Text(
                 'Dicek tiap 7 hari. Naik hanya jika kamu setuju.',
                 style: TextStyle(color: c.muted, fontSize: 13),
@@ -265,7 +265,7 @@ class _LadderRow extends StatelessWidget {
                 ),
               ),
               Text(
-                'Lv $step / $maxStep',
+                'Level $step dari $maxStep',
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ],
