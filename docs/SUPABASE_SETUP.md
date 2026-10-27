@@ -91,9 +91,9 @@ app baru tetap menghitung foto langsung seperti sebelumnya, jadi urutan deploy
 tidak membuat misi macet.
 
 Edge Function (tanpa CLI): di dashboard Supabase buka **Edge Functions →
-Deploy a new function → Via Editor**, beri nama `meal-ai-check`, lalu buat dua
-file dengan isi `supabase/functions/meal-ai-check/index.ts` dan
-`supabase/functions/meal-ai-check/gemini.ts`. Biarkan **Verify JWT** aktif.
+Deploy a new function → Via Editor**, beri nama `meal-ai-check`, lalu tempel
+seluruh isi `supabase/functions/meal-ai-check/index.ts` (satu file, tanpa
+impor lokal). Biarkan **Verify JWT** aktif.
 Di **Edge Functions → Secrets** tambahkan `GEMINI_API_KEY` (kunci Gemini;
 jangan pernah ditulis ke repo atau app) dan, bila perlu, `GEMINI_MODEL`
 (bawaan `gemini-3.8-flash`). Fungsi dipanggil oleh app peserta (foto miliknya)

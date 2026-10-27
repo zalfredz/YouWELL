@@ -2,10 +2,56 @@
 // decision. Called by the app (the caller's own photos) and the admin page
 // (every photo). Secrets: GEMINI_API_KEY (required), GEMINI_MODEL
 // (optional). SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY
-// are provided by Supabase. The key never reaches the app.
+// are provided by Supabase. The key never reaches the app. Deploy this one
+// file; it has no local imports.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import { encodeBase64 } from 'jsr:@std/encoding@1.0.5/base64';
-import { geminiRequest, readVerdict } from './gemini.ts';
+
+// --- gemini: start (tested by scripts/check-meal-ai.mts; keep free of Deno APIs) ---
+// One file, so the function can be pasted into the Supabase dashboard as is.
+// The answer is constrained to one word: YA or TIDAK.
+
+export const prompt =
+  'Apakah foto ini menunjukkan makanan atau minuman yang akan atau sedang ' +
+  'dikonsumsi? Jawab hanya dengan satu kata: YA atau TIDAK.';
+
+/** The generateContent body for one PNG photo, as base64. */
+export function geminiRequest(photoBase64: string) {
+  return {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: 'image/png', data: photoBase64 } },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0,
+      // No maxOutputTokens: Gemini 3 spends tokens thinking first, and a tiny
+      // cap returned an empty answer. Enum output keeps it to one word.
+      responseMimeType: 'text/x.enum',
+      responseSchema: { type: 'STRING', enum: ['YA', 'TIDAK'] },
+    },
+  };
+}
+
+/** 'approved' for YA, 'rejected' for TIDAK, null for anything else. */
+export function readVerdict(response: unknown): 'approved' | 'rejected' | null {
+  const text = (response as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  })?.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text ?? '')
+    .join('')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+  if (text === 'YA') return 'approved';
+  if (text === 'TIDAK') return 'rejected';
+  return null;
+}
+// --- gemini: end ---
 
 const waitHours = 3;
 const batch = 10;
