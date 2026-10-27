@@ -108,6 +108,7 @@ class ActivityPage extends StatelessWidget {
               : controller.mealVerificationFor(mealQuest)) {
             'pending' => 'menunggu verifikasi',
             'rejected' => 'foto ditolak, foto ulang ya',
+            'outside' => 'foto di luar jam misi',
             _ => null,
           },
           onTap: () => _open(context, MealSnapPage(controller: controller)),

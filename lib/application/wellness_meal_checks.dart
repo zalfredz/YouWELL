@@ -17,8 +17,9 @@ extension MealChecks on WellnessController {
     return time != null && now.difference(time) >= age;
   });
 
-  /// 'pending' or 'rejected' for an unfinished meal quest on [day] (today
-  /// by default), so the quest can say why it is not checked yet.
+  /// 'pending', 'rejected' or 'outside' (approved, but taken outside the
+  /// quest's photo hours) for an unfinished meal quest on [day] (today by
+  /// default), so the quest can say why it is not checked yet.
   String? mealVerificationFor(JsonMap task, {String? day}) {
     if (task['activityKind'] != 'meal_snap' || task['status'] == 'completed') {
       return null;
@@ -32,6 +33,16 @@ extension MealChecks on WellnessController {
     ];
     if (photos.contains('pending')) return 'pending';
     if (photos.isNotEmpty && photos.last == 'rejected') return 'rejected';
+    final approved = photos.where((status) => status == 'approved').length;
+    final matched = ActivityEvidence.mealPhotosMatched(
+      task,
+      mealCheckIns,
+      day ?? today,
+    );
+    // An approved photo the quest could not use: its time was off.
+    if (approved > 0 && task['photoWindows'] is List && matched < approved) {
+      return 'outside';
+    }
     return null;
   }
 

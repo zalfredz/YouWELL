@@ -175,6 +175,17 @@ class ProgressSyncController extends ChangeNotifier {
               (_base == null && !_hasProfile) ||
               localKey == _base)) {
         await _adopt(cloud, notifyApp: false);
+      } else if (!initial &&
+          localKey == _base &&
+          cloud.revision > _revision) {
+        // Nothing changed here since the last sync and the cloud is newer,
+        // e.g. an admin restored progress: take it without asking.
+        await _adopt(cloud, notifyApp: true);
+      } else if (!initial && _revision == 0 && _base == null) {
+        // This phone never synced this account (a reinstall that started
+        // offline). Its fresh start must not overwrite the account's
+        // progress; the local copy is kept as a backup by _adopt.
+        await _adopt(cloud, notifyApp: true);
       } else if (_revision == cloud.revision && _base == cloudKey) {
         await _upload();
       } else if (cloudKey == _sent) {

@@ -35,12 +35,11 @@ class _AuthenticatedAppState extends State<AuthenticatedApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    var tick = 0;
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         unawaited(_auth?.progress?.syncNow());
-        // Meal Snap decisions every 2 minutes.
-        if (++tick % 4 == 0) unawaited(_auth?.pollMeals());
+        // Meal Snap decisions; no request while no photo is waiting.
+        unawaited(_auth?.pollMeals());
       }
     });
     unawaited(_connect());

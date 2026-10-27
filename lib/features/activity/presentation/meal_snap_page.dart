@@ -161,6 +161,27 @@ class _MealSnapPageState extends State<MealSnapPage> {
     Navigator.pop(context);
   }
 
+  /// Every open meal quest has photo hours, and none of them is now.
+  bool get _outsideQuestHours {
+    final open = [
+      for (final task in widget.controller.quests)
+        if (task['activityKind'] == 'meal_snap' &&
+            task['status'] != 'completed')
+          task,
+    ];
+    final now = widget.controller.now;
+    final hour = now.hour + now.minute / 60;
+    return open.isNotEmpty &&
+        open.every(
+          (task) =>
+              task['photoWindows'] is List &&
+              !(task['photoWindows'] as List).any(
+                (window) =>
+                    hour >= (window as List)[0] && hour < (window[1] as num),
+              ),
+        );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Meal Snap')),
@@ -171,6 +192,14 @@ class _MealSnapPageState extends State<MealSnapPage> {
           'Catat makanmu',
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
         ),
+        if (_outsideQuestHours) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Sekarang di luar jam misi makan. Fotonya masuk jurnal, tapi '
+            'belum menyelesaikan misi.',
+            style: TextStyle(color: context.colors.amber, height: 1.4),
+          ),
+        ],
         const SizedBox(height: 24),
         TextButton.icon(
           onPressed: _saving ? null : _noteOnly,

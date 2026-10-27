@@ -19,6 +19,12 @@ class ResearchSummary {
     required this.openedDayCount,
     required this.activityDayCount,
     required this.questDayCount,
+    this.questsByAdmin = 0,
+    this.cigarettesTotal,
+    this.vapeTotal,
+    this.usageDaysLogged = 0,
+    this.adminIntervention = false,
+    this.openedDaysByAdmin = 0,
   });
 
   /// Week 1–4 counted from the day the profile started.
@@ -30,6 +36,8 @@ class ResearchSummary {
     List<String> activityDays = const [],
     required List<JsonMap> habitDelays,
     required List<JsonMap> habitSwaps,
+    List<JsonMap> usage = const [],
+    List<String> adminOpenedDays = const [],
   }) {
     final from = shiftDayKey(started, 7 * (week - 1));
     final to = shiftDayKey(from, 6);
@@ -47,7 +55,7 @@ class ResearchSummary {
         .map((entry) => entry.value is Map ? entry.value['ladderSteps'] : null)
         .whereType<Map>()
         .firstOrNull;
-    var questsDone = 0;
+    var questsDone = 0, questsByAdmin = 0;
     for (final entry in days.entries.where((entry) => inWeek(entry.key))) {
       final quests = (entry.value is Map ? entry.value['quests'] : null) ?? [];
       final done = (quests as List)
@@ -61,10 +69,46 @@ class ResearchSummary {
           )
           .length;
       questsDone += done;
+      questsByAdmin += quests
+          .whereType<Map>()
+          .where(
+            (task) =>
+                task['status'] == 'completed' &&
+                task['adminCompleted'] == true &&
+                task['bonus'] != true,
+          )
+          .length;
       if (done > 0) questDays.add(entry.key);
     }
+    // Daily totals (latest proposal): one confirmed row per day.
+    final usageRows = [
+      for (final row in usage)
+        if (inWeek(row['day']) && row['confirmed'] == true) row,
+    ];
+    int? sum(String kind) {
+      final values = [
+        for (final row in usageRows)
+          if (row[kind] is num) (row[kind] as num).toInt(),
+      ];
+      return values.isEmpty ? null : values.fold<int>(0, (a, b) => a + b);
+    }
+
+    final swapsInWeek = habitSwaps.where((row) => inWeek(row['day']));
+    final openedByAdmin = adminOpenedDays.where(inWeek).toSet().length;
     return ResearchSummary(
       week: week,
+      questsByAdmin: questsByAdmin,
+      cigarettesTotal: sum('cigarette'),
+      vapeTotal: sum('vape'),
+      usageDaysLogged: usageRows.map((row) => row['day']).toSet().length,
+      openedDaysByAdmin: openedByAdmin,
+      adminIntervention:
+          questsByAdmin > 0 ||
+          openedByAdmin > 0 ||
+          usageRows.any((row) => row['source'] == 'admin') ||
+          swapsInWeek.any(
+            (row) => row['id']?.toString().startsWith('admin-') ?? false,
+          ),
       // "Aktif" (proposal §7): app opened OR at least one quest finished.
       activeDays: {...opened, ...activity, ...questDays}.length,
       openedDayCount: opened.length,
@@ -91,6 +135,19 @@ class ResearchSummary {
   final int delayCravingCount, delayCravingCompleted;
   final int openedDayCount, activityDayCount, questDayCount;
 
+  /// Quests ticked by an admin intervention (included in [questsDone]).
+  final int questsByAdmin;
+
+  /// Weekly sums of the confirmed daily totals; null when nothing logged.
+  final int? cigarettesTotal, vapeTotal;
+  final int usageDaysLogged;
+
+  /// Any quest, daily total or Habit Swap in this week set by an admin.
+  final bool adminIntervention;
+
+  /// Days marked as opened by an admin (included in opened_days).
+  final int openedDaysByAdmin;
+
   /// Ladder position per category; null when the category is not in use.
   final int? ladderGerak, ladderIstirahat, ladderHidrasi, ladderMakan;
   final int? ladderJeda;
@@ -116,5 +173,11 @@ class ResearchSummary {
     'delay_craving_count': delayCravingCount,
     'delay_craving_completed': delayCravingCompleted,
     'habit_swap_count': habitSwapCount,
+    'quests_by_admin': questsByAdmin,
+    'cigarettes_total': cigarettesTotal,
+    'vape_total': vapeTotal,
+    'usage_days_logged': usageDaysLogged,
+    'admin_intervention': adminIntervention,
+    'opened_days_by_admin': openedDaysByAdmin,
   };
 }

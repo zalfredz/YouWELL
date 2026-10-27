@@ -94,6 +94,15 @@ void main() {
     expect(c.xp, greaterThan(xp));
   });
 
+  test('An approved photo outside the photo hours says so', () {
+    final c = make();
+    time = DateTime(2026, 10, 24, 11);
+    c.recordMeal(photoCaptured: true, checkId: 'k1');
+    c.applyMealVerdicts({'k1': 'approved'});
+    expect(c.quests.single['status'], 'committed');
+    expect(c.mealVerificationFor(c.quests.single), 'outside');
+  });
+
   test('Pending decisions and unknown answers change nothing', () {
     final c = make();
     c.recordMeal(photoCaptured: true, checkId: 'k1');

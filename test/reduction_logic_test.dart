@@ -439,7 +439,9 @@ void main() {
         ]);
         expect(research, isNot(contains('nicotineDays')));
         expect(research, isNot(contains('after_meal')));
-        expect(research, isNot(contains('cigarette')));
+        // Latest proposal: weekly totals only, never triggers or times.
+        expect(research, isNot(contains('"product"')));
+        expect(research, isNot(contains('"time"')));
         expect(
           WellnessController(
             saved: c.export(),

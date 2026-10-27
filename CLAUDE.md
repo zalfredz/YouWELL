@@ -6,7 +6,27 @@ Dokumen ini merangkum keputusan desain YouWell yang sudah dikunci di proposal pe
 
 ---
 
-## Keputusan terbaru: 23 Oktober 2026
+## Keputusan terbaru: 27 Oktober 2026
+
+**Total rokok/vape harian menjadi data riset (proposal terbaru):** hanya
+angka total per hari per jenis (`usageTotals`: tanggal, rokok/vape, jumlah)
+yang disinkronkan dan diekspor per kode P1–P10. Jam, pemicu, aktivitas, dan
+catatan tetap hanya di HP. Ini menggantikan "data mentah rokok/vape tidak
+masuk ekspor riset" (§6 dan keputusan 15 Okt) untuk total harian saja;
+lembar persetujuan peserta perlu menyebutkannya.
+
+**Overview admin (force majeure):** admin ber-MFA dapat memulihkan progres
+peserta yang hilang (misalnya setelah install ulang): centang quest (XP dan
+level mengikuti), buat kartu untuk hari terlewat, ubah level misi, tandai hari
+membuka aplikasi, isi total rokok/vape harian, dan jumlah Habit Swap. Setiap
+simpan wajib beralasan, dicatat di `youwell_admin_interventions`, dan ditandai
+di data (`adminCompleted`, `source: admin`, id `admin-`, `adminOpenedDays`)
+serta di ekspor (`quests_by_admin`, `opened_days_by_admin`,
+`admin_intervention`). Server menyimpan 60 salinan progres terakhir per akun
+untuk pemulihan. HP yang belum pernah sinkron dengan akun tidak lagi menimpa
+progres cloud.
+
+## Keputusan sebelumnya: 23 Oktober 2026
 
 Tangga Istirahat (kunci `Energy`, kolom riset `tangga_istirahat`) diganti dari
 "layar off sebelum tidur" menjadi **Tidur & bangun** dengan check-in tidur dan

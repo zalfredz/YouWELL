@@ -347,9 +347,17 @@ class WellnessController extends ChangeNotifier {
     activityDays: activityDays,
     habitDelays: habitDelays,
     habitSwaps: habitSwaps,
+    usage: _rows('nicotineDays'),
+    adminOpenedDays: [
+      for (final day in (_data['adminOpenedDays'] ?? const []) as List)
+        day.toString(),
+    ],
   );
 
   Future<void> _save() {
+    // A screen still holding a replaced controller must not write its stale
+    // copy over progress adopted from the cloud.
+    if (_disposed) return _pending;
     if (profile != null && level > levelFloor) _data['levelFloor'] = level;
     if (days[today] is Map && capacity.isNotEmpty) {
       _data['days'][today]['ladderSteps'] = ladderSteps;
@@ -1438,6 +1446,8 @@ class WellnessController extends ChangeNotifier {
       final tasks = value['quests'] as List;
       for (final raw in tasks.whereType<Map>()) {
         final task = Map<String, dynamic>.from(raw);
+        // Ticked by an admin intervention: there is no evidence to check.
+        if (task['adminCompleted'] == true) continue;
         final completed = task['status'] == 'completed';
         if (ActivityEvidence.isWorkout(task)) {
           final ratio = ActivityEvidence.workoutProgress(

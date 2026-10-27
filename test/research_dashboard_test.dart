@@ -31,6 +31,38 @@ class FakeResearch implements ResearchStore {
   @override
   Future<void> setParticipantCode(String account, String? code) async =>
       assigned[account] = code;
+
+  /// Admin writes: the new payload replaces the row, like the server.
+  final writes = <JsonMap>[];
+  @override
+  Future<bool> writeProgress({
+    required String account,
+    required int expectedRevision,
+    required JsonMap payload,
+    required String reason,
+    required List<JsonMap> changes,
+  }) async {
+    final index = rows.indexWhere((row) => row['account'] == account);
+    final revision = (rows[index]['revision'] as int?) ?? 0;
+    if (revision != expectedRevision) return false;
+    rows[index] = {...rows[index], 'payload': payload, 'revision': revision + 1};
+    writes.add({'account': account, 'reason': reason, 'changes': changes});
+    return true;
+  }
+
+  @override
+  Future<List<JsonMap>> interventions() async => [
+    for (final write in writes.reversed)
+      {...write, 'created_at': '2026-10-27T09:00:00Z'},
+  ];
+  @override
+  Future<List<JsonMap>> history(String account) async => [];
+  @override
+  Future<void> restoreRevision(
+    String account,
+    int revision,
+    String reason,
+  ) async {}
 }
 
 /// The row the phase 6 RPC returns for one simulated participant.

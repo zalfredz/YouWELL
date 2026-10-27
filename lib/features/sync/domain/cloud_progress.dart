@@ -11,6 +11,8 @@ abstract final class CloudProgress {
     'mobileRewards',
     'achievements',
     'openedDays',
+    // Days an admin marked as opened (Overview); kept apart for research.
+    'adminOpenedDays',
     'activityDays',
     'levelFloor',
     'themeMode',
@@ -136,7 +138,66 @@ abstract final class CloudProgress {
         for (final row in (source['habitSwaps'] as List).whereType<Map>())
           _pick(row, ['id', 'day']),
       ],
+      // Latest proposal: the daily total per product is research data. Only
+      // the numbers leave the phone, never times, triggers or notes.
+      'usageTotals': usageTotals(source['nicotineDays']),
     };
+  }
+
+  static const _usageTypes = {'cigarette': 'rokok', 'vape': 'vape'};
+
+  /// `{day, type: rokok|vape, total, confirmed, source}` per logged product.
+  static List<JsonMap> usageTotals(Object? nicotineDays) => [
+    for (final row in ((nicotineDays ?? const []) as List).whereType<Map>())
+      for (final MapEntry(key: kind, value: type) in _usageTypes.entries)
+        if (row['day'] is String && row[kind] is num)
+          {
+            'day': row['day'],
+            'type': type,
+            'total': (row[kind] as num).toInt(),
+            'confirmed': row['confirmed'] == true,
+            if (row['source'] == 'admin') 'source': 'admin',
+          },
+  ];
+
+  /// Device rows for the cloud totals: a day missing on this phone (a new
+  /// install) or one an admin set is taken from the cloud; other days keep
+  /// what the phone recorded.
+  static List<JsonMap> _mergeUsage(Object? device, Object? cloud) {
+    final rows = {
+      for (final row in ((device ?? const []) as List).whereType<Map>())
+        row['day'].toString(): Map<String, dynamic>.from(row),
+    };
+    final byDay = <String, List<Map>>{};
+    for (final row in ((cloud ?? const []) as List).whereType<Map>()) {
+      if (row['day'] is String && row['total'] is num) {
+        (byDay[row['day']] ??= []).add(row);
+      }
+    }
+    for (final MapEntry(key: day, value: totals) in byDay.entries) {
+      final admin = totals.any((row) => row['source'] == 'admin');
+      if (rows.containsKey(day) && !admin) continue;
+      int? total(String type) =>
+          (totals.where((row) => row['type'] == type).firstOrNull?['total']
+                  as num?)
+              ?.toInt();
+      final cigarettes = total('rokok'), vape = total('vape');
+      rows[day] = {
+        ...?rows[day],
+        'day': day,
+        'product': cigarettes != null && vape != null
+            ? 'both'
+            : vape != null
+            ? 'vape'
+            : 'cigarette',
+        'confirmed': totals.any((row) => row['confirmed'] == true),
+        'cigarette': cigarettes,
+        'vape': vape,
+        if (admin) 'source': 'admin',
+      };
+    }
+    return rows.values.toList()
+      ..sort((a, b) => a['day'].toString().compareTo(b['day'].toString()));
   }
 
   /// Overlay shared fields, keeping device-only data and local photo handles.
@@ -150,7 +211,13 @@ abstract final class CloudProgress {
     final shared = project(
       jsonEncode({...createEmptyWellnessState(), ...payload}),
     );
-    final result = {...device, ...shared}..remove('schemaVersion');
+    final result = {...device, ...shared}
+      ..remove('schemaVersion')
+      ..remove('usageTotals');
+    result['nicotineDays'] = _mergeUsage(
+      device['nicotineDays'],
+      payload['usageTotals'],
+    );
     for (final collection in [
       'mealCheckIns',
       'workoutSessions',

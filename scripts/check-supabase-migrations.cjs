@@ -231,6 +231,66 @@ async function main() {
       assert.equal(after[0].status, 'pending');
     });
     console.log('Meal verification passed: owner-only upload, MFA admin decision once, retake goes back to pending.');
+
+    // Phase 10: daily usage totals, admin interventions and history restore.
+    const revisionOf = async () =>
+      (await db.query('select revision from public.youwell_progress where user_id = $1', [owner])).rows[0].revision;
+    await asUser(owner, 'aal1', async () => {
+      const current = Number((await db.query('select revision from public.youwell_progress where user_id = $1', [owner])).rows[0].revision);
+      const withUsage = { ...payload, usageTotals: [{ day: '2026-10-23', type: 'rokok', total: 4, confirmed: true }] };
+      assert.equal((await db.query('select public.save_youwell_progress($1, $2) as r', [withUsage, current])).rows[0].r.saved, true);
+      for (const bad of [
+        [{ day: '2026-10-23', type: 'cigarette', total: 4 }],
+        [{ day: '2026-10-23', type: 'rokok', total: 900 }],
+        [{ day: '2026-10-23', type: 'rokok', total: 4, time: '08:00' }],
+      ]) {
+        await assert.rejects(
+          () => db.query('select public.save_youwell_progress($1, $2)', [{ ...payload, usageTotals: bad }, current + 1]),
+          error => error.code === '22023',
+        );
+      }
+      await denied(() => db.query('select public.admin_write_youwell_progress($1, 1, $2, $3, $4)', [owner, payload, 'Pemulihan data', []]));
+      await denied(() => db.query('select * from public.youwell_admin_interventions'));
+      await denied(() => db.query('select * from public.youwell_progress_history'));
+    });
+    await db.exec('reset role');
+    const beforeAdmin = Number(await revisionOf());
+    await asUser(admin, 'aal1', async () => {
+      await denied(() => db.query('select public.youwell_admin_interventions()'));
+    });
+    await asUser(admin, 'aal2', async () => {
+      const overview = (await db.query('select public.youwell_admin_progress_overview() as r')).rows[0].r;
+      const mine = overview.find(row => row.account === owner);
+      assert.equal(Number(mine.revision), beforeAdmin);
+      const edited = { ...mine.payload, usageTotals: [{ day: '2026-10-23', type: 'rokok', total: 6, confirmed: true, source: 'admin' }] };
+      await assert.rejects(
+        () => db.query('select public.admin_write_youwell_progress($1, $2, $3, $4, $5)', [owner, beforeAdmin, edited, '', []]),
+        error => error.code === '22023',
+      );
+      await assert.rejects(
+        () => db.query('select public.admin_write_youwell_progress($1, $2, $3, $4, $5)',
+          [owner, beforeAdmin, { ...edited, profile: { ...edited.profile, alias: 'other' } }, 'Pemulihan data', []]),
+        error => error.code === '22023',
+      );
+      const stale = (await db.query('select public.admin_write_youwell_progress($1, $2, $3, $4, $5) as r',
+        [owner, beforeAdmin - 1, edited, 'Pemulihan data', []])).rows[0].r;
+      assert.equal(stale.saved, false);
+      const saved = (await db.query('select public.admin_write_youwell_progress($1, $2, $3, $4, $5) as r',
+        [owner, beforeAdmin, edited, 'Data hilang setelah install ulang', [{ kind: 'usage', day: '2026-10-23' }]])).rows[0].r;
+      assert.equal(saved.saved, true);
+      const log = (await db.query('select public.youwell_admin_interventions() as r')).rows[0].r;
+      assert.deepEqual(log.map(i => [i.alias, i.reason]), [['renamed', 'Data hilang setelah install ulang']]);
+      const history = (await db.query('select public.youwell_admin_progress_history($1) as r', [owner])).rows[0].r;
+      assert.equal(Number(history[0].revision), beforeAdmin);
+      const restored = (await db.query('select public.admin_restore_youwell_revision($1, $2, $3) as r',
+        [owner, beforeAdmin, 'Kembali ke salinan sebelum edit'])).rows[0].r;
+      assert.equal(restored.saved, true);
+    });
+    await db.exec('reset role');
+    const back = (await db.query('select payload, revision from public.youwell_progress where user_id = $1', [owner])).rows[0];
+    assert.equal(back.payload.usageTotals[0].total, 4);
+    assert.equal(Number(back.revision), beforeAdmin + 2);
+    console.log('Admin overview passed: usage totals validated, MFA-only edits with reason and audit, stale revision refused, history restore.');
   } finally { await db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

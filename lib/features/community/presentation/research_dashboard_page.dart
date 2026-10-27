@@ -178,6 +178,19 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
             label: const Text('Unduh ringkasan P1–P10 (CSV)'),
           ),
           OutlinedButton.icon(
+            onPressed: coded.every((p) => p.usageRows().isEmpty)
+                ? null
+                : () => _download(
+                    'youwell-rokok-vape-harian.csv',
+                    toCsv(usageCsvColumns, [
+                      for (final p in coded) ...p.usageRows(),
+                    ]),
+                    'text/csv',
+                  ),
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Unduh rokok/vape harian P1–P10 (CSV)'),
+          ),
+          OutlinedButton.icon(
             onPressed: people.isEmpty
                 ? null
                 : () => _download(

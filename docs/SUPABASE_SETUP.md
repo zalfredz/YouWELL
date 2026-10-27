@@ -100,6 +100,15 @@ jangan pernah ditulis ke repo atau app) dan, bila perlu, `GEMINI_MODEL`
 dan oleh tab admin Verif makanan (semua foto) saat ada foto yang menunggu lebih
 dari 3 jam. Jika Gemini sedang sibuk (503) atau jawabannya bukan YA/TIDAK,
 foto tetap menunggu dan dicoba lagi nanti.
+Tahap 10 (`20261027090000_admin_overview_usage.sql`, keputusan 27 Okt 2026)
+menerima total rokok/vape harian (`usageTotals`, angka saja) dalam progres,
+menambah tab **Overview** di admin untuk memulihkan progres peserta sebagai
+intervensi admin (wajib alasan, tercatat di log), dan menyimpan 60 salinan
+progres terakhir per akun agar progres yang tertimpa bisa dipulihkan. Jalankan
+setelah tahap 9 dan sebelum memasang build app terbaru. Edit admin masuk ke HP
+peserta saat sinkron berikutnya (±30 detik bila aplikasi terbuka, atau saat
+dibuka). Peserta perlu versi app terbaru agar total rokok/vape dan tanda hari
+buka dari admin tidak hilang saat HP-nya sinkron.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)

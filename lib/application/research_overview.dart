@@ -1,4 +1,5 @@
 import 'package:youwell/core/types/json_map.dart';
+import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/features/sync/domain/cloud_progress.dart';
 import 'wellness_controller.dart';
 
@@ -22,6 +23,8 @@ class ParticipantOverview {
     required this.payload,
     this.code,
     this.updatedAt,
+    this.revision = 0,
+    this.started,
   });
 
   /// Returns null for a row whose snapshot cannot be read.
@@ -64,6 +67,8 @@ class ParticipantOverview {
         weeks: weeks,
         payload: Map<String, dynamic>.from(payload),
         updatedAt: DateTime.tryParse(row['updated_at']?.toString() ?? ''),
+        revision: (row['revision'] as num?)?.toInt() ?? 0,
+        started: c.profile!['started']?.toString(),
       );
     } catch (_) {
       return null;
@@ -88,6 +93,33 @@ class ParticipantOverview {
   /// The synced progress as the server holds it, for a per-account download.
   final JsonMap payload;
   final DateTime? updatedAt;
+
+  /// Server revision of [payload]; an admin edit must name it.
+  final int revision;
+  final String? started;
+
+  /// Daily smoking/vaping totals for the usage CSV (coded accounts only).
+  List<JsonMap> usageRows() =>
+      [
+        if (code != null)
+          for (final row
+              in ((payload['usageTotals'] ?? const []) as List)
+                  .whereType<Map>())
+            {
+              'participant_code': code,
+              'day': row['day'],
+              'study_day': started == null || row['day'] is! String
+                  ? null
+                  : daysBetweenKeys(started!, row['day']) + 1,
+              'type': row['type'],
+              'total': row['total'],
+              'confirmed': row['confirmed'] == true,
+              'source': row['source'] ?? 'app',
+            },
+      ]..sort(
+        (a, b) =>
+            '${a['day']}${a['type']}'.compareTo('${b['day']}${b['type']}'),
+      );
 
   List<bool?> get activeWeeks => [
     for (final week in weeks) week == null ? null : week['active'] == true,

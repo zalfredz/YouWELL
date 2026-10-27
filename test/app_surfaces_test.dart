@@ -47,6 +47,9 @@ void main() {
         YouWellApp(controller: controller, surface: AppSurface.admin),
       );
       await tester.pumpAndSettle();
+      // The admin opens on Overview; moderation is the next tab.
+      await tester.tap(find.widgetWithText(Tab, 'Community'));
+      await tester.pumpAndSettle();
       expect(find.text('Cari alias atau isi post'), findsNothing);
       expect(find.textContaining('Menunggu ('), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);

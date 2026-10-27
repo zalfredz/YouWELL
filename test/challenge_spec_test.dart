@@ -500,6 +500,12 @@ void main() {
         'delay_craving_count',
         'delay_craving_completed',
         'habit_swap_count',
+        'quests_by_admin',
+        'cigarettes_total',
+        'vape_total',
+        'usage_days_logged',
+        'admin_intervention',
+        'opened_days_by_admin',
       ]);
       expect(summary['ladder_makan'], 2);
       expect(summary['ladder_jeda'], isNull);

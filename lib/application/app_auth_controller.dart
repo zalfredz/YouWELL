@@ -155,6 +155,7 @@ class AppAuthController extends ChangeNotifier {
         stage = AuthStage.importChoice;
       } else {
         await _activate(identity.id, saved, generation);
+        unawaited(pollMeals());
       }
       if (current()) _notify();
     } catch (_) {
@@ -259,6 +260,7 @@ class AppAuthController extends ChangeNotifier {
       }
       if (_disposed || generation != _generation) return;
       await _activate(userId, saved, generation);
+      unawaited(pollMeals());
       if (_disposed || generation != _generation) return;
       _notify();
     } catch (_) {
@@ -285,7 +287,11 @@ class AppAuthController extends ChangeNotifier {
           (last == null ||
               DateTime.now().difference(last) >= const Duration(minutes: 10))) {
         _lastOverdueCheck = DateTime.now();
-        await verifier.checkOverdue().timeout(const Duration(seconds: 60));
+        try {
+          await verifier.checkOverdue().timeout(const Duration(seconds: 30));
+        } catch (_) {
+          // A slow or missing AI function must not hold back admin decisions.
+        }
       }
       final verdicts = await verifier.decisions().timeout(timeout);
       if (identical(meals, verifier) && identical(wellness, controller)) {

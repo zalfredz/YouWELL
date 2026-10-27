@@ -749,6 +749,13 @@ class _QuestCard extends StatelessWidget {
                   text: 'Foto ditolak, foto ulang ya.',
                   color: c.amber,
                 ),
+                'outside' => _Note(
+                  icon: Icons.schedule_rounded,
+                  text:
+                      'Foto disetujui, tapi diambil di luar jam misi. '
+                      '${_photoRule(task)}',
+                  color: c.amber,
+                ),
                 _ => _Note(
                   icon: Icons.photo_camera_rounded,
                   text: _photoRule(task),
