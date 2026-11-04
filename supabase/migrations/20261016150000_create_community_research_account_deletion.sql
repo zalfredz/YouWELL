@@ -8,8 +8,9 @@
 begin;
 
 -- ---------------------------------------------------------------------------
--- Progress privacy: raw smoking/vaping data must never reach the server
--- (CLAUDE.md §6). The client strips these keys; the server rejects them too.
+-- Progress privacy: raw smoking/vaping moments must not reach the server.
+-- Daily totals are handled separately by a later migration. The client strips
+-- these keys; the server rejects them too.
 create or replace function private.youwell_cloud_fields_safe(value jsonb)
 returns boolean language plpgsql immutable set search_path = '' as $$
 declare entry record;
@@ -255,7 +256,7 @@ grant execute on function public.moderate_youwell_post(uuid, text, text) to auth
 grant execute on function public.resolve_youwell_report(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- Research logs (CLAUDE.md §3.6): numbers and a P1-P10 code only.
+-- Research logs: numbers and a P1-P10 code only.
 -- Deliberately no user_id, email, alias, free text, photo, or location.
 -- Insert-only for participants; read it from the dashboard (one researcher).
 -- A week can be sent again while it is still running; analyse the latest

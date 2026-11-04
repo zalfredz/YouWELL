@@ -19,6 +19,7 @@ windows/
 # Local configuration and OS files
 .env
 .env.*
+CLAUDE.md
 config/env/*.json
 !config/env/*.example.json
 .DS_Store

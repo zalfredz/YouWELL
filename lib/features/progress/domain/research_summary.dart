@@ -152,7 +152,7 @@ class ResearchSummary {
   final int? ladderGerak, ladderIstirahat, ladderHidrasi, ladderMakan;
   final int? ladderJeda;
 
-  /// Columns of `research_logs` (CLAUDE.md §3). Internal category keys map
+  /// Columns of `research_logs` (docs/PROJECT_DECISIONS.md). Category keys map
   /// to research names here: Body → gerak, Energy → istirahat,
   /// Lifestyle → hidrasi, Food → makan, Reduction → jeda. Tidur is not used
   /// yet. `quests_done` includes practice quests from relaxed days but not

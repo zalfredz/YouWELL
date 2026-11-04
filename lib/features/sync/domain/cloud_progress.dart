@@ -39,7 +39,7 @@ abstract final class CloudProgress {
     'participant_code',
     'access_token',
     'refresh_token',
-    // Raw smoking/vaping data stays on the device (CLAUDE.md §6).
+    // Raw smoking/vaping moments stay on the device; daily totals are separate.
     'product',
     'trigger',
     'triggers',
@@ -53,7 +53,7 @@ abstract final class CloudProgress {
     'reductionSettings',
     'reductionPlans',
     'reductionSetup',
-    // Raw sleep times stay on the device (CLAUDE.md §6).
+    // Raw sleep times stay on the device (docs/PROJECT_DECISIONS.md).
     'sleepLogs',
     'openSleep',
     'bedAt',

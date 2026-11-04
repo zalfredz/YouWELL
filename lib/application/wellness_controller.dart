@@ -1364,8 +1364,8 @@ class WellnessController extends ChangeNotifier {
     _save();
   }
 
-  /// Reduction logs stay on this device for now. Ask for consent again
-  /// before they are ever synced (see CLAUDE.md §2, §6).
+  /// Detailed reduction moments stay on this device. Only daily usage totals
+  /// are shared; see docs/PROJECT_DECISIONS.md.
   void switchPath(bool enabled) {
     _data['profile']['path'] = enabled ? 'reduction' : 'wellness';
     _reviewLadders();

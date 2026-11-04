@@ -58,3 +58,4 @@ Verifikasi sebelum rilis: `flutter analyze` dan `flutter test`.
 | Sinkron progres | [docs/PROGRESS_SYNC.md](docs/PROGRESS_SYNC.md) |
 | Deploy ke Render | [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) |
 | Struktur kode | [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) |
+| Keputusan produk terbaru | [docs/PROJECT_DECISIONS.md](docs/PROJECT_DECISIONS.md) |

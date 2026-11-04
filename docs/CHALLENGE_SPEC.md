@@ -1,8 +1,12 @@
 # YouWell – Spesifikasi Sistem Challenge
 
-Dokumen ini adalah pelengkap `CLAUDE.md` dan ditaruh di `docs/CHALLENGE_SPEC.md`. Isinya keputusan desain challenge hasil diskusi tim TRIAD (Oktober 2026).
+Dokumen ini merinci keputusan desain challenge tim TRIAD (Oktober 2026).
+Untuk keputusan terbaru yang menggantikan bagian historis, lihat
+[PROJECT_DECISIONS.md](PROJECT_DECISIONS.md).
 
-**Aturan utama:** semua personalisasi berbasis aturan (*rule-based*) dan bisa dijelaskan ke pengguna. **Tanpa machine learning.**
+**Aturan utama:** personalisasi berbasis aturan (*rule-based*) dan bisa
+dijelaskan ke pengguna. Verifikasi foto makan oleh AI adalah pengecualian
+terpisah; lihat [PROJECT_DECISIONS.md](PROJECT_DECISIONS.md).
 
 ## Penghapusan timer path rokok/vape (15 Oktober 2026)
 
@@ -122,7 +126,7 @@ Dasar teori yang dirujuk proposal:
 
 | Input | Pengaruh |
 |---|---|
-| Login Google | Akun (lihat `CLAUDE.md` §2) |
+| Login Google | Akun (lihat [SUPABASE_SETUP.md](SUPABASE_SETUP.md)) |
 | Usia | Tiga pilihan: **Di atas 22 / 18 - 22 / Di bawah 18** (tanpa pertanyaan lanjutan, keputusan tim 7 Okt 2026). Di jalur rokok/vape, "Di bawah 18" dan "18 - 22" memakai copy **"menuju berhenti"** (PP 28/2024 Pasal 434); "Di atas 22" memakai copy biasa |
 | Jalur | Better Daily Rhythm / Kurangi Rokok/Vape |
 | Jenis & frekuensi (khusus rokok/vape) | Rokok / vape / keduanya; perkiraan sesi per hari. Dipakai untuk tangga Jeda anak tangga 8 - 9. **Hanya disimpan di HP, tidak disinkronkan** (§10a) |
