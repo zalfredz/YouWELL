@@ -14,9 +14,12 @@ import 'support/sim.dart';
 void main() {
   Future<Sim> withSleepQuest() async {
     final sim = Sim();
-    sim.now = DateTime(2026, 10, 24, 7);
+    // Drawn before 06.00, while last night can still be checked in; a card
+    // drawn later without a recorded night has no sleep quest.
+    sim.now = DateTime(2026, 10, 24, 5);
     await sim.start(pace: 1);
     sim.takeCard(category: 'Energy');
+    sim.now = DateTime(2026, 10, 24, 7);
     return sim;
   }
 

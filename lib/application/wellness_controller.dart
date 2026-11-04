@@ -245,7 +245,8 @@ class WellnessController extends ChangeNotifier {
   /// holds one, else that day's Hidrasi step. 2.000 ml is the ladder's top,
   /// not a fixed daily goal.
   int waterTargetOn(String day) {
-    final entry = days[day];
+    // Read in place: copying every day here made each water tap O(days²).
+    final entry = (_data['days'] as Map?)?[day];
     final quest = entry is Map
         ? ((entry['quests'] ?? const []) as List).whereType<Map>().firstWhere(
             (task) => task['ladder'] == 'Lifestyle' && task['waterMl'] is num,
@@ -492,6 +493,9 @@ class WellnessController extends ChangeNotifier {
     hour: now.hour,
     timedWorkouts: timedWorkouts,
     wellnessUat: profile != null,
+    // Before 06.00 tonight's sleep can still be checked in.
+    sleepPossible:
+        lastNightSleep != null || sleepCheckIn != null || now.hour < 6,
     recentAttempts: {
       for (final category in ladderCategories(reduction: reduction))
         category: _ladderQuestsBefore(
@@ -521,10 +525,8 @@ class WellnessController extends ChangeNotifier {
       (card) => ((card['tasks'] ?? []) as List).whereType<Map>().any(
         (task) =>
             task['ladder'] == 'Food' &&
-            (task['photoWindows'] as List?)?.any(
-                  (window) => (window[1] as num) <= now.hour,
-                ) ==
-                true,
+                photoWindowClosing(task['photoWindows'] as List?, now.hour) ||
+            task['catalogId'] == 'sunlight' && now.hour >= 12,
       ),
     );
     if (!expired) return false;
@@ -1035,6 +1037,25 @@ class WellnessController extends ChangeNotifier {
           task['activityKind'] == 'water' &&
           water >= ((task['waterMl'] as num?)?.toInt() ?? 0),
     );
+    // Same partial as when water was logged before the card was taken, so
+    // the ladder review does not depend on the order of the two.
+    if (days[today] is Map) {
+      _data['days'][today]['quests'] = [
+        for (final task in quests)
+          if (task['activityKind'] == 'water' && task['status'] != 'completed')
+            {
+              ...task,
+              'partial':
+                  ((water / ((task['waterMl'] as num?)?.toDouble() ?? 250))
+                              .clamp(0, .99) *
+                          100)
+                      .floor() /
+                  100,
+            }
+          else
+            task,
+      ];
+    }
     if (_mobileRewardsEnabled) _claimAchievements();
     _save();
   }

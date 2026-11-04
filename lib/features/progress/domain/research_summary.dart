@@ -51,10 +51,17 @@ class ResearchSummary {
     final weekEntries =
         days.entries.where((entry) => inWeek(entry.key)).toList()
           ..sort((a, b) => b.key.compareTo(a.key));
-    final historicalSteps = weekEntries
-        .map((entry) => entry.value is Map ? entry.value['ladderSteps'] : null)
-        .whereType<Map>()
-        .firstOrNull;
+    Map? stepsOf(MapEntry<String, dynamic> entry) =>
+        entry.value is Map ? entry.value['ladderSteps'] as Map? : null;
+    // A week without app use keeps the last level known before it, so a
+    // null column only ever means "category not used".
+    final historicalSteps =
+        weekEntries.map(stepsOf).whereType<Map>().firstOrNull ??
+        (days.entries.where((entry) => entry.key.compareTo(from) < 0).toList()
+              ..sort((a, b) => b.key.compareTo(a.key)))
+            .map(stepsOf)
+            .whereType<Map>()
+            .firstOrNull;
     var questsDone = 0, questsByAdmin = 0;
     for (final entry in days.entries.where((entry) => inWeek(entry.key))) {
       final quests = (entry.value is Map ? entry.value['quests'] : null) ?? [];

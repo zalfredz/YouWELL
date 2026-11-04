@@ -20,8 +20,15 @@ extension SleepCheckIns on WellnessController {
   JsonMap? get lastNightSleep =>
       sleepLogs.where((row) => row['day'] == today).lastOrNull;
 
+  /// Check-ins open from 18.00 to 06.00, so a tap during the day cannot
+  /// start a "night" that blocks tonight's real one.
+  static bool bedtimeWindow(DateTime time) => time.hour >= 18 || time.hour < 6;
+
+  bool get canCheckInSleep =>
+      profile != null && sleepCheckIn == null && bedtimeWindow(now);
+
   bool checkInSleep() {
-    if (profile == null || sleepCheckIn != null) return false;
+    if (!canCheckInSleep) return false;
     _data['openSleep'] = now.toIso8601String();
     _save();
     return true;
@@ -38,8 +45,9 @@ extension SleepCheckIns on WellnessController {
     return recordSleep(bedAt: bed, wakeAt: now);
   }
 
-  /// One night per wake-up day; a later record for that day replaces it.
-  /// Nights shorter than 2 hours or longer than 16 are not plausible.
+  /// One night per wake-up day: the longer one is kept, so an evening nap
+  /// never replaces the night that ended that morning. Nights shorter than
+  /// 2 hours or longer than 16 are not plausible.
   bool recordSleep({required DateTime bedAt, required DateTime wakeAt}) {
     final hours = wakeAt.difference(bedAt).inMinutes / 60;
     if (profile == null || hours < 2 || hours > 16 || wakeAt.isAfter(now)) {
@@ -47,6 +55,19 @@ extension SleepCheckIns on WellnessController {
     }
     final day = dayKey(wakeAt);
     final rows = (_data['sleepLogs'] ??= <dynamic>[]) as List;
+    final kept = rows.whereType<Map>().where((row) => row['day'] == day);
+    for (final row in kept) {
+      final bed = DateTime.tryParse(row['bedAt']?.toString() ?? '');
+      final wake = DateTime.tryParse(row['wakeAt']?.toString() ?? '');
+      if (bed != null &&
+          wake != null &&
+          wake.difference(bed) >= wakeAt.difference(bedAt)) {
+        _data.remove('openSleep');
+        if (day == today) _applySleepEvidence();
+        _save();
+        return true;
+      }
+    }
     rows.removeWhere((row) => row is Map && row['day'] == day);
     rows.add({
       'id': 'sleep-${wakeAt.microsecondsSinceEpoch}',

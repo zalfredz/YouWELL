@@ -316,7 +316,21 @@ async function main() {
       assert.equal(row.code, 'P4');
       assert.equal(row.study_path, 'wellness');
     });
-    console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes and path switches.');
+    // Phase 12: removing a code and assigning it again keeps the group.
+    await asUser(admin, 'aal2', async () => {
+      await db.query('select public.set_youwell_participant_code($1, null)', [owner]);
+      const uncoded = (await db.query('select public.youwell_admin_progress_overview() as r')).rows[0].r
+        .find(r => r.account === owner);
+      assert.equal(uncoded.code, null);
+      assert.equal(uncoded.study_path, 'wellness', 'the group outlives the code');
+      await db.query('select public.set_youwell_participant_code($1, $2)', [owner, 'P5']);
+      const again = (await db.query('select public.youwell_admin_progress_overview() as r')).rows[0].r
+        .find(r => r.account === owner);
+      assert.equal(again.code, 'P5');
+      assert.equal(again.study_path, 'wellness', 'not re-locked to today\'s reduction path');
+      await denied(() => db.query('select * from public.youwell_study_cohorts'));
+    });
+    console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes, removal and re-assignment, and path switches.');
   } finally { await db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

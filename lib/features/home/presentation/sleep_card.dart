@@ -29,7 +29,6 @@ class SleepCard extends StatelessWidget {
     final colors = context.colors;
     final open = c.sleepCheckIn;
     final last = c.lastNightSleep;
-    final hour = c.now.hour;
     final (bedTarget, wakeTarget) = _targets(c);
     final Widget body;
     if (open != null) {
@@ -61,7 +60,7 @@ class SleepCard extends StatelessWidget {
           child: const Text('Batal'),
         ),
       );
-    } else if (hour >= 18 || hour < 4) {
+    } else if (SleepCheckIns.bedtimeWindow(c.now)) {
       body = _Row(
         icon: Icons.nights_stay_rounded,
         color: colors.energy,
@@ -149,47 +148,95 @@ class _Row extends StatelessWidget {
   );
 }
 
-/// The sleep quest's sheet: just the one button that fits right now.
-Future<void> openSleepSheet(BuildContext context, WellnessController c) =>
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final awake = c.sleepCheckIn != null;
-        void press() {
-          final ok = awake ? c.checkOutSleep() : c.checkInSleep();
-          final messenger = ScaffoldMessenger.of(context);
-          Navigator.pop(sheetContext);
-          messenger
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  !ok
-                      ? 'Bisa ditekan minimal 2 jam setelah mulai tidur.'
-                      : awake
-                      ? 'Selamat pagi! Tidurmu tercatat.'
-                      : 'Selamat tidur!',
-                ),
-              ),
+/// The sleep quest's sheet: the one button that fits right now, or, during
+/// the day, what last night looked like and when check-in opens.
+Future<void> openSleepSheet(
+  BuildContext context,
+  WellnessController c,
+) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  builder: (sheetContext) {
+    final awake = c.sleepCheckIn != null;
+    final colors = sheetContext.colors;
+    if (!awake && !c.canCheckInSleep) {
+      final last = c.lastNightSleep;
+      final (bedTarget, wakeTarget) = _targets(c);
+      final night = last == null
+          ? null
+          : (
+              DateTime.parse(last['bedAt'].toString()),
+              DateTime.parse(last['wakeAt'].toString()),
             );
-        }
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: FilledButton.icon(
-                onPressed: press,
-                icon: Icon(
-                  awake ? Icons.wb_sunny_rounded : Icons.bedtime_rounded,
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                night == null
+                    ? 'Tidur tadi malam belum tercatat'
+                    : 'Tidur tadi malam ${_clock(night.$1)} – ${_clock(night.$2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
-                label: Text(awake ? 'Aku sudah bangun' : 'Aku mau tidur'),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Misi tidur dinilai dari malam yang berakhir pagi ini '
+                '(tidur sebelum $bedTarget, bangun sebelum $wakeTarget). '
+                'Tombol "Aku mau tidur" aktif mulai pukul 18.00, untuk '
+                'misi besok.',
+                style: TextStyle(color: colors.muted, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text('Mengerti'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    void press() {
+      final ok = awake ? c.checkOutSleep() : c.checkInSleep();
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.pop(sheetContext);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              !ok
+                  ? 'Bisa ditekan minimal 2 jam setelah mulai tidur.'
+                  : awake
+                  ? 'Selamat pagi! Tidurmu tercatat.'
+                  : 'Selamat tidur!',
             ),
           ),
         );
-      },
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: press,
+            icon: Icon(awake ? Icons.wb_sunny_rounded : Icons.bedtime_rounded),
+            label: Text(awake ? 'Aku sudah bangun' : 'Aku mau tidur'),
+          ),
+        ),
+      ),
     );
+  },
+);

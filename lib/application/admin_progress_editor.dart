@@ -58,11 +58,32 @@ class AdminProgressEditor {
 
   /// Gives a day without a committed card the card the app would have
   /// recommended (same generator, the participant's levels and tempo).
+  /// Levels in force on [day]: the last ones recorded up to that day,
+  /// else today's.
+  Map<String, int> stepsOn(String day) {
+    final recorded =
+        (_days.entries.where((entry) => entry.key.compareTo(day) <= 0).toList()
+              ..sort((a, b) => b.key.compareTo(a.key)))
+            .map(
+              (entry) => entry.value is Map ? entry.value['ladderSteps'] : null,
+            )
+            .whereType<Map>()
+            .firstOrNull;
+    return {
+      for (final category in categories)
+        category:
+            (recorded?[category] as num?)?.toInt() ??
+            ladderSteps[category] ??
+            1,
+    };
+  }
+
   void createCard(String day) {
     if (hasCard(day)) return;
+    final steps = stepsOn(day);
     final packs = const DailyCardGenerator().cardPacks(
       today: day,
-      steps: ladderSteps,
+      steps: steps,
       pace: (_profile['pace'] as num?)?.toInt() ?? 1,
       lowImpact: _lowImpact,
       reduction: reduction,
@@ -80,6 +101,7 @@ class AdminProgressEditor {
           {...task, 'status': 'committed', 'done': false},
       ],
       'water': existing['water'] ?? 0,
+      'ladderSteps': existing['ladderSteps'] ?? steps,
       'cardDraw': {'committedCardId': card['id'], 'adminCreated': true},
     }..remove('cardPacks');
   }
@@ -113,14 +135,12 @@ class AdminProgressEditor {
   // ---------------------------------------------------------- opened days
 
   List get _opened => (payload['openedDays'] ??= <dynamic>[]) as List;
-  List get _adminOpened =>
-      (payload['adminOpenedDays'] ??= <dynamic>[]) as List;
+  List get _adminOpened => (payload['adminOpenedDays'] ??= <dynamic>[]) as List;
 
   bool openedOn(String day) => _opened.contains(day);
 
   /// Opened in the app itself; the admin cannot remove those days.
-  bool openedByApp(String day) =>
-      openedOn(day) && !_adminOpened.contains(day);
+  bool openedByApp(String day) => openedOn(day) && !_adminOpened.contains(day);
 
   void setOpened(String day, bool opened) {
     if (openedByApp(day)) return;

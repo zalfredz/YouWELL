@@ -130,6 +130,8 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
           title: 'B. Jalur wellness',
           subtitle:
               'Minggu 1–4 per peserta. Tanda bintang: minggu masih berjalan. '
+              'Rata-rata kelompok hanya memakai minggu yang sudah selesai '
+              '(n = jumlah peserta). '
               '"Target tidur tercapai" berarti misi tidur selesai, bukan tidur '
               'membaik; foto disetujui berarti ada foto makanan/minuman, '
               'bukan mutu gizinya.',
@@ -426,11 +428,22 @@ class _WeekGrid extends StatelessWidget {
     final scale =
         metric.max ??
         (observed.isEmpty ? 1 : observed.reduce((a, b) => a > b ? a : b));
-    double? mean(int week) {
-      final values = [for (final p in people) ?value(p, week)];
-      return values.isEmpty
-          ? null
-          : values.fold<num>(0, (a, b) => a + b) / values.length;
+    // Completed weeks only: a running week would pull the mean down just
+    // because it is not over yet.
+    ({double? mean, int n, int running}) groupMean(int week) {
+      final values = [
+        for (final p in people)
+          if (week < p.weeks.length && p.weeks[week].complete) ?value(p, week),
+      ];
+      return (
+        mean: values.isEmpty
+            ? null
+            : values.fold<num>(0, (a, b) => a + b) / values.length,
+        n: values.length,
+        running: people
+            .where((p) => week < p.weeks.length && !p.weeks[week].complete)
+            .length,
+      );
     }
 
     Widget cell(num? v, {bool running = false, bool bold = false}) => SizedBox(
@@ -464,10 +477,29 @@ class _WeekGrid extends StatelessWidget {
             ),
     );
 
+    Widget meanCell(int week) {
+      final g = groupMean(week);
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          cell(g.mean, bold: true),
+          Text(
+            [
+              'n=${g.n}',
+              if (g.running > 0) '${g.running} masih berjalan',
+            ].join(' · '),
+            style: TextStyle(color: c.muted, fontSize: 11.5),
+          ),
+        ],
+      );
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
         headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
+        dataRowMaxHeight: 60,
         columns: [
           const DataColumn(label: Text('Kode')),
           for (var w = 1; w <= 4; w++) DataColumn(label: Text('Minggu $w')),
@@ -495,7 +527,7 @@ class _WeekGrid extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
-              for (var w = 0; w < 4; w++) DataCell(cell(mean(w), bold: true)),
+              for (var w = 0; w < 4; w++) DataCell(meanCell(w)),
             ],
           ),
         ],

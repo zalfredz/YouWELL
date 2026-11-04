@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/features/home/domain/wellness_uat_program.dart';
 
@@ -461,15 +462,25 @@ LadderReview reviewLadder({
         : sum + ((task['partial'] as num?)?.toDouble() ?? 0),
   );
   final completion = score / total;
+  // Stepping up needs mostly finished missions: a partial counts at most
+  // half here, so a week of 83% water days never offers a harder level
+  // with "0 of 7 done". Partials still count in full against stepping down.
+  final upScore = weekQuests.fold<double>(
+    0,
+    (sum, task) => task['status'] == 'completed'
+        ? sum + 1
+        : sum + min(.5, (task['partial'] as num?)?.toDouble() ?? 0),
+  );
   // Days on which a card (and so this ladder quest) was taken.
   final cardDays = weekQuests.map((task) => task['day']).toSet().length;
-  final step = nextStep(
+  var step = nextStep(
     current,
     maxStep,
     completion: completion,
     cardDays: cardDays,
     inactiveDays: inactiveDays,
   );
+  if (step > current && upScore / total < .8) step = current;
   final summary = '$done dari $total misi $label selesai';
   if (step > current) {
     return LadderReview(
@@ -485,7 +496,7 @@ LadderReview reviewLadder({
       reason: 'Turun satu level karena $summary. Biar lebih pas dulu.',
     );
   }
-  final ready = completion >= .8;
+  final ready = upScore / total >= .8;
   return LadderReview(
     step: current,
     change: 'hold',

@@ -5,8 +5,10 @@ import 'package:youwell/core/types/json_map.dart';
 /// Starts in the evening so every quest can be finished the same day.
 class Sim {
   /// [timed]: walk/run counts session time, as in the web app.
-  Sim({this.timed = false});
-  final bool timed;
+  /// [slept]: a night (22.30–06.30) is checked in and out before each day,
+  /// so the sleep ladder can be on the cards (it is left out otherwise).
+  Sim({this.timed = false, this.slept = false});
+  final bool timed, slept;
   DateTime now = DateTime(2026, 10, 24, 20);
   late final controller = WellnessController(
     clock: () => now,
@@ -25,10 +27,21 @@ class Sim {
     'lowImpact': lowImpact,
     'companion': 'plant',
     'ageGroup': ?ageGroup,
+  }).then((_) {
+    if (!slept) return;
+    _night();
+    // Redraw today's cards now that last night is known.
+    controller.setDailyPace('normal');
   });
+
+  void _night() => controller.recordSleep(
+    bedAt: DateTime(now.year, now.month, now.day - 1, 22, 30),
+    wakeAt: DateTime(now.year, now.month, now.day, 6, 30),
+  );
 
   void nextDay() {
     now = now.add(const Duration(days: 1));
+    if (slept) _night();
     controller.prepareToday();
   }
 

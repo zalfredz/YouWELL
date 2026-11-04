@@ -56,7 +56,7 @@ void main() {
     });
 
     test('Each card: 3 ladder quests from 3 different categories', () async {
-      final sim = Sim();
+      final sim = Sim(slept: true);
       await sim.start();
       for (final card in sim.cards) {
         final ladder = sim
@@ -74,6 +74,8 @@ void main() {
       'Healthy-living path: every category is on at least 3 cards',
       () async {
         final sim = Sim();
+        // Before 06.00 the sleep ladder can still be on the cards.
+        sim.now = DateTime(2026, 10, 24, 5);
         await sim.start();
         for (final category in healthyCategories) {
           expect(
@@ -111,6 +113,8 @@ void main() {
 
     test('Least-practised category appears on most cards', () async {
       final sim = Sim();
+      // Before 06.00 the sleep ladder can still be on the cards.
+      sim.now = DateTime(2026, 10, 24, 5);
       await sim.start();
       // Three days of Body, Food and Lifestyle; Istirahat is never taken.
       for (var day = 0; day < 3; day++) {
@@ -140,7 +144,7 @@ void main() {
     }
 
     test('Relaxed day: 3-mission cards, one step lower, practice', () async {
-      final sim = Sim();
+      final sim = Sim(slept: true);
       await sim.start(pace: 3);
       expect(sim.controller.setDailyPace('relaxed'), isTrue);
       for (final card in sim.cards) {
@@ -467,7 +471,7 @@ void main() {
     test(
       'Relaxed-day quests count in quests_done, not in the ladder',
       () async {
-        final sim = Sim();
+        final sim = Sim(slept: true);
         await sim.start(pace: 2);
         for (var day = 0; day < 7; day++) {
           expect(sim.controller.setDailyPace('relaxed'), isTrue);

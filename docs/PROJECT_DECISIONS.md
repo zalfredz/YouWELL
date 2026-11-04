@@ -6,6 +6,29 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 4 November 2026 — perbaikan misi (audit)
+
+- Misi Tidur dinilai dari malam yang berakhir pagi itu, jadi kartu tidak
+  memuatnya bila malam itu tidak tercatat (belum ada check-out hari ini, tidak
+  ada check-in yang terbuka, dan sudah lewat 06.00). Di hari seperti itu
+  kartu jalur wellness berisi 2 dari 3 kategori level lain ditambah quest
+  pendamping, supaya lima kartu tetap berbeda (keputusan tim, menyimpang dari
+  "3 kategori per kartu" hanya di hari tanpa catatan tidur).
+- "Aku mau tidur" hanya bisa ditekan 18.00–06.00. Satu malam per hari bangun:
+  yang lebih panjang dipertahankan, jadi tidur sore tidak menimpa malamnya.
+- Progres sebagian Hidrasi sama, entah air dicatat sebelum atau sesudah kartu
+  dipilih. Untuk tawaran naik level, misi sebagian dihitung paling banyak
+  setengah; untuk turun level tetap dihitung penuh.
+- Misi foto makan yang jendelanya habis dalam kurang dari 60 menit memakai
+  versi "kapan saja"; "Cari cahaya pagi" diganti quest lain bila kartu dipilih
+  setelah 12.00.
+- Kolom level di ringkasan riset memakai level terakhir yang diketahui untuk
+  minggu tanpa pemakaian; kosong berarti kategori tidak dipakai.
+- Kartu yang dibuat admin untuk hari lampau memakai level yang berlaku hari
+  itu dan menyimpannya.
+- Belum diubah (menunggu tim): target durasi tidur 7–9 jam dan menilai malam
+  yang akan datang. Keduanya mengubah isi `tangga_istirahat`.
+
 ## 4 November 2026 — dashboard peneliti
 
 - Dashboard peneliti punya tab **Analisis studi**: ringkasan studi, grafik
@@ -18,8 +41,11 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 - Semua angka bisa dihitung ulang tanpa data intervensi admin, dan CSV
   "data grafik" memakai angka yang sama dengan grafik.
 - Jalur studi, tanggal mulai, dan versi aturan ukur dikunci saat kode P
-  pertama kali diberikan (tahap 11), sehingga pindah jalur tidak memindahkan
+  pertama kali diberikan (tahap 11, disimpan terpisah sejak tahap 12), jadi
+  pindah jalur atau menghapus lalu memberi ulang kode tidak memindahkan
   peserta ke kelompok lain.
+- Rata-rata kelompok hanya memakai minggu yang sudah selesai dan menampilkan
+  jumlah peserta penyusunnya.
 - Belum dikerjakan: peran peneliti terpisah yang hanya baca, dan kuesioner
   awal–akhir yang dihubungkan lewat kode P.
 

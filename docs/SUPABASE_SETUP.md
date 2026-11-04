@@ -114,6 +114,10 @@ mulai, dan versi aturan ukur saat kode P1–P10 pertama kali diberikan, untuk
 tab **Analisis studi**. Kode yang sudah ada diisi dari profil saat ini dan
 ditandai `backfill-2026-11-04`; cek peserta yang pernah pindah jalur. Jalankan
 setelah tahap 10.
+Tahap 12 (`20261104120000_study_cohort_keep.sql`) memindahkan kunci jalur
+studi ke tabel `youwell_study_cohorts`, sehingga menghapus kode P lalu
+memberikannya lagi tidak mengunci ulang jalur dari profil saat ini. Jalankan
+setelah tahap 11.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)

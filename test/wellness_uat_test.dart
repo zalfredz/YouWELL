@@ -327,7 +327,7 @@ void main() {
     test(
       'Prelogged water, photo and ${timed ? 'timer' : 'GPS'} count once at commit',
       () async {
-        final sim = Sim(timed: timed);
+        final sim = Sim(timed: timed, slept: true);
         sim.controller.enableMobileRewards();
         await sim.start(pace: 1);
         for (var glass = 0; glass < 4; glass++) {
@@ -379,7 +379,7 @@ void main() {
   test(
     'Partial evidence is credited, notes and invalid GPS cannot finish quests',
     () async {
-      final sim = Sim();
+      final sim = Sim(slept: true);
       await sim.start(pace: 1);
       sim.controller.addWater();
       sim.controller.recordMeal(note: 'Catatan makan tanpa foto');

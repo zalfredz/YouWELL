@@ -26,8 +26,14 @@ class DailyCardGenerator {
     Map<String, int> recentAttempts = const {},
     bool timedWorkouts = false,
     bool wellnessUat = false,
+    bool sleepPossible = true,
   }) {
-    final combos = _combos(today, reduction, recentAttempts);
+    final combos = _combos(
+      today,
+      reduction,
+      recentAttempts,
+      sleepPossible: sleepPossible,
+    );
     final order = [...sizes]
       ..sort((a, b) => _score('$a', today).compareTo(_score('$b', today)));
     if (wellnessUat) _shuffle(order, '$today:wellness-sizes');
@@ -159,10 +165,7 @@ class DailyCardGenerator {
     final refreshed = [
       for (final task in tasks)
         if (task['ladder'] == 'Food' &&
-            (task['photoWindows'] as List?)?.any(
-                  (window) => (window[1] as num) <= hour,
-                ) ==
-                true)
+            photoWindowClosing(task['photoWindows'] as List?, hour))
           {
             ..._ladderTask(
               'Food',
@@ -176,6 +179,8 @@ class DailyCardGenerator {
             ),
             'id': task['id'],
           }
+        else if (task['catalogId'] == 'sunlight' && hour >= 12)
+          _afternoonReplacement(card, task, today, hour, index)
         else
           task,
     ];
@@ -184,6 +189,38 @@ class DailyCardGenerator {
       'tasks': refreshed,
       if (card.containsKey('activeMinutes'))
         'activeMinutes': activeMinutes(refreshed),
+    };
+  }
+
+  /// "Cari cahaya pagi" on a card taken after noon becomes another side
+  /// quest that is not on the card yet, keeping its id and XP.
+  JsonMap _afternoonReplacement(
+    JsonMap card,
+    JsonMap task,
+    String today,
+    int hour,
+    int index,
+  ) {
+    final categories = ((card['categories'] ?? const []) as List)
+        .cast<String>();
+    final taken = {
+      for (final other in (card['tasks'] as List).whereType<Map>())
+        other['catalogId'],
+    };
+    final next = _sideQuests(
+      count: 5,
+      categories: categories,
+      reduction: categories.contains('Reduction'),
+      cameraAvailable: true,
+      salt: '$today:$index:afternoon',
+      hour: hour,
+      wellnessUat: true,
+    ).where((side) => !taken.contains(side.id)).firstOrNull;
+    if (next == null) return task;
+    return {
+      ..._toMap(next, today, 'card-$index-afternoon'),
+      'id': task['id'],
+      'xp': task['xp'],
     };
   }
 
@@ -235,13 +272,23 @@ class DailyCardGenerator {
   }
 
   /// Category mixes for the five cards, least-practised categories first.
+  /// [sleepPossible] false (no night recorded or under way) leaves the
+  /// sleep ladder out: it is judged on last night, so it could not be done.
   List<List<String>> _combos(
     String today,
     bool reduction,
-    Map<String, int> recent,
-  ) {
-    final pool = healthyCategories;
-    final picks = reduction ? ladderQuestsPerCard - 1 : ladderQuestsPerCard;
+    Map<String, int> recent, {
+    bool sleepPossible = true,
+  }) {
+    final pool = [
+      for (final category in healthyCategories)
+        if (sleepPossible || category != 'Energy') category,
+    ];
+    // Without sleep only 3 healthy ladders are left; taking 2 of them keeps
+    // the five cards different (as on the smoking/vaping path).
+    final picks = reduction || !sleepPossible
+        ? ladderQuestsPerCard - 1
+        : ladderQuestsPerCard;
     final combos = <List<String>>[];
     void build(int start, List<String> chosen) {
       if (chosen.length == picks) {
@@ -321,8 +368,7 @@ class DailyCardGenerator {
     // Without background GPS (web app), walk/run counts session time.
     final timed = rung.usesTimer(timed: timedWorkouts);
     // A meal window that has already passed gets the same-step anytime quest.
-    final windowPassed =
-        rung.photoWindows?.any((window) => window[1] <= hour) ?? false;
+    final windowPassed = photoWindowClosing(rung.photoWindows, hour);
     final anytime = windowPassed && rung.anytimeTitle != null;
     final photo = rung.activityKind == 'meal_snap';
     return {
@@ -519,3 +565,8 @@ const bonusQuestXp = 15;
 
 /// Side quests that a Makan ladder photo would also finish.
 const _mealSideIds = {'meal-snap', 'fruit-veg'};
+
+/// A meal photo window that has passed or closes within the hour, so a
+/// card drawn now gets the anytime version instead of a few minutes.
+bool photoWindowClosing(List? windows, int hour) =>
+    windows?.any((window) => ((window as List)[1] as num) - 1 <= hour) ?? false;
