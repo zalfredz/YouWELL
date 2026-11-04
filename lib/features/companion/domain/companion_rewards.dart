@@ -1,9 +1,19 @@
 /// Personal rewards only: no rankings, penalties, or expiring progress.
 class CompanionUnlock {
-  const CompanionUnlock(this.id, this.label, this.level, this.background);
+  const CompanionUnlock(
+    this.id,
+    this.label,
+    this.level,
+    this.background, {
+    this.color = false,
+  });
   final String id, label;
   final int level;
   final bool background;
+
+  /// A body colour for Welli, stored as `profile.companion` like the colour
+  /// picked in onboarding.
+  final bool color;
 }
 
 const companionUnlocks = [
@@ -12,6 +22,10 @@ const companionUnlocks = [
   CompanionUnlock('stars', 'Bintang kecil', 4, false),
   CompanionUnlock('sunrise', 'Pagi hangat', 6, true),
   CompanionUnlock('crown', 'Mahkota daun', 8, false),
+  // After every accessory and background (Nov 2026): new body colours.
+  CompanionUnlock('ocean', 'Warna Samudra', 10, false, color: true),
+  CompanionUnlock('sakura', 'Warna Sakura', 12, false, color: true),
+  CompanionUnlock('sun', 'Warna Mentari', 14, false, color: true),
 ];
 
 /// Level at which each of the five growth stages starts. Sized so someone
@@ -25,7 +39,17 @@ int companionStage(int level) =>
 /// YouWELL's one mascot. The stored `companion` value (plant/cat/cloud, kept
 /// for existing profiles and sync) now only picks Welli's colour.
 const companionName = 'Welli';
-const companionColors = {'plant': 'Daun', 'cat': 'Senja', 'cloud': 'Langit'};
+const companionColors = {
+  'plant': 'Daun',
+  'cat': 'Senja',
+  'cloud': 'Langit',
+  'ocean': 'Samudra',
+  'sakura': 'Sakura',
+  'sun': 'Mentari',
+};
+
+/// The colours offered in onboarding, always available.
+const companionBaseColors = ['plant', 'cat', 'cloud'];
 
 const _stageNames = ['Benih', 'Tunas', 'Berdaun', 'Mekar', 'Bersinar'];
 

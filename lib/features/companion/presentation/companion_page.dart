@@ -24,11 +24,12 @@ class _Preview {
     this.stage,
     this.accessory,
     this.background,
+    this.color,
   });
   final String id, label;
   final int unlockLevel;
   final int? stage;
-  final String? accessory, background;
+  final String? accessory, background, color;
 }
 
 class _CompanionPageState extends State<CompanionPage> {
@@ -69,7 +70,12 @@ class _CompanionPageState extends State<CompanionPage> {
       final items = [
         const CompanionUnlock('none', 'Tanpa aksesori', 1, false),
         const CompanionUnlock('natural', 'Latar alami', 1, true),
-        ...companionUnlocks,
+        ...companionUnlocks.where((item) => !item.color),
+      ];
+      final colors = [
+        for (final id in companionBaseColors)
+          CompanionUnlock(id, companionColors[id]!, 1, false, color: true),
+        ...companionUnlocks.where((item) => item.color),
       ];
       return Scaffold(
         appBar: AppBar(
@@ -97,7 +103,7 @@ class _CompanionPageState extends State<CompanionPage> {
                       )
                     : CompanionPreview(
                         key: ValueKey(preview.id),
-                        kind: kind,
+                        kind: preview.color ?? kind,
                         stage: preview.stage ?? stage,
                         accessory:
                             preview.accessory ?? controller.companionAccessory,
@@ -176,6 +182,54 @@ class _CompanionPageState extends State<CompanionPage> {
                     ),
                 ],
               ),
+            ),
+            const SizedBox(height: 24),
+            const SectionTitle('Warna Welli', icon: Icons.palette_rounded),
+            Text(
+              'Warna baru terbuka di level berikutnya.',
+              style: TextStyle(color: c.muted, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: colors.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: 156,
+              ),
+              itemBuilder: (context, index) {
+                final item = colors[index];
+                final unlocked = level >= item.level;
+                return _RewardTile(
+                  label: item.label.replaceFirst('Warna ', ''),
+                  unlocked: unlocked,
+                  worn: kind == item.id,
+                  previewing: preview?.id == 'color-${item.id}',
+                  unlockLevel: item.level,
+                  preview: CompanionPreview(
+                    kind: item.id,
+                    stage: stage,
+                    accessory: controller.companionAccessory,
+                    background: controller.companionBackground,
+                  ),
+                  onTap: unlocked
+                      ? () {
+                          setState(() => _preview = null);
+                          controller.setCompanionColor(item.id);
+                        }
+                      : () => _show(
+                          _Preview(
+                            id: 'color-${item.id}',
+                            label: item.label,
+                            unlockLevel: item.level,
+                            color: item.id,
+                          ),
+                        ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             const SectionTitle(

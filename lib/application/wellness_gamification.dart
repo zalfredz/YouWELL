@@ -50,11 +50,27 @@ extension MobileWellnessRewards on WellnessController {
     _save();
   }
 
+  /// Welli's body colour: an onboarding colour, or a reward colour once its
+  /// level is reached.
+  void setCompanionColor(String id) {
+    final profile = _data['profile'];
+    if (profile is! Map ||
+        !companionBaseColors.contains(id) &&
+            !companionUnlocks.any(
+              (item) => item.color && item.id == id && level >= item.level,
+            )) {
+      return;
+    }
+    profile['companion'] = id;
+    _save();
+  }
+
   void equipCompanion(String id, {required bool background}) {
     if (id != (background ? 'natural' : 'none') &&
         !companionUnlocks.any(
           (item) =>
               item.id == id &&
+              !item.color &&
               item.background == background &&
               level >= item.level,
         )) {

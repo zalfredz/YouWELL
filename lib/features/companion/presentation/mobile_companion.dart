@@ -180,6 +180,10 @@ class _WelliPainter extends CustomPainter {
   (Color, Color) get _body => switch (kind) {
     'cat' => (const Color(0xffffd3bb), const Color(0xfff5a885)),
     'cloud' => (const Color(0xffd6d1fa), const Color(0xffa9a2ee)),
+    // Reward colours (Lv 10, 12, 14), each clearly apart from the three above.
+    'ocean' => (const Color(0xffbcdcf5), const Color(0xff7fb2e5)),
+    'sakura' => (const Color(0xffffd0dc), const Color(0xfff29bb2)),
+    'sun' => (const Color(0xffffeaa0), const Color(0xfff2c94c)),
     _ => (const Color(0xffc3e6bd), const Color(0xff8fc78a)),
   };
 
