@@ -189,6 +189,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Opens on "Semua": every participant on one progress table.
+      expect(find.text('Progres per peserta'), findsOneWidget);
+      expect(find.textContaining('rokok 5,7 ke 3,0'), findsOneWidget);
+      await tester.tap(find.text('Rokok/vape (1)'));
+      await tester.pumpAndSettle();
       for (final title in [
         'Keaktifan selama 4 minggu',
         'Aktif minggu 4',
@@ -255,6 +260,10 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
+      expect(find.text('Progres per peserta'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'Semua at this width');
+      await tester.tap(find.text('Wellness (2)'));
       await tester.pumpAndSettle();
       expect(find.textContaining('n=1'), findsOneWidget);
       expect(find.text('Angka per peserta'), findsOneWidget);

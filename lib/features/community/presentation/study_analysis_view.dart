@@ -50,9 +50,16 @@ final _wellnessMetrics = [
   _Metric('Foto makan disetujui', (w) => w.mealApproved, null),
 ];
 
+/// For every participant, whatever the path: engagement only.
+final _allMetrics = [
+  _wellnessMetrics[0],
+  _wellnessMetrics[1],
+  _Metric('Jumlah misi inti selesai', (w) => w.coreDone, null),
+];
+
 class _StudyAnalysisViewState extends State<StudyAnalysisView> {
-  int _metric = 0;
-  String _path = 'wellness';
+  int _metric = 0, _allMetric = 0;
+  String _path = 'all';
   String? _detail, _usageParticipant;
 
   @override
@@ -76,7 +83,9 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
     final usage =
         reduction.where((p) => p.code == _usageParticipant).firstOrNull ??
         reduction.firstOrNull;
-    final path = wellness.isEmpty
+    final path = _path == 'all'
+        ? 'all'
+        : wellness.isEmpty
         ? 'reduction'
         : reduction.isEmpty
         ? 'wellness'
@@ -139,6 +148,12 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
           runSpacing: 8,
           children: [
             ChoiceChip(
+              label: Text('Semua (${people.length})'),
+              selected: path == 'all',
+              showCheckmark: false,
+              onSelected: (_) => setState(() => _path = 'all'),
+            ),
+            ChoiceChip(
               label: Text('Wellness (${wellness.length})'),
               selected: path == 'wellness',
               showCheckmark: false,
@@ -157,7 +172,40 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
           ],
         ),
         const SizedBox(height: 20),
-        if (path == 'wellness') ...[
+        if (path == 'all') ...[
+          DropdownButton<int>(
+            isExpanded: true,
+            value: _allMetric,
+            items: [
+              for (final (i, metric) in _allMetrics.indexed)
+                DropdownMenuItem(
+                  value: i,
+                  child: Text(
+                    metric.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: (value) => setState(() => _allMetric = value!),
+          ),
+          const SizedBox(height: 12),
+          _WellnessChart(people: people, metric: _allMetrics[_allMetric]),
+          const SizedBox(height: 20),
+          const Text(
+            'Progres per peserta',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Semua jalur dalam satu tabel. Perubahan rokok/vape: minggu 1 '
+            'dibanding minggu terakhir yang punya minimal 4 hari tercatat; '
+            '* berarti minggu itu masih berjalan.',
+            style: TextStyle(color: c.muted, fontSize: 12.5),
+          ),
+          const SizedBox(height: 8),
+          _ProgressTable(people: people),
+        ] else if (path == 'wellness') ...[
           DropdownButton<int>(
             isExpanded: true,
             value: _metric,
@@ -908,6 +956,123 @@ class _Key extends StatelessWidget {
       Text(label, style: TextStyle(color: context.colors.text, fontSize: 12.5)),
     ],
   );
+}
+
+/// Every coded participant on one row: engagement, level, and for the
+/// smoking/vaping path the change since week 1 per product.
+class _ProgressTable extends StatelessWidget {
+  const _ProgressTable({required this.people});
+  final List<StudyParticipant> people;
+
+  static String _usage(StudyParticipant p) {
+    if (!p.reduction) return '–';
+    if (p.types.isEmpty) return 'belum dicatat';
+    return [
+      for (final type in p.types)
+        () {
+          final weeks = [for (final w in p.weeks) w.usage(type)];
+          // The latest week that can be compared with week 1.
+          final index = weeks.lastIndexWhere((u) => u.comparable);
+          final change = index > 0
+              ? usageChange(weeks.first, weeks[index])
+              : null;
+          if (change == null) return '$type: data belum cukup';
+          final running = !p.weeks[index].complete;
+          return '$type ${_number(weeks.first.mean!)} ke '
+              '${_number(weeks[index].mean!)} · '
+              '${_UsageBlock._changeText(index, weeks.first, weeks[index])}'
+              '${running ? '*' : ''}';
+        }(),
+    ].join('\n');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
+        dataRowMaxHeight: 64,
+        columnSpacing: 28,
+        columns: const [
+          DataColumn(label: Text('Kode')),
+          DataColumn(label: Text('Jalur')),
+          DataColumn(label: Text('Hari')),
+          DataColumn(label: Text('Hari aktif'), numeric: true),
+          DataColumn(label: Text('Misi inti')),
+          DataColumn(label: Text('Minggu aktif')),
+          DataColumn(label: Text('Level · XP')),
+          DataColumn(label: Text('Rokok/vape')),
+          DataColumn(label: Text('Koreksi admin'), numeric: true),
+          DataColumn(label: Text('Sinkron')),
+        ],
+        rows: [
+          for (final p in people)
+            () {
+              final done = p.weeks.fold(0, (sum, w) => sum + w.coreDone);
+              final total = p.weeks.fold(0, (sum, w) => sum + w.coreTotal);
+              return DataRow(
+                cells: [
+                  DataCell(Text(p.code)),
+                  DataCell(Text(p.reduction ? 'Rokok/vape' : 'Wellness')),
+                  DataCell(
+                    Text(p.finished ? 'Selesai' : '${p.elapsed}/$studyDays'),
+                  ),
+                  DataCell(Text('${p.days.where((d) => d.active).length}')),
+                  DataCell(
+                    Text(
+                      total == 0
+                          ? '–'
+                          : '$done/$total (${(done / total * 100).round()}%)',
+                    ),
+                  ),
+                  DataCell(
+                    Semantics(
+                      label: [
+                        for (var w = 0; w < 4; w++)
+                          'minggu ${w + 1} ${w >= p.weeks.length
+                              ? 'belum'
+                              : p.weeks[w].activeDays > 0
+                              ? 'aktif'
+                              : 'tidak aktif'}',
+                      ].join(', '),
+                      excludeSemantics: true,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var w = 0; w < 4; w++)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                w >= p.weeks.length
+                                    ? Icons.remove_rounded
+                                    : p.weeks[w].activeDays > 0
+                                    ? Icons.circle
+                                    : Icons.circle_outlined,
+                                size: 14,
+                                color:
+                                    w < p.weeks.length &&
+                                        p.weeks[w].activeDays > 0
+                                    ? c.success
+                                    : c.muted,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  DataCell(Text('${p.source.level} · ${p.source.xp}')),
+                  DataCell(Text(_usage(p))),
+                  DataCell(Text('${p.adminItems}')),
+                  DataCell(Text(_sync(p.lastSync))),
+                ],
+              );
+            }(),
+        ],
+      ),
+    );
+  }
 }
 
 /// The 28-day timeline of one participant with its data-quality flags.
