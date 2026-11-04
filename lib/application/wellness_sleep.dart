@@ -1,6 +1,8 @@
 part of 'wellness_controller.dart';
 
 /// Sleep check-in ("Aku mau tidur") and check-out ("Aku sudah bangun"),
+/// for the sleep quests of 23 Oct–4 Nov 2026 (Istirahat is calm breathing
+/// from 5 Nov); kept so those quests and an open check-in can still finish,
 /// both stamped with the time the button is pressed; times are never typed
 /// in afterwards, so a missed press simply does not count. The times stay
 /// on this device; only the quest's completion is synced. A night belongs

@@ -45,7 +45,11 @@ class FakeResearch implements ResearchStore {
     final index = rows.indexWhere((row) => row['account'] == account);
     final revision = (rows[index]['revision'] as int?) ?? 0;
     if (revision != expectedRevision) return false;
-    rows[index] = {...rows[index], 'payload': payload, 'revision': revision + 1};
+    rows[index] = {
+      ...rows[index],
+      'payload': payload,
+      'revision': revision + 1,
+    };
     writes.add({'account': account, 'reason': reason, 'changes': changes});
     return true;
   }
@@ -180,8 +184,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     // Uncoded accounts have no study analysis yet.
-    expect(find.textContaining('Belum ada peserta berkode'), findsOneWidget);
-    await tester.tap(find.text('Kelola kode & unduhan'));
+    expect(find.textContaining('Belum ada peserta studi'), findsOneWidget);
+    await tester.tap(find.text('Kelola peserta'));
     await tester.pumpAndSettle();
     expect(find.text('daunpagi'), findsOneWidget);
     expect(find.text('Rokok/vape'), findsOneWidget);

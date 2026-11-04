@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/features/home/presentation/sleep_card.dart';
+import 'package:youwell/features/home/presentation/hibernation_page.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
@@ -47,7 +48,16 @@ class HomePage extends StatelessWidget {
         onComplete: switch (task['activityKind']) {
           null => () => controller.completeCard(task['id'].toString()),
           'habit_swap' => () => openReductionSupport(context, controller),
-          'sleep' => () => openSleepSheet(context, controller),
+          'sleep' => () => openSleepSheet(context, controller, task),
+          'calm' => () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => HibernationPage(
+                controller: controller,
+                questId: task['id'].toString(),
+              ),
+            ),
+          ),
           _ => onOpenActivity,
         },
       ),
@@ -80,11 +90,12 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 16),
           _LadderBanner(controller: controller),
         ],
-        // Evening check-in, morning check-out; hidden in the afternoon.
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: SleepCard(controller: controller),
-        ),
+        // Only while a sleep check-in from before 5 Nov is still open.
+        if (controller.sleepCheckIn != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: SleepCard(controller: controller),
+          ),
         ...[
           const SizedBox(height: 32),
           _TodayHeader(controller: controller),
@@ -399,9 +410,7 @@ class _FullDayMeter extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                full
-                    ? 'Hari Penuh tercapai!'
-                    : 'Bonus Hari Penuh',
+                full ? 'Hari Penuh tercapai!' : 'Bonus Hari Penuh',
                 style: TextStyle(
                   fontSize: 13.5,
                   color: full ? c.success : c.text,
@@ -585,7 +594,7 @@ class LadderOfferCard extends StatelessWidget {
 const _shortLadder = {
   'Body': 'Gerak',
   'Food': 'Makan',
-  'Energy': 'Tidur',
+  'Energy': 'Istirahat',
   'Reduction': 'Habit Swap',
   'Lifestyle': 'Hidrasi',
 };
@@ -622,6 +631,8 @@ class _QuestCard extends StatelessWidget {
         ? 'Pilih Habit Swap'
         : kind == 'sleep'
         ? 'Catat waktu tidur dan bangun'
+        : kind == 'calm'
+        ? 'Mulai hibernasi'
         : verification == 'pending'
         ? 'Menunggu verifikasi'
         : 'Buka Aktivitas untuk menyelesaikan';
@@ -671,8 +682,10 @@ class _QuestCard extends StatelessWidget {
                           if (done)
                             'Selesai'
                           // "1 menit" for a water or meal goal reads wrong.
-                          else if (!const {'water', 'meal_snap'}
-                              .contains(task['activityKind']))
+                          else if (!const {
+                            'water',
+                            'meal_snap',
+                          }.contains(task['activityKind']))
                             '${task['durationMinutes']} menit',
                           if (task['ladder'] != null)
                             '${_shortLadder[task['ladder']]} Lv ${task['step']}',

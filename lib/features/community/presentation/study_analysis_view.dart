@@ -32,7 +32,7 @@ class _Metric {
 }
 
 final _wellnessMetrics = [
-  _Metric('Hari aktif', (w) => w.activeDays, 7, unit: ' hr'),
+  _Metric('Hari aktif', (w) => w.activeDays, 7, unit: ' hari'),
   _Metric(
     'Misi inti selesai',
     (w) => w.coreRate == null ? null : (w.coreRate! * 100).round(),
@@ -41,184 +41,228 @@ final _wellnessMetrics = [
   ),
   for (final MapEntry(:key, :value) in targetCategories.entries)
     _Metric(
-      key == 'Energy'
-          ? 'Target tidur tercapai'
-          : 'Target ${value.toLowerCase()}',
+      'Target ${value.toLowerCase()}',
       (w) => w.targetDays(key),
       7,
-      unit: ' hr',
+      unit: ' hari',
     ),
   _Metric('Sesi gerak', (w) => w.workouts, null),
   _Metric('Foto makan disetujui', (w) => w.mealApproved, null),
 ];
 
 class _StudyAnalysisViewState extends State<StudyAnalysisView> {
-  bool _includeAdmin = true;
   int _metric = 0;
-  String? _detail;
-
-  List<StudyParticipant> get _people => [
-    for (final person in widget.people)
-      ?StudyParticipant.from(
-        person,
-        now: widget.now,
-        includeAdmin: _includeAdmin,
-      ),
-  ]..sort((a, b) => compareParticipantCodes(a.code, b.code));
+  String _path = 'wellness';
+  String? _detail, _usageParticipant;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final people = _people;
-    final summary = StudySummary(people);
+    final people = [
+      for (final person in widget.people)
+        ?StudyParticipant.from(person, now: widget.now),
+    ]..sort((a, b) => compareParticipantCodes(a.code, b.code));
     if (people.isEmpty) {
       return Text(
-        'Belum ada peserta berkode P1–P10. Beri kode di tab "Kelola kode & '
-        'unduhan".',
+        'Belum ada peserta studi. Tambahkan kode di Kelola peserta.',
         style: TextStyle(color: c.muted),
       );
     }
+    final summary = StudySummary(people);
     final wellness = people.where((p) => !p.reduction).toList();
     final reduction = people.where((p) => p.reduction).toList();
     final detail =
         people.where((p) => p.code == _detail).firstOrNull ?? people.first;
+    final usage =
+        reduction.where((p) => p.code == _usageParticipant).firstOrNull ??
+        reduction.firstOrNull;
+    final path = wellness.isEmpty
+        ? 'reduction'
+        : reduction.isEmpty
+        ? 'wellness'
+        : _path;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Limits(),
-        const SizedBox(height: 16),
         Wrap(
-          spacing: 12,
+          spacing: 8,
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            FilterChip(
-              selected: _includeAdmin,
-              onSelected: (value) => setState(() => _includeAdmin = value),
-              label: const Text('Sertakan data intervensi admin'),
-            ),
             OutlinedButton.icon(
               onPressed: () => widget.onDownload(
-                _includeAdmin
-                    ? 'youwell-dashboard-studi.csv'
-                    : 'youwell-dashboard-studi-tanpa-admin.csv',
-                toCsv(
-                  dashboardCsvColumns,
-                  dashboardCsvRows(people, includeAdmin: _includeAdmin),
-                ),
+                'youwell-dashboard-studi.csv',
+                toCsv(dashboardCsvColumns, dashboardCsvRows(people)),
               ),
-              icon: const Icon(Icons.download_rounded),
-              label: const Text('Unduh data grafik (CSV)'),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: const Text('Unduh CSV'),
+            ),
+            TextButton.icon(
+              onPressed: () => _showDataInfo(context),
+              icon: const Icon(Icons.info_outline_rounded, size: 18),
+              label: const Text('Tentang data'),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          _includeAdmin
-              ? 'Angka termasuk ${summary.adminItems} isian admin di '
-                    '${summary.adminPeople} peserta. Matikan untuk melihat '
-                    'apakah kesimpulan berubah.'
-              : 'Isian admin tidak dihitung. CSV mengikuti pilihan ini.',
-          style: TextStyle(color: c.muted, fontSize: 12.5),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 16),
+        _SummaryTiles(summary: summary),
+        const SizedBox(height: 24),
         _Section(
-          title: 'A. Ringkasan studi',
-          child: _SummaryTiles(summary: summary),
-        ),
-        _Section(
-          title: 'B. Jalur wellness',
-          subtitle:
-              'Minggu 1–4 per peserta. Tanda bintang: minggu masih berjalan. '
-              'Rata-rata kelompok hanya memakai minggu yang sudah selesai '
-              '(n = jumlah peserta). '
-              '"Target tidur tercapai" berarti misi tidur selesai, bukan tidur '
-              'membaik; foto disetujui berarti ada foto makanan/minuman, '
-              'bukan mutu gizinya.',
-          child: wellness.isEmpty
-              ? Text(
-                  'Belum ada peserta berkode di jalur wellness.',
-                  style: TextStyle(color: c.muted),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final (i, metric) in _wellnessMetrics.indexed)
-                          ChoiceChip(
-                            label: Text(metric.label),
-                            selected: _metric == i,
-                            onSelected: (_) => setState(() => _metric = i),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _WeekGrid(
-                      people: wellness,
-                      metric: _wellnessMetrics[_metric],
-                    ),
-                  ],
+          title: 'Keaktifan selama 4 minggu',
+          subtitle: 'Peserta aktif per minggu',
+          child: _WeeklyBars(
+            points: [
+              for (var w = 0; w < 4; w++)
+                (
+                  label: 'Minggu ${w + 1}',
+                  value: summary.reached(w + 1) == 0
+                      ? null
+                      : people
+                            .where(
+                              (p) =>
+                                  w < p.weeks.length &&
+                                  p.weeks[w].activeDays > 0,
+                            )
+                            .length,
+                  detail: '${summary.reached(w + 1)} peserta',
+                  running: people.any(
+                    (p) => w < p.weeks.length && !p.weeks[w].complete,
+                  ),
                 ),
+            ],
+            max: people.length,
+            color: c.accent,
+          ),
         ),
-        _Section(
-          title: 'C. Jalur rokok/vape',
-          subtitle:
-              'Rokok (batang) dan vape (sesi) dipisah dan tidak dijumlah. '
-              'Rata-rata = total yang dikonfirmasi ÷ hari yang dicatat. Minggu '
-              'dibandingkan dengan minggu 1 hanya bila keduanya punya minimal '
-              '4 hari tercatat. Hari kosong bukan nol.',
-          child: reduction.isEmpty
-              ? Text(
-                  'Belum ada peserta berkode di jalur rokok/vape.',
-                  style: TextStyle(color: c.muted),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final p in reduction)
-                      if (p.types.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            '${p.code}: belum ada total harian tercatat.',
-                            style: TextStyle(color: c.muted),
-                          ),
-                        )
-                      else
-                        for (final type in p.types)
-                          _UsageBlock(participant: p, type: type),
-                  ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: Text('Wellness (${wellness.length})'),
+              selected: path == 'wellness',
+              showCheckmark: false,
+              onSelected: wellness.isEmpty
+                  ? null
+                  : (_) => setState(() => _path = 'wellness'),
+            ),
+            ChoiceChip(
+              label: Text('Rokok/vape (${reduction.length})'),
+              selected: path == 'reduction',
+              showCheckmark: false,
+              onSelected: reduction.isEmpty
+                  ? null
+                  : (_) => setState(() => _path = 'reduction'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        if (path == 'wellness') ...[
+          DropdownButton<int>(
+            isExpanded: true,
+            value: _metric,
+            items: [
+              for (final (i, metric) in _wellnessMetrics.indexed)
+                DropdownMenuItem(
+                  value: i,
+                  child: Text(
+                    metric.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-        ),
-        _Section(
-          title: 'D. Detail peserta dan kualitas data',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+            onChanged: (value) => setState(() => _metric = value!),
+          ),
+          const SizedBox(height: 12),
+          _WellnessChart(people: wellness, metric: _wellnessMetrics[_metric]),
+          const SizedBox(height: 8),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            expandedAlignment: Alignment.centerLeft,
+            title: const Text('Angka per peserta'),
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final p in people)
-                    ChoiceChip(
-                      label: Text(p.code),
-                      selected: p == detail,
-                      onSelected: (_) => setState(() => _detail = p.code),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _DetailTable(participant: detail),
+              _WeekGrid(people: wellness, metric: _wellnessMetrics[_metric]),
             ],
           ),
+        ] else if (usage != null) ...[
+          DropdownButton<String>(
+            value: usage.code,
+            items: [
+              for (final p in reduction)
+                DropdownMenuItem(value: p.code, child: Text(p.code)),
+            ],
+            onChanged: (value) => setState(() => _usageParticipant = value),
+          ),
+          const SizedBox(height: 12),
+          if (usage.types.isEmpty)
+            Text(
+              'Belum ada konsumsi yang dicatat.',
+              style: TextStyle(color: c.muted),
+            )
+          else
+            for (final type in usage.types)
+              _UsageBlock(participant: usage, type: type),
+        ],
+        const SizedBox(height: 20),
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          expandedAlignment: Alignment.centerLeft,
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: const Text('Detail peserta'),
+          subtitle: Text('${people.length} peserta · catatan 28 hari'),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final p in people)
+                  ChoiceChip(
+                    label: Text(p.code),
+                    selected: p == detail,
+                    onSelected: (_) => setState(() => _detail = p.code),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _DetailTable(participant: detail),
+          ],
         ),
       ],
     );
   }
 }
+
+void _showDataInfo(BuildContext context) => showDialog<void>(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: const Text('Tentang data'),
+    content: const SingleChildScrollView(
+      child: Text(
+        'Log 28 hari mendukung evaluasi penerimaan dan pengalaman penggunaan YouWELL. '
+        'Skor kuesioner, hasil UAT, dan wawancara berasal dari instrumen penelitian terpisah.\n\n'
+        'Koreksi admin memulihkan catatan peserta dan selalu masuk dalam grafik serta CSV. '
+        'Riwayat koreksi tersedia pada detail peserta.\n\n'
+        'Rata-rata wellness memakai minggu yang selesai. Tanda * berarti minggu berjalan. '
+        'Perbandingan konsumsi memerlukan minimal 4 hari tercatat pada kedua minggu. '
+        'Hari kosong tidak dianggap nol; rokok dan vape memakai satuan terpisah.\n\n'
+        'Target tercapai berarti misinya selesai. Target istirahat adalah misi tidur '
+        '(23 Okt–4 Nov) lalu Hibernasi (mulai 5 Nov). Foto makan disetujui bukan '
+        'penilaian gizi. '
+        'Grafik konsumsi menunjukkan perubahan selama pemakaian.\n\n'
+        'Penanda grafik: 23 Okt, aturan tidur dan foto makan berubah; '
+        '27 Okt, total rokok/vape mulai tersinkron; 5 Nov, misi Istirahat '
+        'menjadi Hibernasi.',
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Tutup'),
+      ),
+    ],
+  ),
+);
 
 String _number(num value, {int digits = 1}) => value is int
     ? '$value'
@@ -229,54 +273,6 @@ String _sync(DateTime? time) {
   final t = time.toLocal();
   return '${t.day}/${t.month} ${t.hour.toString().padLeft(2, '0')}:'
       '${t.minute.toString().padLeft(2, '0')}';
-}
-
-class _Limits extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    const lines = [
-      'Hari aktif, misi, XP, dan level mengukur keterlibatan dengan aplikasi, '
-          'bukan kesehatan.',
-      'Minggu 1 sudah minggu pemakaian aplikasi, bukan kondisi sebelum '
-          'intervensi. Data ini tidak bisa menyebut YouWELL menurunkan '
-          'konsumsi; untuk itu perlu kuesioner awal–akhir dan pembanding.',
-      'Total rokok/vape adalah laporan peserta. Hari tanpa catatan bukan nol.',
-      'Hasil tiap momen Habit Swap tidak disinkronkan, jadi tidak ada '
-          'persentase berhasil menahan.',
-      'Cara ukur berubah pada 23 Okt (misi tidur, verifikasi foto) dan 27 Okt '
-          '(total rokok/vape tersinkron); lihat garis penanda di grafik.',
-    ];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.rule_rounded, color: c.accent, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'Batas tafsir',
-                style: TextStyle(fontWeight: FontWeight.w900),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text('• $line', style: TextStyle(color: c.text)),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Section extends StatelessWidget {
@@ -318,56 +314,54 @@ class _SummaryTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     final four = summary.weekFour;
-    final completeness = summary.completeness;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
+    final missions = summary.people.fold(
+      0,
+      (sum, p) => sum + p.weeks.fold(0, (sum, w) => sum + w.coreDone),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 760
+            ? 4
+            : constraints.maxWidth >= 300
+            ? 2
+            : 1;
+        final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+        return Wrap(
           spacing: 12,
           runSpacing: 12,
           children: [
-            _Tile('${summary.people.length}', 'Peserta berkode'),
-            _Tile(
-              [for (var w = 1; w <= 4; w++) summary.reached(w)].join(' / '),
-              'Mencapai minggu 1 / 2 / 3 / 4',
+            SizedBox(
+              width: width,
+              child: _Tile('${summary.people.length}', 'Peserta studi'),
             ),
-            _Tile(
-              completeness == null ? '–' : '${(completeness * 100).round()}%',
-              'Kelengkapan catatan',
-              note: 'hari berisi data ÷ hari studi berjalan',
+            SizedBox(
+              width: width,
+              child: _Tile(
+                four.reached == 0 ? '–' : '${four.active}',
+                'Aktif minggu 4',
+                note: four.reached == 0
+                    ? 'Belum ada yang mencapai minggu 4'
+                    : four.provisional
+                    ? 'Sementara · target 6/10'
+                    : 'Target 6/10',
+                highlight: !four.provisional && four.active >= 6,
+              ),
             ),
-            _Tile(
-              _sync(summary.oldestSync),
-              'Sinkron paling lama',
-              note: 'terbaru ${_sync(summary.newestSync)}',
+            SizedBox(
+              width: width,
+              child: _Tile('$missions', 'Misi inti selesai'),
             ),
-            _Tile(
-              '${summary.adminItems}',
-              'Isian diperbaiki admin',
-              note: '${summary.adminPeople} peserta',
-            ),
-            _Tile(
-              four.reached == 0 ? '–' : '${four.active}/${four.reached}',
-              four.provisional
-                  ? 'Aktif minggu ke-4 (sementara)'
-                  : 'Aktif minggu ke-4 (akhir)',
-              note: 'kriteria: ≥ 6 dari 10',
-              highlight: !four.provisional && four.active >= 6,
+            SizedBox(
+              width: width,
+              child: _Tile(
+                '${summary.people.where((p) => p.finished).length}',
+                'Selesai 28 hari',
+              ),
             ),
           ],
-        ),
-        if (four.provisional)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Hasil kriteria minggu ke-4 masih sementara sampai semua peserta '
-              'berkode menyelesaikan minggu ke-4.',
-              style: TextStyle(color: c.muted, fontSize: 12.5),
-            ),
-          ),
-      ],
+        );
+      },
     );
   }
 }
@@ -382,12 +376,12 @@ class _Tile extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Container(
-      width: 210,
+      constraints: const BoxConstraints(minHeight: 134),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: highlight ? c.selected : c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: highlight ? c.accent : c.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,15 +390,149 @@ class _Tile extends StatelessWidget {
             value,
             style: TextStyle(
               color: c.text,
-              fontSize: 26,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
           Text(label, style: TextStyle(color: c.text)),
           if (note != null)
-            Text(note!, style: TextStyle(color: c.muted, fontSize: 12.5)),
+            Text(note!, style: TextStyle(color: c.muted, fontSize: 12)),
         ],
       ),
+    );
+  }
+}
+
+typedef _WeekPoint = ({String label, num? value, String detail, bool running});
+
+/// Four comparable weekly values. Empty weeks have no bar; explicit zeroes
+/// retain a baseline mark. Counts and coverage stay next to the graphic.
+class _WeeklyBars extends StatelessWidget {
+  const _WeeklyBars({
+    required this.points,
+    required this.color,
+    this.max,
+    this.unit = '',
+  });
+  final List<_WeekPoint> points;
+  final Color color;
+  final num? max;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final scale =
+        max ??
+        points.fold<num>(1, (top, p) => (p.value ?? 0) > top ? p.value! : top);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 18, 12, 12),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final p in points)
+            Expanded(
+              child: Tooltip(
+                message:
+                    '${p.label}: ${p.value == null ? 'belum ada data' : '${_number(p.value!)}$unit'} · ${p.detail}${p.running ? ' · sementara' : ''}',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      p.value == null
+                          ? (p.running ? 'berjalan' : '–')
+                          : '${_number(p.value!)}$unit${p.running ? '*' : ''}',
+                      style: TextStyle(
+                        color: c.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 112,
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: 34,
+                          height: p.value == null
+                              ? 0
+                              : p.value == 0
+                              ? 2
+                              : 112 *
+                                    (p.value! / (scale == 0 ? 1 : scale)).clamp(
+                                      0,
+                                      1,
+                                    ),
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      p.label,
+                      style: TextStyle(
+                        color: c.text,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      p.detail,
+                      style: TextStyle(color: c.muted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WellnessChart extends StatelessWidget {
+  const _WellnessChart({required this.people, required this.metric});
+  final List<StudyParticipant> people;
+  final _Metric metric;
+
+  @override
+  Widget build(BuildContext context) => _WeeklyBars(
+    color: context.colors.accent,
+    max: metric.max,
+    unit: metric.unit,
+    points: [for (var w = 0; w < 4; w++) _point(w)],
+  );
+
+  _WeekPoint _point(int week) {
+    final values = [
+      for (final p in people)
+        if (week < p.weeks.length && p.weeks[week].complete)
+          ?metric.value(p.weeks[week]),
+    ];
+    final running = people
+        .where((p) => week < p.weeks.length && !p.weeks[week].complete)
+        .length;
+    return (
+      label: 'Minggu ${week + 1}',
+      value: values.isEmpty
+          ? null
+          : values.fold<num>(0, (sum, v) => sum + v) / values.length,
+      detail: [
+        'n=${values.length}',
+        if (running > 0) '$running berjalan',
+      ].join(' · '),
+      // Only a week nobody finished yet reads "berjalan" instead of "–".
+      running: values.isEmpty && running > 0,
     );
   }
 }
@@ -572,69 +700,44 @@ class _UsageBlock extends StatelessWidget {
             spacing: 16,
             runSpacing: 6,
             children: [
-              _Key(color: color, label: 'dicatat peserta'),
-              _Key(
-                color: color.withValues(alpha: .35),
-                label: 'diisi admin',
-                outlined: color,
-              ),
+              _Key(color: color, label: 'total tercatat'),
               _Key(color: c.muted, label: 'tidak dicatat', dot: true),
               _Key(color: c.text, label: 'perubahan cara ukur', line: true),
             ],
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
-              columns: [
-                const DataColumn(label: Text('')),
-                for (final w in p.weeks)
-                  DataColumn(
-                    label: Text('Minggu ${w.week}${w.complete ? '' : '*'}'),
-                  ),
-              ],
-              rows: [
-                DataRow(
-                  cells: [
-                    const DataCell(Text('Rata-rata per hari tercatat')),
-                    for (final u in weeks)
-                      DataCell(
-                        Text(
-                          u.mean == null
-                              ? '–'
-                              : '${_number(u.mean!)} $unit · ${u.loggedDays}/7 hari',
-                        ),
-                      ),
-                  ],
+          _WeeklyBars(
+            color: color,
+            unit: '',
+            points: [
+              for (final (i, u) in weeks.indexed)
+                (
+                  label: 'Minggu ${i + 1}',
+                  value: u.mean,
+                  detail: '${u.loggedDays}/${p.weeks[i].days.length} hari',
+                  running: !p.weeks[i].complete,
                 ),
-                DataRow(
-                  cells: [
-                    const DataCell(Text('Dibanding minggu 1')),
-                    for (final (i, u) in weeks.indexed)
-                      DataCell(Text(_changeText(i, first!, u))),
-                  ],
-                ),
-                DataRow(
-                  cells: [
-                    const DataCell(Text('Habit Swap (konteks)')),
-                    for (final w in p.weeks) DataCell(Text('${w.swaps}')),
-                  ],
-                ),
-              ],
-            ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Rata-rata $unit/hari tercatat',
+            style: TextStyle(color: c.muted, fontSize: 12),
           ),
           if (change != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Pada peserta ${p.code}, rata-rata $type pada hari yang dicatat '
-              'berubah dari ${_number(first!.mean!)} $unit di minggu 1 menjadi '
-              '${_number(last!.mean!)} $unit di minggu ${weeks.length}. '
-              'Cakupan catatan: ${first.loggedDays}/7 dan ${last.loggedDays}/7 '
-              'hari.',
-              style: TextStyle(color: c.text, fontStyle: FontStyle.italic),
+              '${_number(first!.mean!)} ke ${_number(last!.mean!)} $unit/hari · '
+              '${_changeText(weeks.length - 1, first, last)}'
+              '${p.weeks.last.complete ? '' : ' (sementara, minggu ${p.weeks.length} masih berjalan)'}',
+              style: TextStyle(color: c.text, fontWeight: FontWeight.w800),
             ),
           ],
+          const SizedBox(height: 8),
+          Text(
+            'Habit Swap: ${[for (final w in p.weeks) 'M${w.week} ${w.swaps}×'].join(' · ')}',
+            style: TextStyle(color: c.muted, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -643,7 +746,7 @@ class _UsageBlock extends StatelessWidget {
   static String _changeText(int index, UsageWeek first, UsageWeek week) {
     if (index == 0) return 'acuan';
     final change = usageChange(first, week);
-    if (change == null) return 'tidak dibandingkan (< 4 hari)';
+    if (change == null) return 'Data belum cukup';
     final diff = change.difference;
     final sign = diff > 0 ? '+' : '';
     final percent = change.percent;
@@ -714,7 +817,7 @@ class _DailyBars extends StatelessWidget {
             'Hari $number (${day.day})',
             value == null
                 ? 'tidak dicatat'
-                : '$value $unit${byAdmin ? ' · diisi admin' : ''}',
+                : '$value $unit${byAdmin ? ' · koreksi admin' : ''}',
             ?note,
           ].join('\n');
     return Tooltip(
@@ -742,8 +845,7 @@ class _DailyBars extends StatelessWidget {
                       width: 14,
                       height: value == 0 ? 2 : _height * value / scale,
                       decoration: BoxDecoration(
-                        color: byAdmin ? color.withValues(alpha: .35) : color,
-                        border: byAdmin ? Border.all(color: color) : null,
+                        color: color,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
                         ),
@@ -782,12 +884,10 @@ class _Key extends StatelessWidget {
   const _Key({
     required this.color,
     required this.label,
-    this.outlined,
     this.dot = false,
     this.line = false,
   });
   final Color color;
-  final Color? outlined;
   final String label;
   final bool dot, line;
 
@@ -801,7 +901,6 @@ class _Key extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: dot ? BoxShape.circle : BoxShape.rectangle,
-          border: outlined == null ? null : Border.all(color: outlined!),
           borderRadius: dot || line ? null : BorderRadius.circular(3),
         ),
       ),
@@ -829,10 +928,9 @@ class _DetailTable extends StatelessWidget {
           children: [
             Text('Jalur studi: ${p.reduction ? 'rokok/vape' : 'wellness'}'),
             Text('Mulai: ${p.started}'),
-            Text('Sinkron terakhir: ${_sync(p.lastSync)}'),
-            Text(
-              'Kelengkapan: ${p.daysWithData}/${p.elapsed} hari berisi data',
-            ),
+            Text('Sinkron: ${_sync(p.lastSync)}'),
+            Text('Koreksi admin: ${p.adminItems}'),
+            Text('Hari berisi data: ${p.daysWithData}/${p.elapsed}'),
           ],
         ),
         if (!p.groupLocked || p.pathChanged)
@@ -900,12 +998,7 @@ class _DetailTable extends StatelessWidget {
                     ),
                     for (final type in usageTypes)
                       DataCell(
-                        Text(
-                          d.usage[type] == null
-                              ? '–'
-                              : '${d.usage[type]}'
-                                    '${d.usageByAdmin.contains(type) ? ' (admin)' : ''}',
-                        ),
+                        Text(d.usage[type] == null ? '–' : '${d.usage[type]}'),
                       ),
                     DataCell(Text(d.swaps == 0 ? '–' : '${d.swaps}')),
                     DataCell(
@@ -913,12 +1006,10 @@ class _DetailTable extends StatelessWidget {
                         [
                           if (!d.hasData) 'tanpa data',
                           if (d.adminItems > 0)
-                            'diperbaiki admin (${d.adminItems})',
+                            'koreksi admin: ${d.adminItems}',
                           ?d.measurementNote,
                         ].join(' · '),
-                        style: TextStyle(
-                          color: d.adminItems > 0 ? c.amber : c.muted,
-                        ),
+                        style: TextStyle(color: c.muted),
                       ),
                     ),
                   ],

@@ -6,11 +6,36 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 4 November 2026 — Istirahat menjadi Hibernasi
+
+- Mulai 5 November level Istirahat (kunci `Energy`, kolom `tangga_istirahat`)
+  berisi **Hibernasi 1/2/3/5 menit**: hitung mundur napas tenang (tarik 4,
+  hembuskan 6) lalu berdiam. Misi tercentang otomatis saat hitung mundur
+  selesai; berhenti di tengah tidak memberi XP. Waktu dihitung dari jam mulai.
+- Misi tidur yang masih terbuka di hari ≥ 5 Nov diganti Hibernasi pada level
+  yang sama; misi tidur 4 Nov dan sebelumnya tetap dinilai sebagai tidur.
+  Riwayat, XP, dan level tidak berubah. Kartu "Siap tidur?" di Beranda
+  dihapus; check-in yang masih terbuka tetap bisa ditutup.
+- Isi `tangga_istirahat` berbeda per periode: layar off (s.d. 22 Okt), tidur
+  (23 Okt–4 Nov), Hibernasi (mulai 5 Nov). Dashboard memberi penanda 5 Nov.
+- Aturan "kartu tanpa misi tidur berisi 2 kategori" di bawah tidak berlaku
+  lagi: kartu kembali selalu memuat 3 kategori.
+
 ## 4 November 2026 — perbaikan misi (audit)
 
-- Misi Tidur dinilai dari malam yang berakhir pagi itu, jadi kartu tidak
-  memuatnya bila malam itu tidak tercatat (belum ada check-out hari ini, tidak
-  ada check-in yang terbuka, dan sudah lewat 06.00). Di hari seperti itu
+- Koreksi admin memulihkan data peserta dan menjadi bagian tetap dari seluruh
+  grafik, statistik, dan CSV. Tidak ada pilihan mengecualikannya; sumber dan
+  alasan koreksi tetap dapat ditelusuri melalui detail dan log admin.
+- Dashboard menonjolkan angka ringkasan dan grafik keterlibatan minggu 1–4.
+  Grafik wellness dan rokok/vape dipilih per jalur; penjelasan ada di
+  "Tentang data", tabel harian di "Detail peserta". Data log melengkapi
+  kuesioner, hasil tugas UAT, dan wawancara dalam evaluasi penerimaan.
+
+- Misi Tidur dinilai dari malam yang berakhir pagi itu. Kartu hanya memuatnya
+  bila catatan malam memenuhi target, atau targetnya masih bisa dicapai
+  berdasarkan batas tidur/bangun level tersebut. Membuka aplikasi pukul 05.00
+  tanpa check-in semalam tidak memberi target tidur sebelum 00.30. Draft yang
+  lewat batas diganti misi ringan, lalu dikonfirmasi ulang. Di hari seperti itu
   kartu jalur wellness berisi 2 dari 3 kategori level lain ditambah quest
   pendamping, supaya lima kartu tetap berbeda (keputusan tim, menyimpang dari
   "3 kategori per kartu" hanya di hari tanpa catatan tidur).
@@ -38,16 +63,17 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 - Rata-rata konsumsi = total yang dikonfirmasi ÷ hari yang dicatat. Minggu
   dibandingkan dengan minggu 1 hanya bila keduanya punya minimal 4 hari
   tercatat; bila rata-rata minggu 1 nol, hanya selisih yang ditampilkan.
-- Semua angka bisa dihitung ulang tanpa data intervensi admin, dan CSV
-  "data grafik" memakai angka yang sama dengan grafik.
+- CSV "data grafik" memakai angka yang sama dengan grafik, termasuk data
+  peserta yang dipulihkan admin.
 - Jalur studi, tanggal mulai, dan versi aturan ukur dikunci saat kode P
   pertama kali diberikan (tahap 11, disimpan terpisah sejak tahap 12), jadi
   pindah jalur atau menghapus lalu memberi ulang kode tidak memindahkan
   peserta ke kelompok lain.
 - Rata-rata kelompok hanya memakai minggu yang sudah selesai dan menampilkan
   jumlah peserta penyusunnya.
-- Belum dikerjakan: peran peneliti terpisah yang hanya baca, dan kuesioner
-  awal–akhir yang dihubungkan lewat kode P.
+- Belum dikerjakan: peran peneliti terpisah yang hanya baca dan impor hasil
+  instrumen penelitian. Kuesioner penerimaan awal dan pasca-pemakaian berasal
+  dari kelompok berbeda; bukan pasangan skor sebelum–sesudah per peserta.
 
 ## 27 Oktober 2026 — progres dan data riset
 

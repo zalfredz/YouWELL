@@ -101,6 +101,13 @@ class ResearchSummary {
     }
 
     final swapsInWeek = habitSwaps.where((row) => inWeek(row['day']));
+    // A recovered Habit Swap is a participant activity just like a record
+    // from the app, even if the original activity-day marker was lost.
+    activity.addAll(
+      swapsInWeek
+          .where((row) => row['outcome'] != 'not_tried')
+          .map((row) => row['day'].toString()),
+    );
     final openedByAdmin = adminOpenedDays.where(inWeek).toSet().length;
     return ResearchSummary(
       week: week,

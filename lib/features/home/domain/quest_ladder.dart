@@ -18,8 +18,6 @@ class LadderRung {
     this.timedTitle,
     this.timedMinutes,
     this.strenuous = false,
-    this.bedBefore,
-    this.wakeBefore,
   });
   final String title, description;
   final int durationMinutes;
@@ -54,17 +52,20 @@ class LadderRung {
 
   /// Shows "berhenti jika pusing atau nyeri" on the quest.
   final bool strenuous;
-
-  /// Sleep rungs: latest bedtime (minutes after 18.00) and latest wake-up
-  /// (minutes after midnight) for last night to count.
-  final int? bedBefore, wakeBefore;
 }
+
+const _hibernation =
+    'Tarik napas pelan dan berdiam sejenak sampai hitung mundurnya habis.';
+
+/// First day of Hibernasi; open sleep quests from here on are converted,
+/// earlier ones keep being judged as sleep.
+const breathingFrom = '2026-11-05';
 
 const ladderLabels = {
   'Body': 'Gerak',
   'Food': 'Makan',
   'Lifestyle': 'Hidrasi',
-  'Energy': 'Tidur',
+  'Energy': 'Istirahat',
   'Reduction': 'Ganti kebiasaan',
 };
 
@@ -270,41 +271,35 @@ const ladders = <String, List<LadderRung>>{
       photoCount: 2,
     ),
   ],
-  // Sleep, from last night's check-in and check-out (decision 23 Oct 2026),
-  // stepping towards bed by 23.00 and up by 06.00. Times are minutes:
-  // bedtime counted from 18.00, waking from midnight.
+  // Istirahat: Hibernasi, a countdown of calm breathing and keeping still
+  // (decision of 4 Nov 2026, from 5 Nov). It finishes only when the
+  // countdown ends. It replaced the sleep check-in rungs of 23 Oct, which
+  // were judged on the night before the card and so often could not be
+  // done; those quests stay in history as they were.
   'Energy': [
     LadderRung(
-      title: 'Tidur sebelum 00.30, bangun sebelum 07.30',
-      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
-      durationMinutes: 0,
-      activityKind: 'sleep',
-      bedBefore: 390,
-      wakeBefore: 450,
+      title: 'Hibernasi 1 menit',
+      description: _hibernation,
+      durationMinutes: 1,
+      activityKind: 'calm',
     ),
     LadderRung(
-      title: 'Tidur sebelum 00.00, bangun sebelum 07.00',
-      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
-      durationMinutes: 0,
-      activityKind: 'sleep',
-      bedBefore: 360,
-      wakeBefore: 420,
+      title: 'Hibernasi 2 menit',
+      description: _hibernation,
+      durationMinutes: 2,
+      activityKind: 'calm',
     ),
     LadderRung(
-      title: 'Tidur sebelum 23.30, bangun sebelum 06.30',
-      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
-      durationMinutes: 0,
-      activityKind: 'sleep',
-      bedBefore: 330,
-      wakeBefore: 390,
+      title: 'Hibernasi 3 menit',
+      description: _hibernation,
+      durationMinutes: 3,
+      activityKind: 'calm',
     ),
     LadderRung(
-      title: 'Tidur sebelum 23.00, bangun sebelum 06.00',
-      description: 'Catat waktu tidur dan bangun untuk menyelesaikan misi.',
-      durationMinutes: 0,
-      activityKind: 'sleep',
-      bedBefore: 300,
-      wakeBefore: 360,
+      title: 'Hibernasi 5 menit',
+      description: _hibernation,
+      durationMinutes: 5,
+      activityKind: 'calm',
     ),
   ],
   'Reduction': [

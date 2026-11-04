@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/app_colors.dart';
-import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/shared/widgets/game_widgets.dart';
+
+// Sleep check-in quests ran 23 Oct–4 Nov 2026; Istirahat is calm breathing
+// from 5 Nov. What remains here lets an open check-in and those last sleep
+// quests finish.
 
 String _clock(DateTime time) =>
     '${time.hour.toString().padLeft(2, '0')}.${time.minute.toString().padLeft(2, '0')}';
 
-/// The current sleep level's targets, e.g. "23.00 · 06.00".
-(String, String) _targets(WellnessController c) {
-  final rungs = ladders['Energy']!;
-  final step = (c.ladderSteps['Energy'] ?? 1).clamp(1, rungs.length);
-  final rung = rungs[step - 1];
+/// A sleep quest's own targets, e.g. "23.00 · 06.00".
+(String, String) _targets(Map task) {
   String at(int minutes) =>
       '${(minutes ~/ 60 % 24).toString().padLeft(2, '0')}.${(minutes % 60).toString().padLeft(2, '0')}';
-  return (at(rung.bedBefore! + 1080), at(rung.wakeBefore!));
+  return (
+    at(((task['bedBefore'] as num?)?.toInt() ?? 390) + 1080),
+    at((task['wakeBefore'] as num?)?.toInt() ?? 450),
+  );
 }
 
-/// Shows on Home only when it matters: check-in in the evening, check-out
-/// after a check-in, and last night's summary in the morning.
+/// On Home only while a check-in is still open, so it can be closed.
 class SleepCard extends StatelessWidget {
   const SleepCard({super.key, required this.controller});
   final WellnessController controller;
@@ -26,17 +28,15 @@ class SleepCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
-    final colors = context.colors;
     final open = c.sleepCheckIn;
-    final last = c.lastNightSleep;
-    final (bedTarget, wakeTarget) = _targets(c);
-    final Widget body;
-    if (open != null) {
-      body = _Row(
+    if (open == null) return const SizedBox.shrink();
+    return GameCard(
+      padding: const EdgeInsets.all(16),
+      child: _Row(
         icon: Icons.bedtime_rounded,
-        color: colors.energy,
-        title: 'Tidur sejak ${_clock(open)} · selamat tidur',
-        subtitle: 'Target bangun sebelum $wakeTarget',
+        color: context.colors.energy,
+        title: 'Tidur sejak ${_clock(open)}',
+        subtitle: 'Tekan saat kamu sudah bangun.',
         primary: FilledButton.icon(
           onPressed: () {
             final ok = c.checkOutSleep();
@@ -59,33 +59,8 @@ class SleepCard extends StatelessWidget {
           onPressed: c.cancelSleepCheckIn,
           child: const Text('Batal'),
         ),
-      );
-    } else if (SleepCheckIns.bedtimeWindow(c.now)) {
-      body = _Row(
-        icon: Icons.nights_stay_rounded,
-        color: colors.energy,
-        title: 'Siap tidur?',
-        subtitle: 'Target tidur sebelum $bedTarget',
-        primary: FilledButton.icon(
-          onPressed: c.checkInSleep,
-          icon: const Icon(Icons.bedtime_rounded),
-          label: const Text('Aku mau tidur'),
-        ),
-      );
-    } else if (last != null) {
-      final bed = DateTime.parse(last['bedAt'].toString());
-      final wake = DateTime.parse(last['wakeAt'].toString());
-      final minutes = wake.difference(bed).inMinutes;
-      body = _Row(
-        icon: Icons.check_circle_rounded,
-        color: colors.success,
-        title: 'Tidur ${_clock(bed)} – ${_clock(wake)}',
-        subtitle: '${minutes ~/ 60} jam ${minutes % 60} menit',
-      );
-    } else {
-      return const SizedBox.shrink();
-    }
-    return GameCard(padding: const EdgeInsets.all(16), child: body);
+      ),
+    );
   }
 }
 
@@ -148,11 +123,12 @@ class _Row extends StatelessWidget {
   );
 }
 
-/// The sleep quest's sheet: the one button that fits right now, or, during
-/// the day, what last night looked like and when check-in opens.
+/// A sleep quest's sheet (4 Nov and earlier): the one button that fits
+/// right now, or, during the day, what last night looked like.
 Future<void> openSleepSheet(
   BuildContext context,
   WellnessController c,
+  Map task,
 ) => showModalBottomSheet<void>(
   context: context,
   showDragHandle: true,
@@ -161,7 +137,7 @@ Future<void> openSleepSheet(
     final colors = sheetContext.colors;
     if (!awake && !c.canCheckInSleep) {
       final last = c.lastNightSleep;
-      final (bedTarget, wakeTarget) = _targets(c);
+      final (bedTarget, wakeTarget) = _targets(task);
       final night = last == null
           ? null
           : (
@@ -186,10 +162,9 @@ Future<void> openSleepSheet(
               ),
               const SizedBox(height: 8),
               Text(
-                'Misi tidur dinilai dari malam yang berakhir pagi ini '
-                '(tidur sebelum $bedTarget, bangun sebelum $wakeTarget). '
-                'Tombol "Aku mau tidur" aktif mulai pukul 18.00, untuk '
-                'misi besok.',
+                'Misi ini dinilai dari malam yang berakhir pagi ini (tidur '
+                'sebelum $bedTarget, bangun sebelum $wakeTarget). Mulai besok '
+                'misi Istirahat berganti menjadi hibernasi (hitung mundur napas tenang).',
                 style: TextStyle(color: colors.muted, height: 1.4),
               ),
               const SizedBox(height: 16),

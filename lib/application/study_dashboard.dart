@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'research_overview.dart';
@@ -17,6 +15,7 @@ import 'research_overview.dart';
 const measurementChanges = [
   (day: '2026-10-23', label: 'Misi tidur & verifikasi foto makan berubah'),
   (day: '2026-10-27', label: 'Total rokok/vape mulai tersinkron'),
+  (day: '2026-11-05', label: 'Misi Istirahat: tidur diganti Hibernasi'),
 ];
 
 const studyDays = 28;
@@ -27,38 +26,8 @@ const targetCategories = {
   'Body': 'Gerak',
   'Lifestyle': 'Hidrasi',
   'Food': 'Makan',
-  'Energy': 'Tidur',
+  'Energy': 'Istirahat',
 };
-
-/// A copy of [payload] without anything an admin intervention added:
-/// ticked quests, cards made for missed days, daily totals, Habit Swaps and
-/// days marked as opened.
-JsonMap withoutAdminData(JsonMap payload) {
-  final copy = jsonDecode(jsonEncode(payload)) as JsonMap;
-  for (final day in ((copy['days'] ?? const {}) as Map).values) {
-    if (day is! Map) continue;
-    if (day['cardDraw'] is Map && day['cardDraw']['adminCreated'] == true) {
-      day['quests'] = <dynamic>[];
-      continue;
-    }
-    for (final task in ((day['quests'] ?? const []) as List).whereType<Map>()) {
-      if (task.remove('adminCompleted') == true) {
-        task
-          ..['status'] = 'committed'
-          ..['done'] = false;
-      }
-    }
-  }
-  (copy['usageTotals'] as List?)?.removeWhere(
-    (row) => row is Map && row['source'] == 'admin',
-  );
-  (copy['habitSwaps'] as List?)?.removeWhere(
-    (row) => row is Map && _adminId(row),
-  );
-  final adminOpened = {...((copy.remove('adminOpenedDays') ?? []) as List)};
-  (copy['openedDays'] as List?)?.removeWhere(adminOpened.contains);
-  return copy;
-}
 
 bool _adminId(Map row) => row['id']?.toString().startsWith('admin-') ?? false;
 
@@ -79,7 +48,12 @@ class StudyDay {
   final usage = <String, int>{};
   final usageByAdmin = <String>{};
 
-  bool get hasData => active || usage.isNotEmpty || swaps > 0 || workouts > 0;
+  bool get hasData =>
+      active ||
+      usage.isNotEmpty ||
+      swaps > 0 ||
+      workouts > 0 ||
+      mealApproved + mealRejected + mealPending + mealUnverified > 0;
 
   String? get measurementNote =>
       measurementChanges.where((m) => m.day == day).firstOrNull?.label;
@@ -158,21 +132,18 @@ class StudyParticipant {
     required this.types,
   });
 
-  /// Days 1–28 of [person]; [includeAdmin] false leaves admin
-  /// interventions out. Null without a code or a start date.
+  /// Days 1–28 of [person], including recovered participant data entered
+  /// by an admin. Null without a code or a start date.
   static StudyParticipant? from(
     ParticipantOverview person, {
     required DateTime now,
-    bool includeAdmin = true,
   }) {
     final code = person.code;
     final started = person.studyStarted ?? person.started;
     if (code == null || started == null || DateTime.tryParse(started) == null) {
       return null;
     }
-    final payload = includeAdmin
-        ? person.payload
-        : withoutAdminData(person.payload);
+    final payload = person.payload;
     final today = dayKey(now);
     final elapsed = (daysBetweenKeys(started, today) + 1).clamp(0, studyDays);
     final days = [
@@ -288,6 +259,7 @@ class StudyParticipant {
       final day = on(row['day']);
       if (day == null) continue;
       day.swaps++;
+      day.active = true;
       if (_adminId(row)) day.adminItems++;
     }
   }
@@ -384,7 +356,7 @@ const dashboardCsvColumns = [
   'gerak_target_days',
   'hidrasi_target_days',
   'makan_target_days',
-  'tidur_target_days',
+  'istirahat_target_days',
   'workout_sessions',
   'workout_minutes',
   'workout_meters',
@@ -404,10 +376,7 @@ const dashboardCsvColumns = [
   'synced_at',
 ];
 
-List<JsonMap> dashboardCsvRows(
-  Iterable<StudyParticipant> people, {
-  required bool includeAdmin,
-}) => [
+List<JsonMap> dashboardCsvRows(Iterable<StudyParticipant> people) => [
   for (final p in people)
     for (final week in p.weeks)
       {
@@ -442,7 +411,7 @@ List<JsonMap> dashboardCsvRows(
         },
         'habit_swaps': week.swaps,
         'admin_items': week.adminItems,
-        'includes_admin_data': includeAdmin,
+        'includes_admin_data': true,
         'synced_at': p.lastSync?.toIso8601String(),
       },
 ];

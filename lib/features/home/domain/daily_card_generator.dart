@@ -26,14 +26,8 @@ class DailyCardGenerator {
     Map<String, int> recentAttempts = const {},
     bool timedWorkouts = false,
     bool wellnessUat = false,
-    bool sleepPossible = true,
   }) {
-    final combos = _combos(
-      today,
-      reduction,
-      recentAttempts,
-      sleepPossible: sleepPossible,
-    );
+    final combos = _combos(today, reduction, recentAttempts);
     final order = [...sizes]
       ..sort((a, b) => _score('$a', today).compareTo(_score('$b', today)));
     if (wellnessUat) _shuffle(order, '$today:wellness-sizes');
@@ -272,23 +266,13 @@ class DailyCardGenerator {
   }
 
   /// Category mixes for the five cards, least-practised categories first.
-  /// [sleepPossible] false (no night recorded or under way) leaves the
-  /// sleep ladder out: it is judged on last night, so it could not be done.
   List<List<String>> _combos(
     String today,
     bool reduction,
-    Map<String, int> recent, {
-    bool sleepPossible = true,
-  }) {
-    final pool = [
-      for (final category in healthyCategories)
-        if (sleepPossible || category != 'Energy') category,
-    ];
-    // Without sleep only 3 healthy ladders are left; taking 2 of them keeps
-    // the five cards different (as on the smoking/vaping path).
-    final picks = reduction || !sleepPossible
-        ? ladderQuestsPerCard - 1
-        : ladderQuestsPerCard;
+    Map<String, int> recent,
+  ) {
+    final pool = healthyCategories;
+    final picks = reduction ? ladderQuestsPerCard - 1 : ladderQuestsPerCard;
     final combos = <List<String>>[];
     void build(int start, List<String> chosen) {
       if (chosen.length == picks) {
@@ -392,8 +376,6 @@ class DailyCardGenerator {
       if (!timed) 'targetMeters': ?rung.targetMeters,
       if (timed) 'timed': true,
       'waterMl': ?rung.waterMl,
-      'bedBefore': ?rung.bedBefore,
-      'wakeBefore': ?rung.wakeBefore,
       if (photo && cameraAvailable) 'photoCount': rung.photoCount ?? 1,
       if (photo && cameraAvailable && !anytime && rung.photoWindows != null)
         'photoWindows': rung.photoWindows,

@@ -14,6 +14,7 @@ IconData questIcon(Map<String, dynamic> task) =>
       'habit_swap' => Icons.swap_horiz_rounded,
       'water' || 'water-glass' => Icons.water_drop_rounded,
       'meal_snap' || 'ladder-food' || 'Food' => Icons.restaurant_rounded,
+      'calm' => Icons.spa_rounded,
       'sleep' || 'ladder-energy' || 'Energy' => Icons.bedtime_rounded,
       'posture' || 'stand-break' => Icons.accessibility_new_rounded,
       'stretch' => Icons.sports_gymnastics_rounded,

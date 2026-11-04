@@ -52,12 +52,10 @@ Future<(JsonMap, DateTime)> smoker({String? studyPath}) async {
   );
 }
 
-StudyParticipant study(JsonMap row, DateTime now, {bool admin = true}) =>
-    StudyParticipant.from(
-      ParticipantOverview.fromRow(row, now: now)!,
-      now: now,
-      includeAdmin: admin,
-    )!;
+StudyParticipant study(JsonMap row, DateTime now) => StudyParticipant.from(
+  ParticipantOverview.fromRow(row, now: now)!,
+  now: now,
+)!;
 
 void main() {
   test('Weekly means per logged day, compared only with >= 4 days', () async {
@@ -77,29 +75,83 @@ void main() {
     expect(p.weeks[1].usage('vape').mean, isNull);
   });
 
-  test('Without admin data the numbers change and the CSV says so', () async {
-    final (row, now) = await smoker();
-    final withAdmin = study(row, now);
-    final without = study(row, now, admin: false);
-    expect(withAdmin.adminItems, 2, reason: 'usage + opened day');
-    expect(without.adminItems, 0);
-    expect(without.weeks[0].usage('rokok').loggedDays, 6);
-    expect(without.weeks[0].usage('rokok').mean, 5);
-    expect(without.days[6].opened, isFalse);
-
-    final rows = dashboardCsvRows([without], includeAdmin: false);
-    expect(rows.first.keys, dashboardCsvColumns);
-    expect(rows.first['rokok_mean_per_logged_day'], '5.00');
-    expect(rows.first['includes_admin_data'], isFalse);
-    expect(rows.first['week_complete'], isTrue);
-    expect(rows.last['week_complete'], isFalse);
-  });
+  test(
+    'Recovered admin records count once in the primary data and CSV',
+    () async {
+      final (row, now) = await smoker();
+      final p = study(row, now);
+      expect(p.adminItems, 2, reason: 'usage + opened day remain auditable');
+      expect(p.weeks[0].usage('rokok').loggedDays, 7);
+      expect(p.weeks[0].usage('rokok').total, 40);
+      expect(p.days[6].opened, isTrue);
+      final rows = dashboardCsvRows([p]);
+      expect(rows.first.keys, dashboardCsvColumns);
+      expect(rows.first['rokok_mean_per_logged_day'], '5.71');
+      expect(rows.first['rokok_total'], 40);
+      expect(rows.first['includes_admin_data'], isTrue);
+      expect(rows.first['admin_items'], 2);
+      expect(rows.first['week_complete'], isTrue);
+      expect(rows.last['week_complete'], isFalse);
+    },
+  );
 
   test('A zero baseline gives a difference without a percentage', () {
     const zero = UsageWeek(0, 5), later = UsageWeek(4, 4);
     expect(usageChange(zero, later), (difference: 1.0, percent: null));
     expect(usageChange(zero, const UsageWeek(9, 3)), isNull);
   });
+
+  test(
+    'Recovered quests, opened days and swaps count in week-four retention',
+    () async {
+      final (row, _) = await smoker();
+      final payload = row['payload'] as JsonMap;
+      payload['days'] = {
+        '2026-11-14': {
+          'quests': [
+            {
+              'id': 'recovered',
+              'status': 'completed',
+              'ladder': 'Body',
+              'adminCompleted': true,
+              'xp': 20,
+            },
+          ],
+        },
+      };
+      payload['openedDays'] = ['2026-11-16'];
+      payload['adminOpenedDays'] = ['2026-11-16'];
+      payload['activityDays'] = [];
+      payload['habitSwaps'] = [
+        {'id': 'admin-swap', 'day': '2026-11-15'},
+      ];
+      payload['usageTotals'] = [
+        {
+          'day': '2026-11-14',
+          'type': 'rokok',
+          'total': 4,
+          'confirmed': true,
+          'source': 'admin',
+        },
+      ];
+      final now = DateTime(2026, 11, 21);
+      final p = study(row, now);
+      expect(p.weeks[3].coreDone, 1);
+      expect(p.weeks[3].activeDays, 3);
+      expect(p.weeks[3].adminItems, 4);
+      expect(StudySummary([p]).weekFour.active, 1);
+      final exported = dashboardCsvRows([p]).last;
+      expect(exported['active_days'], 3);
+      expect(exported['core_quests_done'], 1);
+      expect(exported['rokok_total'], 4);
+      final research = ParticipantOverview.fromRow(
+        row,
+        now: now,
+      )!.researchRows().last;
+      expect(research['active_days'], 3);
+      expect(research['quests_done'], 1);
+    },
+  );
 
   test('The locked study group wins over a later path switch', () async {
     final (row, now) = await smoker(studyPath: 'wellness');
@@ -113,50 +165,100 @@ void main() {
     expect(summary.reached(3), 0);
   });
 
-  testWidgets('Analysis view renders the study sections and toggles admin '
-      'data', (tester) async {
-    tester.view.physicalSize = const Size(1280, 4000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final (row, now) = await smoker();
-    String? downloaded;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: StudyAnalysisView(
-              people: [ParticipantOverview.fromRow(row, now: now)!],
-              now: now,
-              onDownload: (name, csv) => downloaded = name,
+  testWidgets(
+    'Charts lead the view; corrections are primary data and details stay collapsed',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (row, now) = await smoker();
+      String? downloaded;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: StudyAnalysisView(
+                people: [ParticipantOverview.fromRow(row, now: now)!],
+                now: now,
+                onDownload: (name, csv) => downloaded = name,
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    for (final title in [
-      'Batas tafsir',
-      'A. Ringkasan studi',
-      'B. Jalur wellness',
-      'C. Jalur rokok/vape',
-      'D. Detail peserta dan kualitas data',
-      'P3 · Rokok (batang/hari)',
-    ]) {
-      expect(find.text(title), findsOneWidget, reason: title);
-    }
-    expect(
-      find.textContaining('Aktif minggu ke-4 (sementara)'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('2 isian admin'), findsOneWidget);
+      );
+      await tester.pumpAndSettle();
+      for (final title in [
+        'Keaktifan selama 4 minggu',
+        'Aktif minggu 4',
+        'P3 · Rokok (batang/hari)',
+        'Detail peserta',
+      ]) {
+        expect(find.text(title), findsOneWidget);
+      }
+      expect(find.text('Sertakan data intervensi admin'), findsNothing);
+      expect(find.text('Batas tafsir'), findsNothing);
+      expect(find.textContaining('Koreksi admin:'), findsNothing);
+      // Nobody reached week 4 yet: no 0 that reads as "nobody active".
+      expect(find.text('Belum ada yang mencapai minggu 4'), findsOneWidget);
 
-    await tester.tap(find.text('Sertakan data intervensi admin'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Isian admin tidak dihitung'), findsOneWidget);
-    await tester.tap(find.text('Unduh data grafik (CSV)'));
-    expect(downloaded, 'youwell-dashboard-studi-tanpa-admin.csv');
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.text('Unduh CSV'));
+      expect(downloaded, 'youwell-dashboard-studi.csv');
+      await tester.tap(find.text('Tentang data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('selalu masuk dalam grafik serta CSV'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Tutup'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Detail peserta'));
+      await tester.tap(find.text('Detail peserta'));
+      await tester.pumpAndSettle();
+      expect(find.text('Koreksi admin: 2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Completed wellness weeks show n; narrow dark layout remains usable',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (row, now) = await smoker(studyPath: 'wellness');
+      final later = {
+        ...row,
+        'account': 'acc-2',
+        'code': 'P4',
+        'study_started': '2026-11-01',
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: StudyAnalysisView(
+                  people: [
+                    ParticipantOverview.fromRow(row, now: now)!,
+                    ParticipantOverview.fromRow(later, now: now)!,
+                  ],
+                  now: now,
+                  onDownload: (_, _) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('n=1'), findsOneWidget);
+      expect(find.text('Angka per peserta'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

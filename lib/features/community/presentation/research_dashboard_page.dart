@@ -115,7 +115,7 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Progres yang sudah tersinkron. Beri kode P1–P10 pada peserta UAT yang sudah menandatangani persetujuan.',
+            'Keterlibatan dan pemakaian peserta selama 28 hari.',
             style: TextStyle(color: c.muted),
           ),
           const SizedBox(height: 20),
@@ -123,10 +123,7 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
             showSelectedIcon: false,
             segments: const [
               ButtonSegment(value: 'analysis', label: Text('Analisis studi')),
-              ButtonSegment(
-                value: 'manage',
-                label: Text('Kelola kode & unduhan'),
-              ),
+              ButtonSegment(value: 'manage', label: Text('Kelola peserta')),
             ],
             selected: {_view},
             onSelectionChanged: (value) => setState(() => _view = value.single),

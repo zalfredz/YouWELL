@@ -447,7 +447,7 @@ class WellnessController extends ChangeNotifier {
         (existing['cardPacks'] != null ||
             hasCommittedDailyCard ||
             completedCards.isNotEmpty)) {
-      final refreshed = _refreshMealDraft();
+      final refreshed = _refreshTimedDraft();
       if (firstOpenToday || _mobileRewardsEnabled || refreshed) _save();
       return;
     }
@@ -493,9 +493,6 @@ class WellnessController extends ChangeNotifier {
     hour: now.hour,
     timedWorkouts: timedWorkouts,
     wellnessUat: profile != null,
-    // Before 06.00 tonight's sleep can still be checked in.
-    sleepPossible:
-        lastNightSleep != null || sleepCheckIn != null || now.hour < 6,
     recentAttempts: {
       for (final category in ladderCategories(reduction: reduction))
         category: _ladderQuestsBefore(
@@ -516,7 +513,7 @@ class WellnessController extends ChangeNotifier {
     _data['days'][today]['cardPacks'] = _cardPacks();
   }
 
-  bool _refreshMealDraft() {
+  bool _refreshTimedDraft() {
     if (profile == null || hasCommittedDailyCard) {
       return false;
     }
@@ -735,16 +732,25 @@ class WellnessController extends ChangeNotifier {
   /// Open "layar off" and "Jeda layar" quests become the sleep check-in
   /// level and "Jeda mikro" (decision 23 Oct 2026). Finished ones keep
   /// their history and XP.
+  /// Open Istirahat quests from [breathingFrom] on become today's rung of
+  /// the same step (screen-off quests of before 23 Oct, sleep check-in
+  /// quests of 23 Oct–4 Nov). Finished quests, XP and history stay; earlier
+  /// days keep being judged as they were.
   void _retireScreenOffQuests() {
     final rungs = ladders['Energy']!;
-    JsonMap adapt(Map raw) {
+    JsonMap adapt(Map raw, String day) {
       final task = Map<String, dynamic>.from(raw);
       if (task['status'] == 'completed') return task;
-      if (task['ladder'] == 'Energy' && task['activityKind'] != 'sleep') {
-        final step = ((task['step'] as num?)?.toInt() ?? 1).clamp(
-          1,
-          rungs.length,
-        );
+      // Sleep quests before 5 Nov stay sleep quests and are judged as such.
+      final keepSleep =
+          task['activityKind'] == 'sleep' && day.compareTo(breathingFrom) < 0;
+      final step = ((task['step'] as num?)?.toInt() ?? 1).clamp(
+        1,
+        rungs.length,
+      );
+      if (task['ladder'] == 'Energy' &&
+          !keepSleep &&
+          task['title'] != rungs[step - 1].title) {
         final rung = rungs[step - 1];
         return {
           ...task,
@@ -753,10 +759,10 @@ class WellnessController extends ChangeNotifier {
           'title': rung.title,
           'description': rung.description,
           'durationMinutes': rung.durationMinutes,
-          'activityKind': 'sleep',
-          'bedBefore': rung.bedBefore,
-          'wakeBefore': rung.wakeBefore,
-        };
+          'activityKind': rung.activityKind,
+        }..removeWhere(
+          (key, _) => const {'bedBefore', 'wakeBefore'}.contains(key),
+        );
       }
       if (task['catalogId'] == 'screen-break') {
         return {
@@ -770,13 +776,14 @@ class WellnessController extends ChangeNotifier {
     }
 
     for (final entry in (_data['days'] as Map).entries) {
-      if (entry.key.toString().compareTo(today) < 0 || entry.value is! Map) {
+      final key = entry.key.toString();
+      if (key.compareTo(today) < 0 || entry.value is! Map) {
         continue;
       }
       final day = entry.value as Map;
       day['quests'] = [
         for (final task in (day['quests'] ?? const []) as List)
-          if (task is Map) adapt(task),
+          if (task is Map) adapt(task, key),
       ];
       for (final key in ['cardPacks', 'bonusCards']) {
         if (day[key] is! List) continue;
@@ -788,10 +795,10 @@ class WellnessController extends ChangeNotifier {
                     'tasks': [
                       for (final task
                           in (card['tasks'] as List).whereType<Map>())
-                        adapt(task),
+                        adapt(task, key),
                     ],
                   }
-                : adapt(card),
+                : adapt(card, key),
         ];
       }
     }
@@ -976,8 +983,8 @@ class WellnessController extends ChangeNotifier {
 
   bool commitDailyCardPack() {
     final beforeRefresh = selectedDailyCard;
-    final mealRefreshed = _refreshMealDraft();
-    if (mealRefreshed &&
+    final draftRefreshed = _refreshTimedDraft();
+    if (draftRefreshed &&
         beforeRefresh != null &&
         jsonEncode(beforeRefresh['tasks']) !=
             jsonEncode(selectedDailyCard?['tasks'])) {

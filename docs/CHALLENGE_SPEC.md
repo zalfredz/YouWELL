@@ -110,7 +110,7 @@ Dasar teori yang dirujuk proposal:
 - 🚶 **Gerak** (jalan/lari, jarak GPS)
 - 🍽️ **Makan** (sarapan, tidak telat makan, buah/sayur, Isi Piringku; validasi foto)
 - 💧 **Hidrasi**
-- 🌙 **Istirahat** (sementara, lihat §5.2a; nanti diganti **Tidur & Bangun**, P1)
+- 🌙 **Istirahat**: mulai 5 Nov 2026 berisi **Hibernasi** (hitung mundur napas tenang 1/2/3/5 menit), lihat PROJECT_DECISIONS.md. Bagian Tidur & Bangun di bawah adalah arsip rencana.
 
 **Jalur Kurangi Rokok/Vape:** ⏸️ **Jeda** selalu ada di setiap kartu, ditambah **2 kategori acak** dari empat kategori di atas.
 

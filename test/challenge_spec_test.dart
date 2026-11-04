@@ -56,7 +56,7 @@ void main() {
     });
 
     test('Each card: 3 ladder quests from 3 different categories', () async {
-      final sim = Sim(slept: true);
+      final sim = Sim();
       await sim.start();
       for (final card in sim.cards) {
         final ladder = sim
@@ -74,8 +74,6 @@ void main() {
       'Healthy-living path: every category is on at least 3 cards',
       () async {
         final sim = Sim();
-        // Before 06.00 the sleep ladder can still be on the cards.
-        sim.now = DateTime(2026, 10, 24, 5);
         await sim.start();
         for (final category in healthyCategories) {
           expect(
@@ -113,8 +111,6 @@ void main() {
 
     test('Least-practised category appears on most cards', () async {
       final sim = Sim();
-      // Before 06.00 the sleep ladder can still be on the cards.
-      sim.now = DateTime(2026, 10, 24, 5);
       await sim.start();
       // Three days of Body, Food and Lifestyle; Istirahat is never taken.
       for (var day = 0; day < 3; day++) {
@@ -144,7 +140,7 @@ void main() {
     }
 
     test('Relaxed day: 3-mission cards, one step lower, practice', () async {
-      final sim = Sim(slept: true);
+      final sim = Sim();
       await sim.start(pace: 3);
       expect(sim.controller.setDailyPace('relaxed'), isTrue);
       for (final card in sim.cards) {
@@ -354,8 +350,8 @@ void main() {
     });
   });
 
-  group('Tidur: check-in and check-out (decision 23 Oct 2026)', () {
-    test('An open screen-off quest becomes the sleep level', () {
+  group('Istirahat: Hibernasi (decision 4 Nov 2026)', () {
+    test('An open screen-off quest becomes the Hibernasi level', () {
       final controller = withQuests([
         quest(
           'energy',
@@ -368,13 +364,10 @@ void main() {
         ),
       ], () => DateTime(2026, 10, 24, 8));
       final task = controller.quests.single;
-      expect(task['activityKind'], 'sleep');
       expect(task['title'], ladders['Energy']![1].title);
-      // A sleep quest is never ticked by hand.
-      expect(
-        ladders['Energy']!.every((r) => r.activityKind == 'sleep'),
-        isTrue,
-      );
+      // Hibernasi finishes through its countdown, not a manual tick.
+      expect(task['activityKind'], 'calm');
+      expect(task['durationMinutes'], 2);
     });
   });
 
@@ -471,7 +464,7 @@ void main() {
     test(
       'Relaxed-day quests count in quests_done, not in the ladder',
       () async {
-        final sim = Sim(slept: true);
+        final sim = Sim();
         await sim.start(pace: 2);
         for (var day = 0; day < 7; day++) {
           expect(sim.controller.setDailyPace('relaxed'), isTrue);

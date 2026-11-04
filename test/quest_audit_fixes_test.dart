@@ -29,16 +29,7 @@ void main() {
     return c;
   }
 
-  group('Sleep quest', () {
-    test('No night recorded: no sleep quest, cards still differ', () async {
-      now = DateTime(2026, 10, 20, 15);
-      final c = await participant();
-      final cards = c.dailyDrawCards;
-      expect(cards.any((card) => categories(card).contains('Energy')), isFalse);
-      expect(cards.every((card) => categories(card).length == 2), isTrue);
-      expect(cards.map((card) => categories(card).join()).toSet().length, 3);
-    });
-
+  group('Sleep check-in (last sleep quests)', () {
     test(
       'A daytime tap does not start a night; the evening one does',
       () async {
@@ -53,11 +44,6 @@ void main() {
         c.prepareToday();
         expect(c.checkOutSleep(), isTrue);
         expect(c.lastNightSleep!['bedAt'], startsWith('2026-10-20T23:30'));
-        // With last night known, the sleep ladder is back on the cards.
-        expect(
-          c.dailyDrawCards.any((card) => categories(card).contains('Energy')),
-          isTrue,
-        );
       },
     );
 
