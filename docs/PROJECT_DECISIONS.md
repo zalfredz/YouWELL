@@ -6,6 +6,23 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 4 November 2026 — dashboard peneliti
+
+- Dashboard peneliti punya tab **Analisis studi**: ringkasan studi, grafik
+  minggu 1–4 jalur wellness, grafik harian rokok (batang) dan vape (sesi)
+  yang tidak pernah dijumlah, serta detail 28 hari per kode dengan penanda
+  hari tanpa data dan isian admin. Batas tafsir tertulis di layar.
+- Rata-rata konsumsi = total yang dikonfirmasi ÷ hari yang dicatat. Minggu
+  dibandingkan dengan minggu 1 hanya bila keduanya punya minimal 4 hari
+  tercatat; bila rata-rata minggu 1 nol, hanya selisih yang ditampilkan.
+- Semua angka bisa dihitung ulang tanpa data intervensi admin, dan CSV
+  "data grafik" memakai angka yang sama dengan grafik.
+- Jalur studi, tanggal mulai, dan versi aturan ukur dikunci saat kode P
+  pertama kali diberikan (tahap 11), sehingga pindah jalur tidak memindahkan
+  peserta ke kelompok lain.
+- Belum dikerjakan: peran peneliti terpisah yang hanya baca, dan kuesioner
+  awal–akhir yang dihubungkan lewat kode P.
+
 ## 27 Oktober 2026 — progres dan data riset
 
 - Total rokok dan vape per hari disimpan terpisah, disinkronkan sebagai angka

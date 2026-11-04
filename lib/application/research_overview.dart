@@ -25,6 +25,9 @@ class ParticipantOverview {
     this.updatedAt,
     this.revision = 0,
     this.started,
+    this.studyPath,
+    this.studyStarted,
+    this.measurementVersion,
   });
 
   /// Returns null for a row whose snapshot cannot be read.
@@ -69,6 +72,9 @@ class ParticipantOverview {
         updatedAt: DateTime.tryParse(row['updated_at']?.toString() ?? ''),
         revision: (row['revision'] as num?)?.toInt() ?? 0,
         started: c.profile!['started']?.toString(),
+        studyPath: row['study_path']?.toString(),
+        studyStarted: row['study_started']?.toString(),
+        measurementVersion: row['measurement_version']?.toString(),
       );
     } catch (_) {
       return null;
@@ -97,6 +103,10 @@ class ParticipantOverview {
   /// Server revision of [payload]; an admin edit must name it.
   final int revision;
   final String? started;
+
+  /// Study group locked when the code was first assigned (phase 11); null
+  /// before that phase or for accounts without a code.
+  final String? studyPath, studyStarted, measurementVersion;
 
   /// Daily smoking/vaping totals for the usage CSV (coded accounts only).
   List<JsonMap> usageRows() =>

@@ -109,6 +109,11 @@ setelah tahap 9 dan sebelum memasang build app terbaru. Edit admin masuk ke HP
 peserta saat sinkron berikutnya (±30 detik bila aplikasi terbuka, atau saat
 dibuka). Peserta perlu versi app terbaru agar total rokok/vape dan tanda hari
 buka dari admin tidak hilang saat HP-nya sinkron.
+Tahap 11 (`20261104090000_study_cohort.sql`) mengunci jalur studi, tanggal
+mulai, dan versi aturan ukur saat kode P1–P10 pertama kali diberikan, untuk
+tab **Analisis studi**. Kode yang sudah ada diisi dari profil saat ini dan
+ditandai `backfill-2026-11-04`; cek peserta yang pernah pindah jalur. Jalankan
+setelah tahap 10.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)

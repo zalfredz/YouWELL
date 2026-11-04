@@ -179,6 +179,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // Uncoded accounts have no study analysis yet.
+    expect(find.textContaining('Belum ada peserta berkode'), findsOneWidget);
+    await tester.tap(find.text('Kelola kode & unduhan'));
+    await tester.pumpAndSettle();
     expect(find.text('daunpagi'), findsOneWidget);
     expect(find.text('Rokok/vape'), findsOneWidget);
 

@@ -6,6 +6,7 @@ import 'package:youwell/core/platform/platform.dart' as platform;
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/auth/presentation/account_scope.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
+import 'study_analysis_view.dart';
 
 /// Researcher view for admins with MFA: every account's progress by alias,
 /// participant codes P1–P10, the engagement criterion, and downloads.
@@ -24,6 +25,9 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
   List<ParticipantOverview>? _people;
   String? _error;
   bool _loading = false;
+
+  /// 'analysis' (charts, brief of 4 Nov 2026) or 'manage' (codes, downloads).
+  var _view = 'analysis';
 
   @override
   void didChangeDependencies() {
@@ -115,10 +119,29 @@ class _ResearchDashboardPageState extends State<ResearchDashboardPage> {
             style: TextStyle(color: c.muted),
           ),
           const SizedBox(height: 20),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: 'analysis', label: Text('Analisis studi')),
+              ButtonSegment(
+                value: 'manage',
+                label: Text('Kelola kode & unduhan'),
+              ),
+            ],
+            selected: {_view},
+            onSelectionChanged: (value) => setState(() => _view = value.single),
+          ),
+          const SizedBox(height: 20),
           if (_error != null)
             Text(_error!, style: TextStyle(color: c.amber))
           else if (people == null)
             const Center(child: CircularProgressIndicator())
+          else if (_view == 'analysis')
+            StudyAnalysisView(
+              people: people,
+              now: widget.now ?? DateTime.now(),
+              onDownload: (name, csv) => _download(name, csv, 'text/csv'),
+            )
           else
             ..._content(context, people),
         ],

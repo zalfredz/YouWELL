@@ -291,6 +291,32 @@ async function main() {
     assert.equal(back.payload.usageTotals[0].total, 4);
     assert.equal(Number(back.revision), beforeAdmin + 2);
     console.log('Admin overview passed: usage totals validated, MFA-only edits with reason and audit, stale revision refused, history restore.');
+
+    // Phase 11: the study group is locked when a code is first assigned.
+    await asUser(admin, 'aal2', async () => {
+      const row = async () => (await db.query('select public.youwell_admin_progress_overview() as r')).rows[0].r
+        .find(r => r.account === owner);
+      const before = await row();
+      assert.equal(before.code, 'P1');
+      assert.equal(before.study_path, null, 'P1 was assigned before any progress synced');
+      // The next assignment fills the still-empty group from the profile.
+      await db.query('select public.set_youwell_participant_code($1, $2)', [owner, 'P2']);
+      const fresh = await row();
+      assert.equal(fresh.study_path, 'wellness');
+      assert.equal(fresh.study_started, '2026-10-16');
+      assert.equal(fresh.measurement_version, 'v2026-11-04');
+    });
+    // A later path switch does not move the participant to another group.
+    await db.exec('reset role');
+    await db.query(`update public.youwell_progress set payload = jsonb_set(payload, '{profile,path}', '"reduction"') where user_id = $1`, [owner]);
+    await asUser(admin, 'aal2', async () => {
+      await db.query('select public.set_youwell_participant_code($1, $2)', [owner, 'P4']);
+      const row = (await db.query('select public.youwell_admin_progress_overview() as r')).rows[0].r
+        .find(r => r.account === owner);
+      assert.equal(row.code, 'P4');
+      assert.equal(row.study_path, 'wellness');
+    });
+    console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes and path switches.');
   } finally { await db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
