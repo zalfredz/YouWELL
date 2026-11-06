@@ -330,6 +330,24 @@ async function main() {
       assert.equal(again.study_path, 'wellness', 'not re-locked to today\'s reduction path');
       await denied(() => db.query('select * from public.youwell_study_cohorts'));
     });
+    // Phase 13: Habit Swap results per day and product, counts only.
+    await asUser(owner, 'aal1', async () => {
+      const current = Number((await db.query('select revision from public.youwell_progress where user_id = $1', [owner])).rows[0].revision);
+      const ok = { ...payload, swapResults: [{ day: '2026-11-01', type: 'rokok', tried: 3, skipped: 2, used: 1 }] };
+      assert.equal((await db.query('select public.save_youwell_progress($1, $2) as r', [ok, current])).rows[0].r.saved, true);
+      for (const bad of [
+        [{ day: '2026-11-01', type: 'cigarette', tried: 1, skipped: 1, used: 0 }],
+        [{ day: '2026-11-01', type: 'rokok', tried: 1, skipped: 1, used: 0, trigger: 'stress' }],
+        [{ day: '2026-11-01', type: 'rokok', tried: 999, skipped: 1, used: 0 }],
+        [{ day: '2026-11-01 08:00', type: 'rokok', tried: 1, skipped: 1, used: 0 }],
+      ]) {
+        await assert.rejects(
+          () => db.query('select public.save_youwell_progress($1, $2)', [{ ...payload, swapResults: bad }, current + 1]),
+          error => error.code === '22023',
+        );
+      }
+    });
+    console.log('Habit Swap results passed: daily counts accepted, product names, extra keys, times and large counts refused.');
     console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes, removal and re-assignment, and path switches.');
   } finally { await db.close(); }
 }

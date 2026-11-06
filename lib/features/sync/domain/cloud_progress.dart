@@ -141,7 +141,48 @@ abstract final class CloudProgress {
       // Latest proposal: the daily total per product is research data. Only
       // the numbers leave the phone, never times, triggers or notes.
       'usageTotals': usageTotals(source['nicotineDays']),
+      // Habit Swap results per day and product, counts only (phase 13).
+      // Left out when empty, so wellness snapshots stay valid for a server
+      // that has not run phase 13 yet.
+      if (swapResults(source['habitSwaps'], source['swapResultsCloud'])
+          case final results when results.isNotEmpty)
+        'swapResults': results,
     };
+  }
+
+  /// `{day, type, tried, skipped, used}` per day and product from the
+  /// moments on this phone. Days this phone has no results for (a new
+  /// install) keep the counts last read from the cloud, so they are never
+  /// sent back as zero.
+  static List<JsonMap> swapResults(Object? swaps, Object? cloud) {
+    final counts = <String, JsonMap>{};
+    for (final row in ((swaps ?? const []) as List).whereType<Map>()) {
+      final day = row['day'], product = row['usedProduct'] ?? row['product'];
+      final type = _usageTypes[product];
+      final tried =
+          row['tried'] == true ||
+          const ['skipped', 'used'].contains(row['outcome']);
+      if (day is! String || type == null || !tried) continue;
+      final entry = counts.putIfAbsent(
+        '$day|$type',
+        () => {'day': day, 'type': type, 'tried': 0, 'skipped': 0, 'used': 0},
+      );
+      entry['tried'] = (entry['tried'] as int) + 1;
+      if (row['outcome'] == 'skipped') {
+        entry['skipped'] = (entry['skipped'] as int) + 1;
+      } else if (row['outcome'] == 'used') {
+        entry['used'] = (entry['used'] as int) + 1;
+      }
+    }
+    for (final row in ((cloud ?? const []) as List).whereType<Map>()) {
+      final key = '${row['day']}|${row['type']}';
+      if (!counts.containsKey(key)) {
+        counts[key] = Map<String, dynamic>.from(row);
+      }
+    }
+    return counts.values.toList()..sort(
+      (a, b) => '${a['day']}${a['type']}'.compareTo('${b['day']}${b['type']}'),
+    );
   }
 
   static const _usageTypes = {'cigarette': 'rokok', 'vape': 'vape'};
@@ -213,7 +254,13 @@ abstract final class CloudProgress {
     );
     final result = {...device, ...shared}
       ..remove('schemaVersion')
-      ..remove('usageTotals');
+      ..remove('usageTotals')
+      ..remove('swapResults');
+    // Kept on the phone (never sent as such) so a reinstall keeps them.
+    result['swapResultsCloud'] = [
+      ...((payload['swapResults'] ?? device['swapResultsCloud'] ?? const [])
+          as List),
+    ];
     result['nicotineDays'] = _mergeUsage(
       device['nicotineDays'],
       payload['usageTotals'],

@@ -5,10 +5,10 @@ import 'package:youwell/application/study_dashboard.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
 
-/// "Analisis studi" in the researcher dashboard, laid out as a week report
-/// for checkpoint presentations: key findings, a metric × Week 1–4 table
-/// with n, a chart per metric, progress per participant, smoking/vaping per
-/// participant and the daily detail (brief of 4 Nov 2026, weeks 6 Nov).
+/// "Analisis studi" in the researcher dashboard, kept to one screen: four
+/// key numbers, up to three conclusions, two charts with how to read them,
+/// and a short table per participant. Everything else (all metrics, change
+/// per participant, daily detail, downloads) sits under "Data lengkap".
 class StudyAnalysisView extends StatefulWidget {
   const StudyAnalysisView({
     super.key,
@@ -24,35 +24,42 @@ class StudyAnalysisView extends StatefulWidget {
   State<StudyAnalysisView> createState() => _StudyAnalysisViewState();
 }
 
-/// Which participants the week table, chart and progress table show.
+/// The whole report is shown for one of these groups. Rokok and Vape come
+/// from the daily totals a participant logged (the product choice itself
+/// stays on the phone); someone using both is in both.
 const _groups = {
   'all': 'Semua',
   'wellness': 'Wellness',
-  'reduction': 'Rokok/vape',
+  'rokok': 'Rokok',
+  'vape': 'Vape',
 };
 
 class _StudyAnalysisViewState extends State<StudyAnalysisView> {
   String _group = 'all';
-  int _chartRow = 0;
   String? _detail, _usageParticipant;
 
-  List<StudyParticipant> _of(List<StudyParticipant> people, String group) =>
-      switch (group) {
-        'wellness' => people.where((p) => !p.reduction).toList(),
-        'reduction' => people.where((p) => p.reduction).toList(),
-        _ => people,
-      };
+  static List<StudyParticipant> _of(
+    List<StudyParticipant> people,
+    String group,
+  ) => switch (group) {
+    'wellness' => people.where((p) => !p.reduction).toList(),
+    'rokok' || 'vape' =>
+      people.where((p) => p.reduction && p.types.contains(group)).toList(),
+    _ => people,
+  };
+
+  static List<String> _products(String group) =>
+      group == 'rokok' || group == 'vape' ? [group] : usageTypes;
 
   /// Highlights and the week table as plain text for slides.
   String _slideText(
-    List<String> highlights,
+    List<String> conclusions,
     List<WeekRow> rows,
     String group,
   ) => [
-    'Temuan utama YouWELL',
-    for (final line in highlights) '- $line',
+    'YouWELL: ${_groups[group]}',
+    for (final line in conclusions) '- $line',
     '',
-    'Ringkasan per week (${_groups[group]}; n = peserta dengan week selesai)',
     ['Metrik', for (var w = 1; w <= 4; w++) 'Week $w'].join('\t'),
     for (final row in rows)
       [
@@ -63,10 +70,97 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
               : '${formatWeekValue(row, cell)} (n=${cell.n})',
       ].join('\t'),
     '',
-    'Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7). Angka '
-        'keterlibatan dan laporan peserta, bukan ukuran kesehatan atau '
-        'perbandingan sebelum–sesudah.',
+    'Week = 7 hari sejak peserta mulai. n = peserta dengan week selesai.',
   ].join('\n');
+
+  /// At most three short sentences: engagement, missions or use, data.
+  static List<String> _conclusions(
+    List<WeekRow> rows,
+    List<UsageOutcome> outcomes,
+    String group,
+    StudySummary summary,
+  ) {
+    WeekRow row(String label) => rows.firstWhere((r) => r.label == label);
+    final days = row('Rata-rata hari aktif');
+    final missions = row('Misi inti selesai');
+    final done = [
+      for (var w = 0; w < 4; w++)
+        if (days.cells[w].value != null) w,
+    ];
+    String n(double v) => _number(v);
+    final lines = <String>[];
+    if (done.isEmpty) {
+      lines.add('Belum ada week yang selesai, jadi belum ada angka kelompok.');
+    } else if (done.length == 1) {
+      final w = done.single;
+      lines.add(
+        'Week ${w + 1}: peserta aktif rata-rata '
+        '${n(days.cells[w].value!)} dari 7 hari.',
+      );
+    } else {
+      final a = done.first, b = done.last;
+      final x = days.cells[a].value!, y = days.cells[b].value!;
+      lines.add(
+        'Keaktifan Week ${a + 1} ke Week ${b + 1}: ${n(x)} ke ${n(y)} hari '
+        'dari 7 (${(y - x).abs() < .05
+            ? 'tetap'
+            : y > x
+            ? 'naik'
+            : 'turun'}).',
+      );
+    }
+    final product = group == 'rokok' || group == 'vape' ? group : null;
+    if (product != null) {
+      final m = median([
+        for (final o in outcomes)
+          if (o.change?.percent case final p?) p * 100,
+      ]);
+      final down = outcomes.where((o) => o.category.startsWith('Turun')).length;
+      final compared = outcomes.where((o) => o.change != null).length;
+      lines.add(
+        compared == 0
+            ? '${product == 'rokok' ? 'Rokok' : 'Vape'}: data belum cukup '
+                  'untuk dibandingkan (perlu Week 2 selesai, ≥ 4 hari '
+                  'tercatat).'
+            : '${product == 'rokok' ? 'Rokok' : 'Vape'}: $down dari '
+                  '$compared peserta turun ≥ 20% sejak Week 1'
+                  '${m == null ? '' : ' (median ${m > 0 ? '+' : ''}${m.round()}%)'}.',
+      );
+      // Habit Swap results of the completed weeks, pooled.
+      var skipped = 0, used = 0;
+      for (final p in summary.people) {
+        for (final w in p.weeks.where((w) => w.complete)) {
+          final r = w.swapResult(product);
+          skipped += r.skipped;
+          used += r.used;
+        }
+      }
+      if (skipped + used > 0) {
+        lines.add(
+          'Habit Swap: ${(skipped / (skipped + used) * 100).round()}% momen '
+          'tidak jadi ${product == 'rokok' ? 'merokok' : 'vape'} '
+          '($skipped dari ${skipped + used} momen yang hasilnya dipilih).',
+        );
+      }
+    } else if (done.isNotEmpty) {
+      final a = done.first, b = done.last;
+      final x = missions.cells[a].value, y = missions.cells[b].value;
+      if (x != null && y != null) {
+        lines.add(
+          a == b
+              ? 'Misi inti selesai ${x.round()}%.'
+              : 'Misi inti selesai ${x.round()}% ke ${y.round()}%.',
+        );
+      }
+    }
+    if (summary.adminItems > 0) {
+      lines.add(
+        '${summary.adminItems} isian dipulihkan admin '
+        '(${summary.adminPeople} peserta).',
+      );
+    }
+    return lines;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,18 +175,38 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
         style: TextStyle(color: c.muted),
       );
     }
-    final summary = StudySummary(people);
-    final reduction = people.where((p) => p.reduction).toList();
     final group = _of(people, _group).isEmpty ? 'all' : _group;
     final shown = _of(people, group);
-    final rows = weekReport(shown);
-    final chartRow = rows[_chartRow.clamp(0, rows.length - 1)];
-    final highlights = weekHighlights(people, widget.now);
+    final products = _products(group);
+    final product = products.length == 1 ? products.single : null;
+    final reduction = shown.where((p) => p.reduction).toList();
+    final outcomes = usageOutcomes(reduction, products: products);
+    final rows = weekReport(shown, products: products);
+    final summary = StudySummary(shown);
+    final conclusions = _conclusions(rows, outcomes, group, summary);
+    WeekRow row(String label) => rows.firstWhere((r) => r.label == label);
+    final daysRow = row('Rata-rata hari aktif');
+    final missionRow = row('Misi inti selesai');
+    final usageRow = product == null
+        ? null
+        : rows
+              .where((r) => r.label == 'Rata-rata $product per hari tercatat')
+              .firstOrNull;
+    final last = [
+      for (var w = 0; w < 4; w++)
+        if (daysRow.cells[w].value != null) w,
+    ].lastOrNull;
+    final m = median([
+      for (final o in outcomes)
+        if (o.change?.percent case final p?) p * 100,
+    ]);
     final detail =
-        people.where((p) => p.code == _detail).firstOrNull ?? people.first;
+        shown.where((p) => p.code == _detail).firstOrNull ?? shown.first;
     final usage =
         reduction.where((p) => p.code == _usageParticipant).firstOrNull ??
         reduction.firstOrNull;
+    final suffix = group == 'all' ? '' : '-$group';
+    final unit = product == 'vape' ? 'sesi' : 'batang';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -101,208 +215,305 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            FilledButton.icon(
+            for (final MapEntry(:key, :value) in _groups.entries)
+              ChoiceChip(
+                label: Text('$value (${_of(people, key).length})'),
+                selected: group == key,
+                showCheckmark: false,
+                onSelected: _of(people, key).isEmpty
+                    ? null
+                    : (_) => setState(() {
+                        _group = key;
+                        _usageParticipant = null;
+                        _detail = null;
+                      }),
+              ),
+            const SizedBox(width: 8),
+            TextButton.icon(
               onPressed: () async {
                 await Clipboard.setData(
-                  ClipboardData(text: _slideText(highlights, rows, group)),
+                  ClipboardData(text: _slideText(conclusions, rows, group)),
                 );
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Temuan dan tabel week disalin. Tempel ke slide atau '
-                        'dokumen.',
-                      ),
-                    ),
+                    const SnackBar(content: Text('Disalin untuk slide.')),
                   );
               },
               icon: const Icon(Icons.content_copy_rounded, size: 18),
               label: const Text('Salin untuk slide'),
             ),
-            OutlinedButton.icon(
-              onPressed: () => widget.onDownload(
-                'youwell-ringkasan-week.csv',
-                toCsv(
-                  weekReportCsvColumns,
-                  weekReportCsvRows(weekReport(people)),
-                ),
-              ),
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('Unduh tabel week (CSV)'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => widget.onDownload(
-                'youwell-dashboard-studi.csv',
-                toCsv(dashboardCsvColumns, dashboardCsvRows(people)),
-              ),
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('Unduh data per peserta (CSV)'),
-            ),
-            TextButton.icon(
-              onPressed: () => _showDataInfo(context),
-              icon: const Icon(Icons.info_outline_rounded, size: 18),
-              label: const Text('Tentang data'),
-            ),
           ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          'Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7, Week 2 = '
-          'hari 8–14), bukan minggu kalender. Angka kelompok hanya memakai '
-          'week yang sudah selesai; n = jumlah peserta di balik angka itu.',
-          style: TextStyle(color: c.muted, fontSize: 13),
-        ),
         const SizedBox(height: 16),
-        _SummaryTiles(summary: summary),
-        const SizedBox(height: 24),
-        _Section(
-          title: 'Temuan utama',
-          subtitle: 'Disusun otomatis dari tabel di bawah.',
-          child: _Highlights(lines: highlights),
-        ),
-        _Section(
-          title: 'Ringkasan per week',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final MapEntry(:key, :value) in _groups.entries)
-                    ChoiceChip(
-                      label: Text('$value (${_of(people, key).length})'),
-                      selected: group == key,
-                      showCheckmark: false,
-                      onSelected: _of(people, key).isEmpty
-                          ? null
-                          : (_) => setState(() => _group = key),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _WeekTable(rows: rows),
-            ],
-          ),
-        ),
-        _Section(
-          title: 'Grafik per week',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButton<int>(
-                isExpanded: true,
-                value: rows.indexOf(chartRow),
-                items: [
-                  for (final (i, row) in rows.indexed)
-                    DropdownMenuItem(
-                      value: i,
-                      child: Text(
-                        '${row.group}: ${row.label}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-                onChanged: (value) => setState(() => _chartRow = value!),
-              ),
-              const SizedBox(height: 12),
-              _WeekRowChart(row: chartRow),
-            ],
-          ),
-        ),
-        _Section(
-          title: 'Progres per peserta',
-          subtitle:
-              'Hari aktif per week (dari 7 hari). * = week masih berjalan.',
-          child: _ProgressTable(people: shown),
-        ),
-        if (reduction.isNotEmpty)
-          _Section(
-            title: 'Cek perubahan konsumsi',
-            subtitle:
-                'Week 1 dibanding week terakhir yang sudah selesai dan punya '
-                'minimal 4 hari tercatat. Ini perubahan selama pemakaian, '
-                'belum bukti efektivitas: Week 1 sudah masa pemakaian, tanpa '
-                'kelompok pembanding, dan angkanya laporan peserta.',
-            child: _UsageOutcomes(
-              outcomes: usageOutcomes(reduction),
-              onDownload: widget.onDownload,
-            ),
-          ),
-        if (reduction.isNotEmpty)
-          _Section(
-            title: 'Rokok/vape per peserta',
-            subtitle:
-                'Rata-rata per hari yang dicatat, dengan cakupan hari. '
-                'Perbandingan hanya bila Week 1 dan week pembanding punya '
-                'minimal 4 hari tercatat. Rokok (batang) dan vape (sesi) '
-                'tidak dijumlah.',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 760 ? 4 : 2;
+            final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+            Widget tile(String value, String label, String note) => SizedBox(
+              width: width,
+              child: _Tile(value, label, note: note),
+            );
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                _UsageTable(people: reduction),
-                if (usage != null)
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    expandedAlignment: Alignment.centerLeft,
-                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                    title: const Text('Grafik harian per peserta'),
-                    children: [
-                      DropdownButton<String>(
-                        value: usage.code,
-                        items: [
-                          for (final p in reduction)
-                            DropdownMenuItem(
-                              value: p.code,
-                              child: Text(p.code),
-                            ),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _usageParticipant = value),
-                      ),
-                      const SizedBox(height: 12),
-                      if (usage.types.isEmpty)
-                        Text(
-                          'Belum ada konsumsi yang dicatat.',
-                          style: TextStyle(color: c.muted),
-                        )
-                      else
-                        for (final type in usage.types)
-                          _UsageBlock(participant: usage, type: type),
-                    ],
+                tile('${shown.length}', 'Peserta', _groups[group]!),
+                tile(
+                  last == null
+                      ? '–'
+                      : '${row('Peserta aktif (≥ 1 hari)').cells[last].value!.round()}'
+                            ' dari ${daysRow.cells[last].n}',
+                  'Peserta aktif',
+                  last == null ? 'belum ada week selesai' : 'Week ${last + 1}',
+                ),
+                tile(
+                  last == null
+                      ? '–'
+                      : '${_number(daysRow.cells[last].value!)} / 7',
+                  'Hari aktif rata-rata',
+                  last == null ? '' : 'Week ${last + 1}',
+                ),
+                if (product == null)
+                  tile(
+                    last == null || missionRow.cells[last].value == null
+                        ? '–'
+                        : '${missionRow.cells[last].value!.round()}%',
+                    'Misi inti selesai',
+                    last == null ? '' : 'Week ${last + 1}',
+                  )
+                else
+                  tile(
+                    m == null ? '–' : '${m > 0 ? '+' : ''}${m.round()}%',
+                    'Perubahan $product',
+                    'median, Week 1 ke week terakhir',
                   ),
               ],
-            ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _Section(
+          title: 'Kesimpulan',
+          child: _Highlights(lines: conclusions),
+        ),
+        _Section(
+          title: 'Keaktifan per week',
+          subtitle:
+              'Cara baca: rata-rata hari peserta memakai aplikasi (dari 7). '
+              'Makin tinggi, makin rutin.',
+          child: _WeekRowChart(row: daysRow),
+        ),
+        if (usageRow != null)
+          _Section(
+            title:
+                '${product == 'rokok' ? 'Rokok' : 'Vape'} per hari, per week',
+            subtitle:
+                'Cara baca: rata-rata $unit per hari yang dicatat. Turun = '
+                'pemakaian berkurang selama ikut YouWELL (laporan peserta, '
+                'bukan bukti efektivitas).',
+            child: _WeekRowChart(row: usageRow),
+          )
+        else
+          _Section(
+            title: 'Misi inti selesai per week',
+            subtitle:
+                'Cara baca: persentase misi harian yang diselesaikan. Turun '
+                'bisa berarti misi terlalu berat atau peserta mulai jarang.',
+            child: _WeekRowChart(row: missionRow),
           ),
+        _Section(
+          title: 'Per peserta',
+          subtitle: 'Hari aktif per week (dari 7). * = week belum selesai.',
+          child: _SimpleTable(people: shown, product: product),
+        ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
           expandedAlignment: Alignment.centerLeft,
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          title: const Text('Detail harian peserta'),
-          subtitle: Text('${people.length} peserta · catatan 28 hari'),
+          title: const Text(
+            'Data lengkap',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          subtitle: const Text('Tabel semua metrik, detail harian, unduhan'),
           children: [
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final p in people)
-                  ChoiceChip(
-                    label: Text(p.code),
-                    selected: p == detail,
-                    onSelected: (_) => setState(() => _detail = p.code),
+                OutlinedButton.icon(
+                  onPressed: () => widget.onDownload(
+                    'youwell-ringkasan-week$suffix.csv',
+                    toCsv(weekReportCsvColumns, weekReportCsvRows(rows)),
                   ),
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Unduh tabel week (CSV)'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => widget.onDownload(
+                    'youwell-dashboard-studi.csv',
+                    toCsv(dashboardCsvColumns, dashboardCsvRows(people)),
+                  ),
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Unduh data per peserta (CSV)'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showDataInfo(context),
+                  icon: const Icon(Icons.info_outline_rounded, size: 18),
+                  label: const Text('Tentang data'),
+                ),
               ],
             ),
-            const SizedBox(height: 14),
-            _DetailTable(participant: detail),
+            const SizedBox(height: 16),
+            _Section(
+              title: 'Semua metrik per week',
+              child: _WeekTable(rows: rows),
+            ),
+            if (product != null)
+              _Section(
+                title: product == 'rokok'
+                    ? 'Seluruh perokok'
+                    : 'Seluruh pengguna vape',
+                child: _GroupUsage(
+                  people: reduction,
+                  type: product,
+                  outcomes: outcomes,
+                ),
+              ),
+            if (reduction.isNotEmpty)
+              _Section(
+                title: 'Perubahan konsumsi per peserta',
+                child: _UsageOutcomes(
+                  outcomes: outcomes,
+                  fileSuffix: suffix,
+                  onDownload: widget.onDownload,
+                ),
+              ),
+            if (usage != null && usage.types.any(products.contains))
+              _Section(
+                title: 'Grafik harian satu peserta',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButton<String>(
+                      value: usage.code,
+                      items: [
+                        for (final p in reduction)
+                          DropdownMenuItem(value: p.code, child: Text(p.code)),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _usageParticipant = value),
+                    ),
+                    for (final type in usage.types)
+                      if (products.contains(type))
+                        _UsageBlock(participant: usage, type: type),
+                  ],
+                ),
+              ),
+            _Section(
+              title: 'Detail harian',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final p in shown)
+                        ChoiceChip(
+                          label: Text(p.code),
+                          selected: p == detail,
+                          onSelected: (_) => setState(() => _detail = p.code),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _DetailTable(participant: detail),
+                ],
+              ),
+            ),
           ],
         ),
       ],
     );
   }
+}
+
+/// One row per participant: active days per week and, for one product,
+/// the change since Week 1.
+class _SimpleTable extends StatelessWidget {
+  const _SimpleTable({required this.people, this.product});
+  final List<StudyParticipant> people;
+  final String? product;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: DataTable(
+      headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
+      columnSpacing: 32,
+      columns: [
+        const DataColumn(label: Text('Kode')),
+        for (var w = 1; w <= 4; w++)
+          DataColumn(label: Text('Week $w'), numeric: true),
+        DataColumn(
+          label: Text(product == null ? 'Misi inti' : 'Perubahan $product'),
+        ),
+        if (product != null)
+          const DataColumn(label: Text('Habit Swap tidak jadi')),
+      ],
+      rows: [
+        for (final p in people)
+          DataRow(
+            cells: [
+              DataCell(Text(p.code)),
+              for (var w = 0; w < 4; w++)
+                DataCell(
+                  Text(
+                    w >= p.weeks.length
+                        ? '–'
+                        : '${p.weeks[w].activeDays}'
+                              '${p.weeks[w].complete ? '' : '*'}',
+                  ),
+                ),
+              DataCell(
+                Text(() {
+                  if (product == null) {
+                    final done = p.weeks.fold(0, (s, w) => s + w.coreDone);
+                    final total = p.weeks.fold(0, (s, w) => s + w.coreTotal);
+                    return total == 0
+                        ? '–'
+                        : '${(done / total * 100).round()}%';
+                  }
+                  final o = UsageOutcome(p, product!);
+                  final percent = o.change?.percent;
+                  return o.change == null
+                      ? 'belum cukup data'
+                      : percent == null
+                      ? 'dari 0'
+                      : '${percent > 0 ? '+' : ''}${(percent * 100).round()}%';
+                }()),
+              ),
+              if (product != null)
+                DataCell(
+                  Text(() {
+                    var skipped = 0, used = 0;
+                    for (final w in p.weeks) {
+                      final r = w.swapResult(product!);
+                      skipped += r.skipped;
+                      used += r.used;
+                    }
+                    return skipped + used == 0
+                        ? '–'
+                        : '$skipped dari ${skipped + used} momen';
+                  }()),
+                ),
+            ],
+          ),
+      ],
+    ),
+  );
 }
 
 void _showDataInfo(BuildContext context) => showDialog<void>(
@@ -380,76 +591,6 @@ class _Section extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _SummaryTiles extends StatelessWidget {
-  const _SummaryTiles({required this.summary});
-  final StudySummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final four = summary.weekFour;
-    final people = summary.people;
-    final wellness = people.where((p) => !p.reduction).length;
-    int finished(int week) => people
-        .where((p) => p.weeks.length >= week && p.weeks[week - 1].complete)
-        .length;
-    final completeness = summary.completeness;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 760
-            ? 4
-            : constraints.maxWidth >= 300
-            ? 2
-            : 1;
-        final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: width,
-              child: _Tile(
-                '${people.length}',
-                'Peserta studi',
-                note:
-                    '$wellness wellness · ${people.length - wellness} rokok/vape',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: _Tile(
-                '${finished(1)} · ${finished(2)}',
-                'Selesai Week 1 · Week 2',
-                note: 'sudah melewati 7 dan 14 hari',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: _Tile(
-                completeness == null ? '–' : '${(completeness * 100).round()}%',
-                'Hari berisi data',
-                note: '${summary.adminItems} isian dipulihkan admin',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: _Tile(
-                four.reached == 0 ? '–' : '${four.active} dari ${four.reached}',
-                'Aktif di Week 4',
-                note: four.reached == 0
-                    ? 'kriteria ≥ 6 dari 10; belum ada yang sampai'
-                    : four.provisional
-                    ? 'sementara · kriteria ≥ 6 dari 10'
-                    : 'kriteria ≥ 6 dari 10',
-                highlight: !four.provisional && four.active >= 6,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 /// Key findings, one sentence each.
@@ -650,11 +791,147 @@ class _WeekRowChart extends StatelessWidget {
   }
 }
 
+/// Everyone who logs one product: paired Week 1 vs comparison week, the
+/// median change, zero days, and the group's mean per study day.
+class _GroupUsage extends StatelessWidget {
+  const _GroupUsage({
+    required this.people,
+    required this.type,
+    required this.outcomes,
+  });
+  final List<StudyParticipant> people;
+  final String type;
+  final List<UsageOutcome> outcomes;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final unit = type == 'rokok' ? 'batang' : 'sesi';
+    final color = type == 'rokok' ? c.reduction : c.cyan;
+    final paired = pairedUsage(outcomes);
+    final m = median([
+      for (final o in outcomes)
+        if (o.change?.percent case final p?) p * 100,
+    ]);
+    final daily = groupDailyUsage(people, type);
+    final logged = people.fold(
+      0,
+      (sum, p) => sum + p.days.where((d) => d.usage.containsKey(type)).length,
+    );
+    final zero = people.fold(
+      0,
+      (sum, p) => sum + p.days.where((d) => d.usage[type] == 0).length,
+    );
+    final top = daily.fold<double>(
+      1,
+      (t, d) => (d.mean ?? 0) > t ? d.mean! : t,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _CountChip(
+              text: '${people.length}',
+              label: 'Peserta yang mencatat',
+            ),
+            _CountChip(
+              text: paired.first == null
+                  ? '–'
+                  : '${_number(paired.first!)} ke ${_number(paired.last!)}',
+              label: paired.n == 0
+                  ? '$unit/hari, Week 1 ke pembanding'
+                  : '$unit/hari, Week 1 ke pembanding (${paired.n} peserta sama)',
+            ),
+            _CountChip(
+              text: m == null ? '–' : '${m > 0 ? '+' : ''}${m.round()}%',
+              label: 'Median perubahan',
+            ),
+            _CountChip(
+              text: '$zero dari $logged',
+              label: 'Hari tercatat dengan total 0',
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Rata-rata $unit per hari studi (semua peserta yang mencatat)',
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final d in daily)
+                Tooltip(
+                  message: d.mean == null
+                      ? 'Hari ${d.day}: belum ada catatan'
+                      : 'Hari ${d.day}: rata-rata ${_number(d.mean!)} $unit '
+                            '(${d.n} peserta mencatat)',
+                  child: SizedBox(
+                    width: 26,
+                    height: 150,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (d.mean != null)
+                          Container(
+                            width: 16,
+                            height: d.mean == 0 ? 2 : 110 * d.mean! / top,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: c.muted,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        SizedBox(
+                          height: 20,
+                          child: Text(
+                            d.day == 1 || d.day % 7 == 0 ? '${d.day}' : '',
+                            style: TextStyle(color: c.muted, fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Text(
+          'Sumbu bawah = hari studi tiap peserta (hari 1 = hari pertamanya). '
+          'Arahkan kursor ke batang untuk melihat n.',
+          style: TextStyle(color: c.muted, fontSize: 12.5),
+        ),
+      ],
+    );
+  }
+}
+
 /// Change categories per product, the median change, and one row per
 /// participant and product.
 class _UsageOutcomes extends StatelessWidget {
-  const _UsageOutcomes({required this.outcomes, required this.onDownload});
+  const _UsageOutcomes({
+    required this.outcomes,
+    required this.onDownload,
+    this.fileSuffix = '',
+  });
   final List<UsageOutcome> outcomes;
+  final String fileSuffix;
   final void Function(String name, String csv) onDownload;
 
   static String _week(UsageWeek? week, int zeroDays, String unit) =>
@@ -779,7 +1056,7 @@ class _UsageOutcomes extends StatelessWidget {
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () => onDownload(
-            'youwell-perubahan-konsumsi.csv',
+            'youwell-perubahan-konsumsi$fileSuffix.csv',
             toCsv(usageOutcomeCsvColumns, usageOutcomeCsvRows(outcomes)),
           ),
           icon: const Icon(Icons.download_rounded, size: 18),
@@ -825,86 +1102,10 @@ class _CountChip extends StatelessWidget {
   }
 }
 
-/// Every smoking/vaping participant and product: mean per logged day per
-/// week with its coverage, and the change from Week 1.
-class _UsageTable extends StatelessWidget {
-  const _UsageTable({required this.people});
-  final List<StudyParticipant> people;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final rows = [
-      for (final p in people)
-        for (final type in p.types) (p, type),
-    ];
-    if (rows.isEmpty) {
-      return Text(
-        'Belum ada total rokok/vape yang dicatat.',
-        style: TextStyle(color: c.muted),
-      );
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
-        columnSpacing: 28,
-        columns: [
-          const DataColumn(label: Text('Kode')),
-          const DataColumn(label: Text('Produk')),
-          for (var w = 1; w <= 4; w++) DataColumn(label: Text('Week $w')),
-          const DataColumn(label: Text('Week 1 ke week terakhir')),
-        ],
-        rows: [
-          for (final (p, type) in rows)
-            () {
-              final unit = type == 'rokok' ? 'batang' : 'sesi';
-              final weeks = [for (final w in p.weeks) w.usage(type)];
-              final index = weeks.lastIndexWhere((u) => u.comparable);
-              final change = index > 0
-                  ? usageChange(weeks.first, weeks[index])
-                  : null;
-              return DataRow(
-                cells: [
-                  DataCell(Text(p.code)),
-                  DataCell(
-                    Text('${type == 'rokok' ? 'Rokok' : 'Vape'} ($unit)'),
-                  ),
-                  for (var w = 0; w < 4; w++)
-                    DataCell(
-                      Text(
-                        w >= weeks.length
-                            ? '–'
-                            : weeks[w].mean == null
-                            ? 'tidak dicatat'
-                            : '${_number(weeks[w].mean!)} · '
-                                  '${weeks[w].loggedDays}/${p.weeks[w].days.length} hari'
-                                  '${p.weeks[w].complete ? '' : '*'}',
-                      ),
-                    ),
-                  DataCell(
-                    Text(
-                      change == null
-                          ? 'data belum cukup'
-                          : 'Week ${index + 1}: '
-                                '${_UsageBlock._changeText(index, weeks.first, weeks[index])}'
-                                '${p.weeks[index].complete ? '' : ' (sementara)'}',
-                    ),
-                  ),
-                ],
-              );
-            }(),
-        ],
-      ),
-    );
-  }
-}
-
 class _Tile extends StatelessWidget {
-  const _Tile(this.value, this.label, {this.note, this.highlight = false});
+  const _Tile(this.value, this.label, {this.note});
   final String value, label;
   final String? note;
-  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
@@ -913,7 +1114,7 @@ class _Tile extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 134),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: highlight ? c.selected : c.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.border),
       ),
@@ -1277,68 +1478,6 @@ class _Key extends StatelessWidget {
       const SizedBox(width: 6),
       Text(label, style: TextStyle(color: context.colors.text, fontSize: 12.5)),
     ],
-  );
-}
-
-/// Every participant on one row: active days per week, missions, level,
-/// admin corrections and last sync.
-class _ProgressTable extends StatelessWidget {
-  const _ProgressTable({required this.people});
-  final List<StudyParticipant> people;
-
-  @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: DataTable(
-      headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
-      columnSpacing: 28,
-      columns: [
-        const DataColumn(label: Text('Kode')),
-        const DataColumn(label: Text('Jalur')),
-        const DataColumn(label: Text('Hari ke')),
-        for (var w = 1; w <= 4; w++)
-          DataColumn(label: Text('Week $w'), numeric: true),
-        const DataColumn(label: Text('Misi inti')),
-        const DataColumn(label: Text('Level · XP')),
-        const DataColumn(label: Text('Koreksi admin'), numeric: true),
-        const DataColumn(label: Text('Sinkron')),
-      ],
-      rows: [
-        for (final p in people)
-          () {
-            final done = p.weeks.fold(0, (sum, w) => sum + w.coreDone);
-            final total = p.weeks.fold(0, (sum, w) => sum + w.coreTotal);
-            return DataRow(
-              cells: [
-                DataCell(Text(p.code)),
-                DataCell(Text(p.reduction ? 'Rokok/vape' : 'Wellness')),
-                DataCell(
-                  Text(p.finished ? 'Selesai' : '${p.elapsed} dari $studyDays'),
-                ),
-                for (var w = 0; w < 4; w++)
-                  DataCell(
-                    Text(
-                      w >= p.weeks.length
-                          ? '–'
-                          : '${p.weeks[w].activeDays}/${p.weeks[w].days.length}'
-                                '${p.weeks[w].complete ? '' : '*'}',
-                    ),
-                  ),
-                DataCell(
-                  Text(
-                    total == 0
-                        ? '–'
-                        : '$done/$total (${(done / total * 100).round()}%)',
-                  ),
-                ),
-                DataCell(Text('${p.source.level} · ${p.source.xp}')),
-                DataCell(Text('${p.adminItems}')),
-                DataCell(Text(_sync(p.lastSync))),
-              ],
-            );
-          }(),
-      ],
-    ),
   );
 }
 

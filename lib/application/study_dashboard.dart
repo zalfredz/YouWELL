@@ -48,6 +48,10 @@ class StudyDay {
   final usage = <String, int>{};
   final usageByAdmin = <String>{};
 
+  /// Habit Swap moments per type: tried, ended "tidak jadi" (skipped) and
+  /// "tetap memakai" (used). Synced since phase 13.
+  final swapResults = <String, ({int tried, int skipped, int used})>{};
+
   bool get hasData =>
       active ||
       usage.isNotEmpty ||
@@ -111,6 +115,25 @@ class StudyWeek {
   int get mealUnverified => _sum((d) => d.mealUnverified);
   int get swaps => _sum((d) => d.swaps);
   int get adminItems => _sum((d) => d.adminItems);
+
+  ({int tried, int skipped, int used}) swapResult(String type) {
+    var tried = 0, skipped = 0, used = 0;
+    for (final d in days) {
+      if (d.swapResults[type] case final r?) {
+        tried += r.tried;
+        skipped += r.skipped;
+        used += r.used;
+      }
+    }
+    return (tried: tried, skipped: skipped, used: used);
+  }
+
+  /// Share of moments with a chosen result that ended "tidak jadi".
+  double? skipRate(String type) {
+    final r = swapResult(type);
+    final resolved = r.skipped + r.used;
+    return resolved == 0 ? null : r.skipped / resolved;
+  }
 
   UsageWeek usage(String type) {
     final logged = days.where((d) => d.usage.containsKey(type));
@@ -255,6 +278,18 @@ class StudyParticipant {
       }
     }
     for (final row
+        in ((payload['swapResults'] ?? const []) as List).whereType<Map>()) {
+      final day = on(row['day']);
+      final type = row['type']?.toString();
+      if (day == null || !usageTypes.contains(type)) continue;
+      int count(String key) => (row[key] as num?)?.toInt() ?? 0;
+      day.swapResults[type!] = (
+        tried: count('tried'),
+        skipped: count('skipped'),
+        used: count('used'),
+      );
+    }
+    for (final row
         in ((payload['habitSwaps'] ?? const []) as List).whereType<Map>()) {
       final day = on(row['day']);
       if (day == null) continue;
@@ -342,7 +377,7 @@ class StudySummary {
 }
 
 /// One row per coded participant and reached week; matches the charts.
-const dashboardCsvColumns = [
+final dashboardCsvColumns = [
   'participant_code',
   'study_path',
   'group_locked',
@@ -371,6 +406,11 @@ const dashboardCsvColumns = [
   'vape_days_logged',
   'vape_mean_per_logged_day',
   'habit_swaps',
+  for (final type in usageTypes) ...[
+    'swap_${type}_tried',
+    'swap_${type}_skipped',
+    'swap_${type}_used',
+  ],
   'admin_items',
   'includes_admin_data',
   'synced_at',
@@ -410,6 +450,11 @@ List<JsonMap> dashboardCsvRows(Iterable<StudyParticipant> people) => [
               ?.toStringAsFixed(2),
         },
         'habit_swaps': week.swaps,
+        for (final type in usageTypes) ...{
+          'swap_${type}_tried': week.swapResult(type).tried,
+          'swap_${type}_skipped': week.swapResult(type).skipped,
+          'swap_${type}_used': week.swapResult(type).used,
+        },
         'admin_items': week.adminItems,
         'includes_admin_data': true,
         'synced_at': p.lastSync?.toIso8601String(),
@@ -456,7 +501,11 @@ String formatWeekValue(WeekRow row, WeekCell cell) {
   return '$text${row.unit}';
 }
 
-List<WeekRow> weekReport(List<StudyParticipant> people) {
+/// [products] limits the smoking/vaping rows (the Rokok or Vape view).
+List<WeekRow> weekReport(
+  List<StudyParticipant> people, {
+  List<String> products = usageTypes,
+}) {
   WeekCell cell(
     int week,
     Iterable<StudyParticipant> group,
@@ -537,7 +586,8 @@ List<WeekRow> weekReport(List<StudyParticipant> people) {
     if (reduction.isNotEmpty) ...[
       for (final (type, unit) in const [('rokok', 'batang'), ('vape', 'sesi')])
         // A product nobody logs gets no rows of dashes.
-        if (reduction.any((p) => p.types.contains(type))) ...[
+        if (products.contains(type) &&
+            reduction.any((p) => p.types.contains(type))) ...[
           WeekRow(
             group: 'Rokok/vape',
             label:
@@ -569,6 +619,23 @@ List<WeekRow> weekReport(List<StudyParticipant> people) {
             ),
           ),
         ],
+      for (final type in usageTypes)
+        if (products.contains(type) &&
+            reduction.any(
+              (p) => p.days.any((d) => d.swapResults.containsKey(type)),
+            ))
+          WeekRow(
+            group: 'Rokok/vape',
+            label:
+                'Momen Habit Swap tidak jadi ${type == 'rokok' ? 'merokok' : 'vape'}',
+            unit: '%',
+            note: 'dari momen yang hasilnya dipilih, rata-rata per peserta',
+            cells: cells(
+              reduction,
+              (p, w) =>
+                  w.skipRate(type) == null ? null : w.skipRate(type)! * 100,
+            ),
+          ),
       WeekRow(
         group: 'Rokok/vape',
         label: 'Habit Swap per peserta',
@@ -617,64 +684,6 @@ final weekReportCsvColumns = [
   'satuan',
   for (var w = 1; w <= 4; w++) ...['week_$w', 'n_week_$w', 'berjalan_week_$w'],
 ];
-
-String _fmt(double value) => value == value.roundToDouble()
-    ? value.round().toString()
-    : value.toStringAsFixed(1).replaceAll('.', ',');
-
-/// Plain sentences for a presentation, built only from the week table.
-/// They describe engagement and reported totals, never causes.
-List<String> weekHighlights(List<StudyParticipant> people, DateTime now) {
-  if (people.isEmpty) return const [];
-  final rows = weekReport(people);
-  WeekRow row(String label) => rows.firstWhere((r) => r.label == label);
-  final active = row('Peserta aktif (≥ 1 hari)');
-  final days = row('Rata-rata hari aktif');
-  final missions = row('Misi inti selesai');
-  final wellness = people.where((p) => !p.reduction).length;
-  final lines = <String>[
-    'Data per ${now.day}/${now.month}/${now.year}: ${people.length} peserta '
-        'berkode ($wellness wellness, ${people.length - wellness} rokok/vape). '
-        '${[for (var w = 0; w < 4; w++)
-          if (active.cells[w].n > 0) 'Week ${w + 1} selesai: ${active.cells[w].n} peserta'].join('; ')}.',
-  ];
-  for (var w = 0; w < 4; w++) {
-    final a = active.cells[w];
-    if (a.n == 0 || a.value == null) continue;
-    final d = days.cells[w].value, m = missions.cells[w].value;
-    lines.add(
-      'Week ${w + 1}: ${a.value!.round()} dari ${a.n} peserta aktif; '
-      'rata-rata ${d == null ? '–' : _fmt(d)} dari 7 hari aktif'
-      '${m == null ? '' : ' dan ${m.round()}% misi inti selesai'}.',
-    );
-  }
-  final done = [
-    for (var w = 0; w < 4; w++)
-      if (days.cells[w].value != null) w,
-  ];
-  if (done.length >= 2) {
-    final first = done.first, last = done.last;
-    final change = days.cells[last].value! - days.cells[first].value!;
-    lines.add(
-      'Dari Week ${first + 1} ke Week ${last + 1}, rata-rata hari aktif '
-      '${change.abs() < .05
-          ? 'tetap ${_fmt(days.cells[last].value!)} dari 7'
-          : change > 0
-          ? 'naik ${_fmt(change)}'
-          : 'turun ${_fmt(-change)}'} hari '
-      '(n berbeda per week bila ada peserta yang belum selesai).',
-    );
-  }
-  lines.addAll(usageOutcomeHighlights(usageOutcomes(people)));
-  final summary = StudySummary(people);
-  final completeness = summary.completeness;
-  lines.add(
-    'Kualitas data: ${completeness == null ? '–' : '${(completeness * 100).round()}%'} '
-    'hari berisi catatan; ${summary.adminItems} isian dipulihkan admin di '
-    '${summary.adminPeople} peserta.',
-  );
-  return lines;
-}
 
 // ---------------------------------------------------------------------------
 // Change in reported use (smoking/vaping path). Descriptive only: week 1 is
@@ -759,10 +768,56 @@ class UsageOutcome {
   }
 }
 
-List<UsageOutcome> usageOutcomes(Iterable<StudyParticipant> people) => [
+List<UsageOutcome> usageOutcomes(
+  Iterable<StudyParticipant> people, {
+  List<String> products = usageTypes,
+}) => [
   for (final p in people.where((p) => p.reduction))
-    for (final type in p.types) UsageOutcome(p, type),
+    for (final type in p.types)
+      if (products.contains(type)) UsageOutcome(p, type),
 ];
+
+/// Everyone who logs [type], per study day 1–28: the mean of the confirmed
+/// totals of those who logged that day, and how many did. Days nobody
+/// logged have no mean (an empty day is not zero).
+List<({int day, double? mean, int n})> groupDailyUsage(
+  Iterable<StudyParticipant> people,
+  String type,
+) => [
+  for (var day = 1; day <= studyDays; day++)
+    () {
+      final totals = [
+        for (final p in people)
+          if (day <= p.days.length)
+            if (p.days[day - 1].usage[type] case final total?) total,
+      ];
+      return (
+        day: day,
+        mean: totals.isEmpty
+            ? null
+            : totals.reduce((a, b) => a + b) / totals.length,
+        n: totals.length,
+      );
+    }(),
+];
+
+/// The same participants in Week 1 and their comparison week: mean of the
+/// participant means at both points, and how many pairs.
+({double? first, double? last, int n}) pairedUsage(
+  List<UsageOutcome> outcomes,
+) {
+  final pairs = [
+    for (final o in outcomes)
+      if (o.change != null) (o.first!.mean!, o.last!.mean!),
+  ];
+  if (pairs.isEmpty) return (first: null, last: null, n: 0);
+  double mean(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
+  return (
+    first: mean(pairs.map((p) => p.$1)),
+    last: mean(pairs.map((p) => p.$2)),
+    n: pairs.length,
+  );
+}
 
 /// Median of [values]; null when empty.
 double? median(Iterable<double> values) {
@@ -811,28 +866,4 @@ List<JsonMap> usageOutcomeCsvRows(List<UsageOutcome> outcomes) => [
       'kategori': o.category,
       'tren_per_week': o.slopePerWeek?.toStringAsFixed(2),
     },
-];
-
-/// One sentence per product for the key findings.
-List<String> usageOutcomeHighlights(List<UsageOutcome> outcomes) => [
-  for (final (type, label) in const [('rokok', 'Rokok'), ('vape', 'Vape')])
-    if (outcomes.where((o) => o.type == type).toList() case final list
-        when list.isNotEmpty)
-      () {
-        final counts = {
-          for (final c in usageCategories)
-            c: list.where((o) => o.category == c).length,
-        };
-        final percents = [
-          for (final o in list)
-            if (o.change?.percent case final p?) p * 100,
-        ];
-        final m = median(percents);
-        return '$label, perubahan Week 1 ke week terakhir yang lengkap '
-            '(${list.length} peserta): '
-            '${[for (final c in usageCategories)
-              if (counts[c]! > 0) '${counts[c]} ${c.toLowerCase()}'].join(', ')}'
-            '${m == null ? '' : '; median ${m > 0 ? '+' : ''}${m.round()}%'}. '
-            'Deskriptif, belum menunjukkan efektivitas.';
-      }(),
 ];

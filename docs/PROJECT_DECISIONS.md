@@ -6,21 +6,32 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 6 November 2026 — hasil Habit Swap sebagai data riset
+
+- Per hari dan per produk, aplikasi mengirim jumlah momen Habit Swap yang
+  dicoba, yang berakhir "tidak jadi", dan yang "tetap memakai"
+  (`swapResults`, tahap 13). Jam, pemicu, aktivitas pengganti, dan catatan
+  tetap di HP. Riwayat yang tersimpan di HP ikut terkirim setelah update.
+  Lembar persetujuan peserta perlu menyebutkannya.
+- Dashboard menampilkan persentase momen "tidak jadi" dari momen yang
+  hasilnya dipilih, per week dan per peserta, di menu Rokok/Vape.
+
 ## 6 November 2026 — dashboard peneliti sebagai laporan week
 
 - Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7), bukan minggu
-  kalender. Tab Analisis studi tersusun sebagai laporan: temuan utama yang
-  disusun otomatis, tabel metrik × Week 1–4 (n di setiap angka), grafik per
-  metrik, progres per peserta per week, dan rokok/vape per peserta.
-- "Cek perubahan konsumsi" membandingkan rata-rata rokok/vape Week 1 dengan
-  week selesai terakhir yang punya minimal 4 hari tercatat, per produk:
-  turun ≥ 50%, turun 20–49%, stabil (±20%), naik > 20%, atau data belum
-  cukup; ditambah hari dengan total 0, tren harian (minimal 8 hari tercatat),
-  dan median perubahan kelompok. Ini perubahan selama pemakaian, bukan uji
-  efektivitas (Week 1 sudah masa pemakaian, tanpa pembanding, laporan diri).
-- Angka kelompok hanya memakai week yang sudah selesai; week yang belum
-  selesai tertulis "berjalan". Tombol "Salin untuk slide" dan "Unduh tabel
-  week (CSV)" memakai angka yang sama dengan tabel di layar.
+  kalender. Angka kelompok hanya memakai week yang sudah selesai (n = jumlah
+  peserta); week yang belum selesai tertulis "berjalan".
+- Satu layar per menu Semua / Wellness / Rokok / Vape: 4 angka utama,
+  maksimal 3 kalimat kesimpulan, 2 grafik dengan "Cara baca", dan tabel
+  ringkas per peserta. Tabel semua metrik, perubahan konsumsi per peserta,
+  grafik harian, detail harian, dan unduhan CSV ada di "Data lengkap".
+- Rokok/Vape ditentukan dari total harian yang dicatat (pilihan produk hanya
+  di HP); peserta yang memakai keduanya ada di keduanya.
+- Perubahan rokok/vape = Week 1 dibanding week selesai terakhir dengan
+  minimal 4 hari tercatat (median per kelompok; kategori turun ≥ 50%,
+  20–49%, stabil ±20%, naik > 20%). Ini perubahan selama pemakaian, bukan
+  uji efektivitas (Week 1 sudah masa pemakaian, tanpa pembanding, laporan
+  diri).
 
 ## 4 November 2026 — Istirahat menjadi Hibernasi
 
@@ -137,7 +148,9 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 
 - Foto Community mengikuti penyimpanan dan moderasi Community sendiri. Foto
   Meal Snap hanya diunggah sementara untuk verifikasi. Rute GPS, catatan
-  bebas, jam tidur mentah, dan rincian momen Habit Swap tidak masuk snapshot
-  progres cloud. Pengecualian untuk jalur rokok/vape hanya angka total harian.
+  bebas, jam tidur mentah, dan rincian momen Habit Swap (jam, pemicu,
+  aktivitas) tidak masuk snapshot progres cloud. Pengecualian untuk jalur
+  rokok/vape hanya angka harian: total rokok/vape dan jumlah momen Habit Swap
+  yang dicoba, tidak jadi, dan tetap memakai.
 - UI memakai bahasa Indonesia yang netral dan tidak menghakimi. Hindari label
   seperti “gagal”, “kambuh”, atau “pecandu”.

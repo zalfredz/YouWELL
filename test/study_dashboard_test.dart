@@ -200,143 +200,6 @@ void main() {
     expect(smoking.value, closeTo(40 / 7, 1e-9));
     expect(smoking.n, 1);
     expect(weekReportCsvRows(rows).first.keys, weekReportCsvColumns);
-
-    final lines = weekHighlights(people, now);
-    expect(
-      lines.first,
-      contains('2 peserta berkode (0 wellness, 2 rokok/vape)'),
-    );
-    expect(lines, contains(startsWith('Week 1: 1 dari 1 peserta aktif')));
-    // Week 2 is not complete yet, so no smoking comparison is claimed.
-    expect(
-      lines.where((l) => l.startsWith('Rokok,')).single,
-      contains('2 data belum cukup'),
-    );
-    expect(lines.last, startsWith('Kualitas data:'));
-  });
-
-  testWidgets('Week report reads top to bottom and copies for slides', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1280, 5000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    String? copied;
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied = (call.arguments as Map)['text'] as String;
-        }
-        return null;
-      },
-    );
-    final (row, now) = await smoker();
-    final downloaded = <String>[];
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: StudyAnalysisView(
-              people: [ParticipantOverview.fromRow(row, now: now)!],
-              now: now,
-              onDownload: (name, csv) => downloaded.add(name),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    for (final title in [
-      'Temuan utama',
-      'Ringkasan per week',
-      'Grafik per week',
-      'Progres per peserta',
-      'Rokok/vape per peserta',
-      'Detail harian peserta',
-    ]) {
-      expect(find.text(title), findsOneWidget, reason: title);
-    }
-    expect(
-      find.textContaining('Week 1: 1 dari 1 peserta aktif'),
-      findsOneWidget,
-    );
-    expect(find.text('Week 2: -2,7 (-48%) (sementara)'), findsOneWidget);
-    expect(find.textContaining('Minggu'), findsNothing);
-
-    await tester.tap(find.text('Salin untuk slide'));
-    await tester.pumpAndSettle();
-    expect(copied, contains('Temuan utama YouWELL'));
-    expect(copied, contains('Metrik\tWeek 1\tWeek 2\tWeek 3\tWeek 4'));
-    expect(
-      copied,
-      contains('Peserta aktif (≥ 1 hari)\t1 dari 1 (n=1)\tberjalan'),
-    );
-
-    await tester.tap(find.text('Unduh tabel week (CSV)'));
-    await tester.tap(find.text('Unduh data per peserta (CSV)'));
-    expect(downloaded, [
-      'youwell-ringkasan-week.csv',
-      'youwell-dashboard-studi.csv',
-    ]);
-    await tester.tap(find.text('Tentang data'));
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Week = 7 hari sejak peserta mulai'),
-      findsWidgets,
-    );
-    await tester.tap(find.text('Tutup'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Detail harian peserta'));
-    await tester.tap(find.text('Detail harian peserta'));
-    await tester.pumpAndSettle();
-    expect(find.text('Koreksi admin: 2'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('Narrow dark layout: groups switch and nothing overflows', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 3000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final (row, now) = await smoker(studyPath: 'wellness');
-    final later = {
-      ...row,
-      'account': 'acc-2',
-      'code': 'P4',
-      'study_started': '2026-11-01',
-    };
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: StudyAnalysisView(
-                people: [
-                  ParticipantOverview.fromRow(row, now: now)!,
-                  ParticipantOverview.fromRow(later, now: now)!,
-                ],
-                now: now,
-                onDownload: (_, _) {},
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Wellness (2)'));
-    await tester.pumpAndSettle();
-    expect(find.text('Rokok/vape per peserta'), findsNothing);
-    expect(find.textContaining('1 berjalan'), findsWidgets);
-    expect(tester.takeException(), isNull);
   });
 
   group('Cek perubahan konsumsi', () {
@@ -442,15 +305,148 @@ void main() {
       expect(zero.category, 'Naik > 20%');
       expect(median([3, 1, 2]), 2);
       expect(median([4, 1, 3, 2]), 2.5);
-      expect(
-        usageOutcomeHighlights([
-          UsageOutcome(
-            smokerWith([10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, 5, 5, 5]),
-            'rokok',
-          ),
-        ]).single,
-        contains('1 turun ≥ 50%; median -50%'),
-      );
     });
+  });
+
+  test('Rokok and Vape groups: product rows, group days, pairs', () async {
+    final (row, now) = await smoker();
+    final p = StudyParticipant.from(
+      ParticipantOverview.fromRow(row, now: now)!,
+      now: now,
+    )!;
+    final rokokRows = weekReport([p], products: ['rokok']);
+    expect(rokokRows.any((r) => r.label.contains('rokok')), isTrue);
+    expect(
+      weekReport([p], products: ['vape']).any((r) => r.label.contains('rokok')),
+      isFalse,
+    );
+    final daily = groupDailyUsage([p], 'rokok');
+    expect(daily, hasLength(28));
+    expect((daily[0].mean, daily[0].n), (5.0, 1));
+    expect(daily[11].mean, isNull, reason: 'day 12 not logged: not zero');
+    expect(pairedUsage(usageOutcomes([p])).n, 0, reason: 'Week 2 running');
+  });
+
+  testWidgets('One screen: key numbers, conclusions, two explained charts, '
+      'a short table; the rest under Data lengkap', (tester) async {
+    tester.view.physicalSize = const Size(1280, 6000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    final (row, now) = await smoker();
+    final (well, _) = await smoker(studyPath: 'wellness');
+    final downloaded = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: StudyAnalysisView(
+              people: [
+                ParticipantOverview.fromRow(row, now: now)!,
+                ParticipantOverview.fromRow({
+                  ...well,
+                  'account': 'w',
+                  'code': 'P1',
+                }, now: now)!,
+              ],
+              now: now,
+              onDownload: (name, _) => downloaded.add(name),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final chip in ['Semua (2)', 'Wellness (1)', 'Rokok (1)', 'Vape (0)']) {
+      expect(find.text(chip), findsOneWidget, reason: chip);
+    }
+    for (final title in [
+      'Kesimpulan',
+      'Keaktifan per week',
+      'Misi inti selesai per week',
+      'Per peserta',
+      'Data lengkap',
+    ]) {
+      expect(find.text(title), findsOneWidget, reason: title);
+    }
+    expect(find.textContaining('Cara baca'), findsNWidgets(2));
+    expect(
+      find.textContaining('Week 1: peserta aktif rata-rata'),
+      findsOneWidget,
+    );
+    // Details stay folded away.
+    expect(find.text('Semua metrik per week'), findsNothing);
+
+    await tester.tap(find.text('Rokok (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rokok per hari, per week'), findsOneWidget);
+    expect(find.text('Perubahan rokok'), findsWidgets);
+    expect(find.textContaining('data belum cukup'), findsOneWidget);
+    expect(
+      find.text('P1'),
+      findsNothing,
+      reason: 'wellness participant hidden',
+    );
+
+    await tester.tap(find.text('Salin untuk slide'));
+    await tester.pumpAndSettle();
+    expect(copied, startsWith('YouWELL: Rokok'));
+    expect(copied, contains('Metrik\tWeek 1\tWeek 2\tWeek 3\tWeek 4'));
+
+    await tester.tap(find.text('Data lengkap'));
+    await tester.pumpAndSettle();
+    expect(find.text('Semua metrik per week'), findsOneWidget);
+    expect(find.text('Seluruh perokok'), findsOneWidget);
+    await tester.tap(find.text('Unduh tabel week (CSV)'));
+    expect(downloaded, ['youwell-ringkasan-week-rokok.csv']);
+    expect(find.text('Koreksi admin: 2'), findsOneWidget);
+
+    // Nobody logs vape: the chip cannot be chosen.
+    await tester.tap(find.text('Vape (0)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vape per hari, per week'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Narrow dark layout stays readable', (tester) async {
+    tester.view.physicalSize = const Size(390, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (row, now) = await smoker();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: StudyAnalysisView(
+                people: [ParticipantOverview.fromRow(row, now: now)!],
+                now: now,
+                onDownload: (_, _) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rokok (1)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Data lengkap'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

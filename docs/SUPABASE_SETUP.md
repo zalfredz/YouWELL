@@ -118,6 +118,11 @@ Tahap 12 (`20261104120000_study_cohort_keep.sql`) memindahkan kunci jalur
 studi ke tabel `youwell_study_cohorts`, sehingga menghapus kode P lalu
 memberikannya lagi tidak mengunci ulang jalur dari profil saat ini. Jalankan
 setelah tahap 11.
+Tahap 13 (`20261106090000_habit_swap_results.sql`) menerima jumlah momen
+Habit Swap per hari dan produk (`swapResults`: dicoba, tidak jadi, tetap
+memakai; angka saja) untuk dashboard peneliti. Jalankan setelah tahap 12 dan
+sebelum memasang build app terbaru; tanpa tahap ini server menolak sinkron
+dari build baru.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)
