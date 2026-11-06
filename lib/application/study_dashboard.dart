@@ -415,3 +415,287 @@ List<JsonMap> dashboardCsvRows(Iterable<StudyParticipant> people) => [
         'synced_at': p.lastSync?.toIso8601String(),
       },
 ];
+
+// ---------------------------------------------------------------------------
+// Week report (checkpoint presentations): a Week is 7 study days from each
+// participant's start (Week 1 = days 1–7), not a calendar week. Group
+// numbers use completed weeks only; the participants behind each number
+// are shown as n, and those still inside that week as "running".
+
+/// One number of the week table: [value] over the [n] participants whose
+/// week is complete; [running] are still inside that week.
+class WeekCell {
+  const WeekCell(this.value, this.n, this.running);
+  final double? value;
+  final int n, running;
+}
+
+/// One row of the week table. [count] rows show "value of n".
+class WeekRow {
+  const WeekRow({
+    required this.group,
+    required this.label,
+    required this.cells,
+    this.unit = '',
+    this.count = false,
+    this.note,
+  });
+  final String group, label, unit;
+  final List<WeekCell> cells;
+  final bool count;
+  final String? note;
+}
+
+String formatWeekValue(WeekRow row, WeekCell cell) {
+  final value = cell.value;
+  if (value == null) return cell.running > 0 ? 'berjalan' : '–';
+  if (row.count) return '${value.round()} dari ${cell.n}';
+  final text = value == value.roundToDouble()
+      ? value.round().toString()
+      : value.toStringAsFixed(1).replaceAll('.', ',');
+  return '$text${row.unit}';
+}
+
+List<WeekRow> weekReport(List<StudyParticipant> people) {
+  WeekCell cell(
+    int week,
+    Iterable<StudyParticipant> group,
+    num? Function(StudyParticipant p, StudyWeek w) value, {
+    bool sum = false,
+  }) {
+    final values = <num>[];
+    var running = 0;
+    for (final p in group) {
+      if (week >= p.weeks.length) continue;
+      final w = p.weeks[week];
+      if (!w.complete) {
+        running++;
+        continue;
+      }
+      if (value(p, w) case final v?) values.add(v);
+    }
+    final total = values.fold<num>(0, (a, b) => a + b);
+    return WeekCell(
+      values.isEmpty ? null : (sum ? total : total / values.length).toDouble(),
+      values.length,
+      running,
+    );
+  }
+
+  List<WeekCell> cells(
+    Iterable<StudyParticipant> group,
+    num? Function(StudyParticipant p, StudyWeek w) value, {
+    bool sum = false,
+  }) => [for (var w = 0; w < 4; w++) cell(w, group, value, sum: sum)];
+
+  final reduction = people.where((p) => p.reduction).toList();
+  return [
+    WeekRow(
+      group: 'Keterlibatan',
+      label: 'Peserta aktif (≥ 1 hari)',
+      count: true,
+      cells: cells(people, (p, w) => w.activeDays > 0 ? 1 : 0, sum: true),
+    ),
+    WeekRow(
+      group: 'Keterlibatan',
+      label: 'Rata-rata hari aktif',
+      unit: ' dari 7 hari',
+      cells: cells(people, (p, w) => w.activeDays),
+    ),
+    WeekRow(
+      group: 'Keterlibatan',
+      label: 'Misi inti selesai',
+      unit: '%',
+      note: 'rata-rata per peserta',
+      cells: cells(
+        people,
+        (p, w) => w.coreRate == null ? null : w.coreRate! * 100,
+      ),
+    ),
+    WeekRow(
+      group: 'Keterlibatan',
+      label: 'Misi inti selesai per peserta',
+      unit: ' misi',
+      cells: cells(people, (p, w) => w.coreDone),
+    ),
+    for (final MapEntry(:key, :value) in targetCategories.entries)
+      WeekRow(
+        group: 'Target harian tercapai',
+        label: value,
+        unit: ' hari',
+        note: key == 'Energy'
+            ? 'tidur s.d. 4 Nov, Hibernasi mulai 5 Nov'
+            : null,
+        cells: cells(people, (p, w) => w.targetDays(key)),
+      ),
+    WeekRow(
+      group: 'Target harian tercapai',
+      label: 'Foto makan disetujui',
+      unit: ' foto',
+      cells: cells(people, (p, w) => w.mealApproved),
+    ),
+    if (reduction.isNotEmpty) ...[
+      for (final (type, unit) in const [('rokok', 'batang'), ('vape', 'sesi')])
+        // A product nobody logs gets no rows of dashes.
+        if (reduction.any((p) => p.types.contains(type))) ...[
+          WeekRow(
+            group: 'Rokok/vape',
+            label:
+                'Peserta ${type == 'rokok' ? 'rokok' : 'vape'} dengan ≥ 4 hari tercatat',
+            count: true,
+            cells: [
+              for (var w = 0; w < 4; w++)
+                () {
+                  final users = reduction.where((p) => p.types.contains(type));
+                  final c = cell(
+                    w,
+                    users,
+                    (p, wk) => wk.usage(type).comparable ? 1 : 0,
+                    sum: true,
+                  );
+                  return c;
+                }(),
+            ],
+          ),
+          WeekRow(
+            group: 'Rokok/vape',
+            label:
+                'Rata-rata ${type == 'rokok' ? 'rokok' : 'vape'} per hari tercatat',
+            unit: ' $unit',
+            note: 'peserta dengan ≥ 4 hari tercatat',
+            cells: cells(
+              reduction.where((p) => p.types.contains(type)),
+              (p, w) => w.usage(type).comparable ? w.usage(type).mean : null,
+            ),
+          ),
+        ],
+      WeekRow(
+        group: 'Rokok/vape',
+        label: 'Habit Swap per peserta',
+        unit: ' kali',
+        cells: cells(reduction, (p, w) => w.swaps),
+      ),
+    ],
+    WeekRow(
+      group: 'Kualitas data',
+      label: 'Hari berisi data',
+      unit: '%',
+      cells: cells(
+        people,
+        (p, w) => w.days.where((d) => d.hasData).length / w.days.length * 100,
+      ),
+    ),
+    WeekRow(
+      group: 'Kualitas data',
+      label: 'Isian koreksi admin',
+      unit: ' isian',
+      note: 'jumlah',
+      cells: cells(people, (p, w) => w.adminItems, sum: true),
+    ),
+  ];
+}
+
+/// Week table rows for a spreadsheet: one row per metric, value and n per
+/// week.
+List<JsonMap> weekReportCsvRows(List<WeekRow> rows) => [
+  for (final row in rows)
+    {
+      'kelompok': row.group,
+      'metrik': row.label,
+      'satuan': row.count ? 'jumlah peserta' : row.unit.trim(),
+      for (var w = 0; w < 4; w++) ...{
+        'week_${w + 1}': row.cells[w].value?.toStringAsFixed(2),
+        'n_week_${w + 1}': row.cells[w].n,
+        'berjalan_week_${w + 1}': row.cells[w].running,
+      },
+    },
+];
+
+final weekReportCsvColumns = [
+  'kelompok',
+  'metrik',
+  'satuan',
+  for (var w = 1; w <= 4; w++) ...['week_$w', 'n_week_$w', 'berjalan_week_$w'],
+];
+
+String _fmt(double value) => value == value.roundToDouble()
+    ? value.round().toString()
+    : value.toStringAsFixed(1).replaceAll('.', ',');
+
+/// Plain sentences for a presentation, built only from the week table.
+/// They describe engagement and reported totals, never causes.
+List<String> weekHighlights(List<StudyParticipant> people, DateTime now) {
+  if (people.isEmpty) return const [];
+  final rows = weekReport(people);
+  WeekRow row(String label) => rows.firstWhere((r) => r.label == label);
+  final active = row('Peserta aktif (≥ 1 hari)');
+  final days = row('Rata-rata hari aktif');
+  final missions = row('Misi inti selesai');
+  final wellness = people.where((p) => !p.reduction).length;
+  final lines = <String>[
+    'Data per ${now.day}/${now.month}/${now.year}: ${people.length} peserta '
+        'berkode ($wellness wellness, ${people.length - wellness} rokok/vape). '
+        '${[for (var w = 0; w < 4; w++)
+          if (active.cells[w].n > 0) 'Week ${w + 1} selesai: ${active.cells[w].n} peserta'].join('; ')}.',
+  ];
+  for (var w = 0; w < 4; w++) {
+    final a = active.cells[w];
+    if (a.n == 0 || a.value == null) continue;
+    final d = days.cells[w].value, m = missions.cells[w].value;
+    lines.add(
+      'Week ${w + 1}: ${a.value!.round()} dari ${a.n} peserta aktif; '
+      'rata-rata ${d == null ? '–' : _fmt(d)} dari 7 hari aktif'
+      '${m == null ? '' : ' dan ${m.round()}% misi inti selesai'}.',
+    );
+  }
+  final done = [
+    for (var w = 0; w < 4; w++)
+      if (days.cells[w].value != null) w,
+  ];
+  if (done.length >= 2) {
+    final first = done.first, last = done.last;
+    final change = days.cells[last].value! - days.cells[first].value!;
+    lines.add(
+      'Dari Week ${first + 1} ke Week ${last + 1}, rata-rata hari aktif '
+      '${change.abs() < .05
+          ? 'tetap ${_fmt(days.cells[last].value!)} dari 7'
+          : change > 0
+          ? 'naik ${_fmt(change)}'
+          : 'turun ${_fmt(-change)}'} hari '
+      '(n berbeda per week bila ada peserta yang belum selesai).',
+    );
+  }
+  for (final (type, unit) in const [('rokok', 'batang'), ('vape', 'sesi')]) {
+    // Participants with enough days in week 1 and in a later completed week.
+    final pairs = <(double, double, int)>[];
+    for (final p in people.where(
+      (p) => p.reduction && p.types.contains(type),
+    )) {
+      final weeks = [
+        for (final w in p.weeks)
+          if (w.complete) w.usage(type),
+      ];
+      final index = weeks.lastIndexWhere((u) => u.comparable);
+      if (weeks.isEmpty || !weeks.first.comparable || index < 1) continue;
+      pairs.add((weeks.first.mean!, weeks[index].mean!, index + 1));
+    }
+    if (pairs.isEmpty) continue;
+    double mean(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
+    final before = mean(pairs.map((p) => p.$1));
+    final after = mean(pairs.map((p) => p.$2));
+    lines.add(
+      '${type == 'rokok' ? 'Rokok' : 'Vape'} (${pairs.length} peserta dengan '
+      '≥ 4 hari tercatat): rata-rata ${_fmt(before)} $unit/hari di Week 1 '
+      'dan ${_fmt(after)} $unit/hari di week terakhir yang lengkap. '
+      'Ini laporan peserta selama pemakaian, bukan perbandingan sebelum–sesudah.',
+    );
+  }
+  final summary = StudySummary(people);
+  final completeness = summary.completeness;
+  lines.add(
+    'Kualitas data: ${completeness == null ? '–' : '${(completeness * 100).round()}%'} '
+    'hari berisi catatan; ${summary.adminItems} isian dipulihkan admin di '
+    '${summary.adminPeople} peserta.',
+  );
+  return lines;
+}

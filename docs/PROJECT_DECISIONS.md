@@ -6,6 +6,16 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 6 November 2026 — dashboard peneliti sebagai laporan week
+
+- Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7), bukan minggu
+  kalender. Tab Analisis studi tersusun sebagai laporan: temuan utama yang
+  disusun otomatis, tabel metrik × Week 1–4 (n di setiap angka), grafik per
+  metrik, progres per peserta per week, dan rokok/vape per peserta.
+- Angka kelompok hanya memakai week yang sudah selesai; week yang belum
+  selesai tertulis "berjalan". Tombol "Salin untuk slide" dan "Unduh tabel
+  week (CSV)" memakai angka yang sama dengan tabel di layar.
+
 ## 4 November 2026 — Istirahat menjadi Hibernasi
 
 - Mulai 5 November level Istirahat (kunci `Energy`, kolom `tangga_istirahat`)
