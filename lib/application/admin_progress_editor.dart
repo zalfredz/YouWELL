@@ -205,6 +205,42 @@ class AdminProgressEditor {
     }
   }
 
+  /// Habit Swap results of [day] for 'rokok' or 'vape': moments tried,
+  /// ended "tidak jadi" (skipped) and "tetap memakai" (used).
+  ({int tried, int skipped, int used})? swapResult(String day, String type) {
+    final row = ((payload['swapResults'] as List?) ?? const [])
+        .whereType<Map>()
+        .where((row) => row['day'] == day && row['type'] == type)
+        .firstOrNull;
+    if (row == null) return null;
+    int count(String key) => (row[key] as num?)?.toInt() ?? 0;
+    return (
+      tried: count('tried'),
+      skipped: count('skipped'),
+      used: count('used'),
+    );
+  }
+
+  /// Restores the results of [day]; "tried" never drops below the results.
+  void setSwapResult(String day, String type, {int? skipped, int? used}) {
+    final old = swapResult(day, type);
+    final s = (skipped ?? old?.skipped ?? 0).clamp(0, 200);
+    final u = (used ?? old?.used ?? 0).clamp(0, 200);
+    final tried = s + u > (old?.tried ?? 0) ? s + u : old!.tried;
+    ((payload['swapResults'] ??= <dynamic>[]) as List)
+      ..removeWhere(
+        (row) => row is Map && row['day'] == day && row['type'] == type,
+      )
+      ..add({
+        'day': day,
+        'type': type,
+        'tried': tried,
+        'skipped': s,
+        'used': u,
+        'source': 'admin',
+      });
+  }
+
   // ---------------------------------------------------------------- levels
 
   List<String> get categories => ladderCategories(reduction: reduction);
@@ -279,6 +315,15 @@ class AdminProgressEditor {
             'from': before.swapsOn(day),
             'to': swapsOn(day),
           },
+        for (final type in const ['rokok', 'vape'])
+          if (before.swapResult(day, type) != swapResult(day, type))
+            {
+              'kind': 'swap_result',
+              'day': day,
+              'type': type,
+              'skipped': swapResult(day, type)?.skipped,
+              'used': swapResult(day, type)?.used,
+            },
       ],
     ];
   }
@@ -302,6 +347,9 @@ String describeChange(Map change) {
     'usage' =>
       '$day: ${change['type']} ${change['from'] ?? '–'} → ${change['to']}',
     'habit_swap' => '$day: Habit Swap ${change['from']} → ${change['to']}',
+    'swap_result' =>
+      '$day: Habit Swap ${change['type']}: ${change['skipped']} tidak jadi, '
+          '${change['used']} tetap memakai',
     'restore' => 'Dipulihkan dari salinan revisi ${change['from_revision']}',
     _ => change.toString(),
   };

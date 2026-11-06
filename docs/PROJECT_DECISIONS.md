@@ -15,6 +15,10 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
   Lembar persetujuan peserta perlu menyebutkannya.
 - Dashboard menampilkan persentase momen "tidak jadi" dari momen yang
   hasilnya dipilih, per week dan per peserta, di menu Rokok/Vape.
+- Admin dapat memulihkan hasil Habit Swap per hari dan produk di Overview
+  (tidak jadi / tetap memakai). Isian ini bertanda `source: admin` (tahap
+  14), menang atas hitungan di HP untuk hari itu, tercatat di log
+  intervensi, dan ditandai "(admin)" di Detail harian dashboard.
 
 ## 6 November 2026 — dashboard peneliti sebagai laporan week
 

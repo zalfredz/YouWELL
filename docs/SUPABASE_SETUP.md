@@ -123,6 +123,9 @@ Habit Swap per hari dan produk (`swapResults`: dicoba, tidak jadi, tetap
 memakai; angka saja) untuk dashboard peneliti. Jalankan setelah tahap 12 dan
 sebelum memasang build app terbaru; tanpa tahap ini server menolak sinkron
 dari build baru.
+Tahap 14 (`20261106120000_habit_swap_results_admin.sql`) menerima tanda
+`source` ('app' atau 'admin') pada `swapResults`, sehingga hasil Habit Swap
+yang dipulihkan admin di Overview bisa dibedakan. Jalankan setelah tahap 13.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)

@@ -1571,7 +1571,27 @@ class _DetailTable extends StatelessWidget {
                       DataCell(
                         Text(d.usage[type] == null ? '–' : '${d.usage[type]}'),
                       ),
-                    DataCell(Text(d.swaps == 0 ? '–' : '${d.swaps}')),
+                    DataCell(
+                      Text(() {
+                        var tried = d.swaps, skipped = 0, used = 0;
+                        for (final r in d.swapResults.values) {
+                          skipped += r.skipped;
+                          used += r.used;
+                        }
+                        final fromResults = d.swapResults.values.fold(
+                          0,
+                          (sum, r) => sum + r.tried,
+                        );
+                        if (fromResults > tried) tried = fromResults;
+                        if (tried == 0) return '–';
+                        return [
+                          '$tried dicoba',
+                          if (skipped + used > 0)
+                            '$skipped tidak jadi · $used tetap',
+                          if (d.swapResultsByAdmin.isNotEmpty) '(admin)',
+                        ].join(' · ');
+                      }()),
+                    ),
                     DataCell(
                       Text(
                         [

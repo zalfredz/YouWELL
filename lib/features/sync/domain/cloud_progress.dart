@@ -153,7 +153,7 @@ abstract final class CloudProgress {
   /// `{day, type, tried, skipped, used}` per day and product from the
   /// moments on this phone. Days this phone has no results for (a new
   /// install) keep the counts last read from the cloud, so they are never
-  /// sent back as zero.
+  /// sent back as zero; a day an admin restored keeps the admin's counts.
   static List<JsonMap> swapResults(Object? swaps, Object? cloud) {
     final counts = <String, JsonMap>{};
     for (final row in ((swaps ?? const []) as List).whereType<Map>()) {
@@ -176,7 +176,7 @@ abstract final class CloudProgress {
     }
     for (final row in ((cloud ?? const []) as List).whereType<Map>()) {
       final key = '${row['day']}|${row['type']}';
-      if (!counts.containsKey(key)) {
+      if (!counts.containsKey(key) || row['source'] == 'admin') {
         counts[key] = Map<String, dynamic>.from(row);
       }
     }

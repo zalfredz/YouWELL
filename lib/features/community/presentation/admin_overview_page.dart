@@ -339,7 +339,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         title: 'Harian',
         subtitle:
             'Buka satu hari untuk mencentang quest'
-            '${editor.reduction ? ', mengisi total rokok/vape, dan Habit Swap' : ''}. '
+            '${editor.reduction ? ', mengisi total rokok/vape, Habit Swap, dan hasilnya (tidak jadi / tetap memakai)' : ''}. '
             'Quest yang selesai di aplikasi tidak bisa diubah.',
         child: Column(
           children: [
@@ -456,6 +456,9 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         if (rokok != null) 'rokok $rokok',
         if (vape != null) 'vape $vape',
         if (editor.swapsOn(day) > 0) 'Habit Swap ${editor.swapsOn(day)}',
+        for (final type in const ['rokok', 'vape'])
+          if (editor.swapResult(day, type) case final r?)
+            '$type: ${r.skipped} tidak jadi, ${r.used} tetap',
       ],
     ].join(' · ');
     return Card(
@@ -541,6 +544,37 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                   max: 20,
                   onChanged: (v) => _edit((e) => e.setSwaps(day, v ?? 0)),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Hasil Habit Swap',
+              style: TextStyle(color: c.muted, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 10,
+              children: [
+                for (final type in const ['rokok', 'vape']) ...[
+                  _Counter(
+                    label: 'Tidak jadi $type',
+                    value: editor.swapResult(day, type)?.skipped,
+                    min: 0,
+                    max: 200,
+                    onChanged: (v) => _edit(
+                      (e) => e.setSwapResult(day, type, skipped: v ?? 0),
+                    ),
+                  ),
+                  _Counter(
+                    label: 'Tetap memakai $type',
+                    value: editor.swapResult(day, type)?.used,
+                    min: 0,
+                    max: 200,
+                    onChanged: (v) =>
+                        _edit((e) => e.setSwapResult(day, type, used: v ?? 0)),
+                  ),
+                ],
               ],
             ),
           ],

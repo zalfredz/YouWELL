@@ -346,8 +346,15 @@ async function main() {
           error => error.code === '22023',
         );
       }
+      // Phase 14: an admin restore is marked; other sources are refused.
+      const restored = { ...payload, swapResults: [{ day: '2026-11-02', type: 'vape', tried: 2, skipped: 1, used: 1, source: 'admin' }] };
+      assert.equal((await db.query('select public.save_youwell_progress($1, $2) as r', [restored, current + 1])).rows[0].r.saved, true);
+      await assert.rejects(
+        () => db.query('select public.save_youwell_progress($1, $2)', [{ ...payload, swapResults: [{ ...restored.swapResults[0], source: 'guess' }] }, current + 2]),
+        error => error.code === '22023',
+      );
     });
-    console.log('Habit Swap results passed: daily counts accepted, product names, extra keys, times and large counts refused.');
+    console.log('Habit Swap results passed: daily counts accepted, admin restores marked, product names, extra keys, times, large counts and unknown sources refused.');
     console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes, removal and re-assignment, and path switches.');
   } finally { await db.close(); }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:youwell/application/admin_progress_editor.dart';
 import 'package:youwell/application/research_overview.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/application/study_dashboard.dart';
@@ -96,5 +97,51 @@ void main() {
     final csv = dashboardCsvRows([p]).first;
     expect(csv['swap_rokok_skipped'], 3);
     expect(csv.keys, dashboardCsvColumns);
+  });
+
+  test('Admin restores results per day; they win over the phone and are '
+      'marked', () async {
+    final sim = await smokerWithMoments(['skipped']);
+    final payload = CloudProgress.project(sim.controller.export());
+    final editor = AdminProgressEditor(payload, now: sim.now);
+    final day = editor.days.first;
+    editor
+      ..setSwapResult(day, 'rokok', skipped: 3)
+      ..setSwapResult(day, 'rokok', used: 2)
+      ..setSwapResult(day, 'vape', used: 1);
+    expect(editor.swapResult(day, 'rokok'), (tried: 5, skipped: 3, used: 2));
+    expect(
+      editor.changes.map(describeChange),
+      containsAll([
+        '$day: Habit Swap rokok: 3 tidak jadi, 2 tetap memakai',
+        '$day: Habit Swap vape: 0 tidak jadi, 1 tetap memakai',
+      ]),
+    );
+
+    // The phone still holds its own moment (1 skipped); the admin's day wins.
+    final phone = CloudProgress.apply(editor.payload, sim.controller.export());
+    final rokok = (CloudProgress.project(phone)['swapResults'] as List)
+        .firstWhere((r) => r['type'] == 'rokok');
+    expect(rokok, {
+      'day': day,
+      'type': 'rokok',
+      'tried': 5,
+      'skipped': 3,
+      'used': 2,
+      'source': 'admin',
+    });
+
+    final p = StudyParticipant.from(
+      ParticipantOverview.fromRow({
+        'account': 'a',
+        'code': 'P3',
+        'study_path': 'reduction',
+        'study_started': day,
+        'payload': editor.payload,
+      }, now: sim.now)!,
+      now: sim.now,
+    )!;
+    expect(p.days.first.swapResultsByAdmin, {'rokok', 'vape'});
+    expect(p.adminItems, greaterThanOrEqualTo(2));
   });
 }

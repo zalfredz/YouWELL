@@ -51,6 +51,7 @@ class StudyDay {
   /// Habit Swap moments per type: tried, ended "tidak jadi" (skipped) and
   /// "tetap memakai" (used). Synced since phase 13.
   final swapResults = <String, ({int tried, int skipped, int used})>{};
+  final swapResultsByAdmin = <String>{};
 
   bool get hasData =>
       active ||
@@ -288,6 +289,11 @@ class StudyParticipant {
         skipped: count('skipped'),
         used: count('used'),
       );
+      if (row['source'] == 'admin') {
+        day
+          ..swapResultsByAdmin.add(type)
+          ..adminItems += 1;
+      }
     }
     for (final row
         in ((payload['habitSwaps'] ?? const []) as List).whereType<Map>()) {
