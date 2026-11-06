@@ -665,31 +665,7 @@ List<String> weekHighlights(List<StudyParticipant> people, DateTime now) {
       '(n berbeda per week bila ada peserta yang belum selesai).',
     );
   }
-  for (final (type, unit) in const [('rokok', 'batang'), ('vape', 'sesi')]) {
-    // Participants with enough days in week 1 and in a later completed week.
-    final pairs = <(double, double, int)>[];
-    for (final p in people.where(
-      (p) => p.reduction && p.types.contains(type),
-    )) {
-      final weeks = [
-        for (final w in p.weeks)
-          if (w.complete) w.usage(type),
-      ];
-      final index = weeks.lastIndexWhere((u) => u.comparable);
-      if (weeks.isEmpty || !weeks.first.comparable || index < 1) continue;
-      pairs.add((weeks.first.mean!, weeks[index].mean!, index + 1));
-    }
-    if (pairs.isEmpty) continue;
-    double mean(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
-    final before = mean(pairs.map((p) => p.$1));
-    final after = mean(pairs.map((p) => p.$2));
-    lines.add(
-      '${type == 'rokok' ? 'Rokok' : 'Vape'} (${pairs.length} peserta dengan '
-      '≥ 4 hari tercatat): rata-rata ${_fmt(before)} $unit/hari di Week 1 '
-      'dan ${_fmt(after)} $unit/hari di week terakhir yang lengkap. '
-      'Ini laporan peserta selama pemakaian, bukan perbandingan sebelum–sesudah.',
-    );
-  }
+  lines.addAll(usageOutcomeHighlights(usageOutcomes(people)));
   final summary = StudySummary(people);
   final completeness = summary.completeness;
   lines.add(
@@ -699,3 +675,164 @@ List<String> weekHighlights(List<StudyParticipant> people, DateTime now) {
   );
   return lines;
 }
+
+// ---------------------------------------------------------------------------
+// Change in reported use (smoking/vaping path). Descriptive only: week 1 is
+// already a week of app use, there is no comparison group, and totals are
+// self-reported, so this shows change during use, not effectiveness.
+// Weeks are compared only when complete and with >= 4 logged days.
+
+/// Change categories, most reduction first.
+const usageCategories = [
+  'Turun ≥ 50%',
+  'Turun 20–49%',
+  'Stabil (±20%)',
+  'Naik > 20%',
+  'Data belum cukup',
+];
+
+class UsageOutcome {
+  UsageOutcome._(this.participant, this.type);
+
+  /// One product of one participant, from its completed weeks.
+  factory UsageOutcome(StudyParticipant participant, String type) {
+    final outcome = UsageOutcome._(participant, type);
+    final complete = [
+      for (final w in participant.weeks)
+        if (w.complete) w,
+    ];
+    if (complete.isNotEmpty) {
+      outcome.first = complete.first.usage(type);
+      outcome.firstZeroDays = complete.first.days
+          .where((d) => d.usage[type] == 0)
+          .length;
+      final index = complete.lastIndexWhere((w) => w.usage(type).comparable);
+      if (index > 0) {
+        outcome.lastWeek = complete[index].week;
+        outcome.last = complete[index].usage(type);
+        outcome.lastZeroDays = complete[index].days
+            .where((d) => d.usage[type] == 0)
+            .length;
+      }
+    }
+    // Least-squares slope over every logged day, per week.
+    final points = [
+      for (final d in participant.days)
+        if (d.usage[type] case final total?)
+          (d.number.toDouble(), total.toDouble()),
+    ];
+    outcome.loggedDays = points.length;
+    if (points.length >= 8) {
+      final mx = points.fold(0.0, (s, p) => s + p.$1) / points.length;
+      final my = points.fold(0.0, (s, p) => s + p.$2) / points.length;
+      final sxx = points.fold(0.0, (s, p) => s + (p.$1 - mx) * (p.$1 - mx));
+      final sxy = points.fold(0.0, (s, p) => s + (p.$1 - mx) * (p.$2 - my));
+      if (sxx > 0) outcome.slopePerWeek = sxy / sxx * 7;
+    }
+    return outcome;
+  }
+
+  final StudyParticipant participant;
+  final String type;
+  UsageWeek? first, last;
+  int? lastWeek;
+  int firstZeroDays = 0, lastZeroDays = 0, loggedDays = 0;
+  double? slopePerWeek;
+
+  String get unit => type == 'rokok' ? 'batang' : 'sesi';
+
+  ({double difference, double? percent})? get change =>
+      first == null || last == null ? null : usageChange(first!, last!);
+
+  String get category {
+    final c = change;
+    if (c == null) return usageCategories.last;
+    final percent = c.percent;
+    if (percent == null) {
+      // Week 1 was 0: only a rise or staying at 0 is possible.
+      return c.difference > 0 ? 'Naik > 20%' : 'Stabil (±20%)';
+    }
+    if (percent <= -.5) return 'Turun ≥ 50%';
+    if (percent <= -.2) return 'Turun 20–49%';
+    if (percent < .2) return 'Stabil (±20%)';
+    return 'Naik > 20%';
+  }
+}
+
+List<UsageOutcome> usageOutcomes(Iterable<StudyParticipant> people) => [
+  for (final p in people.where((p) => p.reduction))
+    for (final type in p.types) UsageOutcome(p, type),
+];
+
+/// Median of [values]; null when empty.
+double? median(Iterable<double> values) {
+  final sorted = [...values]..sort();
+  if (sorted.isEmpty) return null;
+  final mid = sorted.length ~/ 2;
+  return sorted.length.isOdd
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+const usageOutcomeCsvColumns = [
+  'participant_code',
+  'produk',
+  'hari_tercatat_total',
+  'week1_rata_rata',
+  'week1_hari_tercatat',
+  'week1_hari_nol',
+  'week_pembanding',
+  'pembanding_rata_rata',
+  'pembanding_hari_tercatat',
+  'pembanding_hari_nol',
+  'selisih',
+  'persen',
+  'kategori',
+  'tren_per_week',
+];
+
+List<JsonMap> usageOutcomeCsvRows(List<UsageOutcome> outcomes) => [
+  for (final o in outcomes)
+    {
+      'participant_code': o.participant.code,
+      'produk': o.type,
+      'hari_tercatat_total': o.loggedDays,
+      'week1_rata_rata': o.first?.mean?.toStringAsFixed(2),
+      'week1_hari_tercatat': o.first?.loggedDays,
+      'week1_hari_nol': o.first == null ? null : o.firstZeroDays,
+      'week_pembanding': o.lastWeek,
+      'pembanding_rata_rata': o.last?.mean?.toStringAsFixed(2),
+      'pembanding_hari_tercatat': o.last?.loggedDays,
+      'pembanding_hari_nol': o.last == null ? null : o.lastZeroDays,
+      'selisih': o.change?.difference.toStringAsFixed(2),
+      'persen': o.change?.percent == null
+          ? null
+          : (o.change!.percent! * 100).toStringAsFixed(1),
+      'kategori': o.category,
+      'tren_per_week': o.slopePerWeek?.toStringAsFixed(2),
+    },
+];
+
+/// One sentence per product for the key findings.
+List<String> usageOutcomeHighlights(List<UsageOutcome> outcomes) => [
+  for (final (type, label) in const [('rokok', 'Rokok'), ('vape', 'Vape')])
+    if (outcomes.where((o) => o.type == type).toList() case final list
+        when list.isNotEmpty)
+      () {
+        final counts = {
+          for (final c in usageCategories)
+            c: list.where((o) => o.category == c).length,
+        };
+        final percents = [
+          for (final o in list)
+            if (o.change?.percent case final p?) p * 100,
+        ];
+        final m = median(percents);
+        return '$label, perubahan Week 1 ke week terakhir yang lengkap '
+            '(${list.length} peserta): '
+            '${[for (final c in usageCategories)
+              if (counts[c]! > 0) '${counts[c]} ${c.toLowerCase()}'].join(', ')}'
+            '${m == null ? '' : '; median ${m > 0 ? '+' : ''}${m.round()}%'}. '
+            'Deskriptif, belum menunjukkan efektivitas.';
+      }(),
+];

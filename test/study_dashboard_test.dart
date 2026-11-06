@@ -208,7 +208,10 @@ void main() {
     );
     expect(lines, contains(startsWith('Week 1: 1 dari 1 peserta aktif')));
     // Week 2 is not complete yet, so no smoking comparison is claimed.
-    expect(lines.where((l) => l.startsWith('Rokok (')), isEmpty);
+    expect(
+      lines.where((l) => l.startsWith('Rokok,')).single,
+      contains('2 data belum cukup'),
+    );
     expect(lines.last, startsWith('Kualitas data:'));
   });
 
@@ -334,5 +337,120 @@ void main() {
     expect(find.text('Rokok/vape per peserta'), findsNothing);
     expect(find.textContaining('1 berjalan'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  group('Cek perubahan konsumsi', () {
+    /// A smoker with [daily] totals from day 1 (null = not logged),
+    /// [days] study days in.
+    StudyParticipant smokerWith(List<int?> daily, {int days = 15}) {
+      final now = DateTime(2026, 10, 24 + days - 1, 20);
+      final row = {
+        'account': 'a',
+        'code': 'P2',
+        'study_path': 'reduction',
+        'study_started': '2026-10-24',
+        'payload': {
+          'schemaVersion': 1,
+          'version': 3,
+          'profile': {
+            'alias': 'p2',
+            'path': 'reduction',
+            'started': '2026-10-24',
+          },
+          'days': {},
+          'capacity': {},
+          'openedDays': [],
+          'activityDays': [],
+          'workoutSessions': [],
+          'mealCheckIns': [],
+          'habitDelays': [],
+          'habitSwaps': [],
+          'usageTotals': [
+            for (final (i, total) in daily.indexed)
+              if (total != null)
+                {
+                  'day': shiftDayKey('2026-10-24', i),
+                  'type': 'rokok',
+                  'total': total,
+                  'confirmed': true,
+                },
+          ],
+        },
+      };
+      return StudyParticipant.from(
+        ParticipantOverview.fromRow(row, now: now)!,
+        now: now,
+      )!;
+    }
+
+    test('Halved use, zero days and a falling trend', () {
+      final o = UsageOutcome(
+        smokerWith([10, 10, 10, 10, 10, 10, 10, 5, 5, 4, 0, 5, 6, 0]),
+        'rokok',
+      );
+      expect(o.first!.mean, 10);
+      expect(o.lastWeek, 2);
+      expect(o.last!.mean, 25 / 7);
+      expect(o.lastZeroDays, 2);
+      expect(o.category, 'Turun ≥ 50%');
+      expect(o.slopePerWeek, isNegative);
+      expect(usageOutcomeCsvRows([o]).single.keys, usageOutcomeCsvColumns);
+    });
+
+    test('Too few logged days, or a running week, are not compared', () {
+      final sparse = UsageOutcome(
+        smokerWith([
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          5,
+          null,
+          null,
+          null,
+          5,
+          null,
+          null,
+        ]),
+        'rokok',
+      );
+      expect(sparse.category, 'Data belum cukup');
+      final running = UsageOutcome(
+        smokerWith([8, 8, 8, 8, 8, 8, 8, 4, 4, 4, 4], days: 11),
+        'rokok',
+      );
+      expect(running.lastWeek, isNull, reason: 'Week 2 is not over');
+      expect(running.category, 'Data belum cukup');
+    });
+
+    test('Bands and a zero week 1', () {
+      String band(List<int?> week2) => UsageOutcome(
+        smokerWith([10, 10, 10, 10, 10, 10, 10, ...week2]),
+        'rokok',
+      ).category;
+      expect(band([7, 7, 7, 7, 7, 7, 7]), 'Turun 20–49%');
+      expect(band([9, 9, 11, 10, 9, 10, 10]), 'Stabil (±20%)');
+      expect(band([13, 13, 13, 13, 13, 13, 13]), 'Naik > 20%');
+      final zero = UsageOutcome(
+        smokerWith([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]),
+        'rokok',
+      );
+      expect(zero.change!.percent, isNull);
+      expect(zero.category, 'Naik > 20%');
+      expect(median([3, 1, 2]), 2);
+      expect(median([4, 1, 3, 2]), 2.5);
+      expect(
+        usageOutcomeHighlights([
+          UsageOutcome(
+            smokerWith([10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, 5, 5, 5]),
+            'rokok',
+          ),
+        ]).single,
+        contains('1 turun ≥ 50%; median -50%'),
+      );
+    });
   });
 }

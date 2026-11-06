@@ -12,6 +12,12 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
   kalender. Tab Analisis studi tersusun sebagai laporan: temuan utama yang
   disusun otomatis, tabel metrik × Week 1–4 (n di setiap angka), grafik per
   metrik, progres per peserta per week, dan rokok/vape per peserta.
+- "Cek perubahan konsumsi" membandingkan rata-rata rokok/vape Week 1 dengan
+  week selesai terakhir yang punya minimal 4 hari tercatat, per produk:
+  turun ≥ 50%, turun 20–49%, stabil (±20%), naik > 20%, atau data belum
+  cukup; ditambah hari dengan total 0, tren harian (minimal 8 hari tercatat),
+  dan median perubahan kelompok. Ini perubahan selama pemakaian, bukan uji
+  efektivitas (Week 1 sudah masa pemakaian, tanpa pembanding, laporan diri).
 - Angka kelompok hanya memakai week yang sudah selesai; week yang belum
   selesai tertulis "berjalan". Tombol "Salin untuk slide" dan "Unduh tabel
   week (CSV)" memakai angka yang sama dengan tabel di layar.

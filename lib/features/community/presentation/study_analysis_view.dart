@@ -221,6 +221,19 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
         ),
         if (reduction.isNotEmpty)
           _Section(
+            title: 'Cek perubahan konsumsi',
+            subtitle:
+                'Week 1 dibanding week terakhir yang sudah selesai dan punya '
+                'minimal 4 hari tercatat. Ini perubahan selama pemakaian, '
+                'belum bukti efektivitas: Week 1 sudah masa pemakaian, tanpa '
+                'kelompok pembanding, dan angkanya laporan peserta.',
+            child: _UsageOutcomes(
+              outcomes: usageOutcomes(reduction),
+              onDownload: widget.onDownload,
+            ),
+          ),
+        if (reduction.isNotEmpty)
+          _Section(
             title: 'Rokok/vape per peserta',
             subtitle:
                 'Rata-rata per hari yang dicatat, dengan cakupan hari. '
@@ -633,6 +646,181 @@ class _WeekRowChart extends StatelessWidget {
             running: cell.value == null && cell.running > 0,
           ),
       ],
+    );
+  }
+}
+
+/// Change categories per product, the median change, and one row per
+/// participant and product.
+class _UsageOutcomes extends StatelessWidget {
+  const _UsageOutcomes({required this.outcomes, required this.onDownload});
+  final List<UsageOutcome> outcomes;
+  final void Function(String name, String csv) onDownload;
+
+  static String _week(UsageWeek? week, int zeroDays, String unit) =>
+      week?.mean == null
+      ? '–'
+      : '${_number(week!.mean!)} $unit/hari · ${week.loggedDays} hari'
+            '${zeroDays > 0 ? ' · $zeroDays hari nol' : ''}';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    if (outcomes.isEmpty) {
+      return Text(
+        'Belum ada total rokok/vape yang dicatat.',
+        style: TextStyle(color: c.muted),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (type, label) in const [
+          ('rokok', 'Rokok'),
+          ('vape', 'Vape'),
+        ])
+          if (outcomes.where((o) => o.type == type).toList() case final list
+              when list.isNotEmpty) ...[
+            Text(
+              '$label (${list.length} peserta)',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final category in usageCategories)
+                  _CountChip(
+                    count: list.where((o) => o.category == category).length,
+                    label: category,
+                  ),
+                () {
+                  final m = median([
+                    for (final o in list)
+                      if (o.change?.percent case final p?) p * 100,
+                  ]);
+                  return _CountChip(
+                    text: m == null ? '–' : '${m > 0 ? '+' : ''}${m.round()}%',
+                    label: 'Median perubahan',
+                  );
+                }(),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingTextStyle: const TextStyle(fontWeight: FontWeight.w900),
+            columnSpacing: 24,
+            columns: const [
+              DataColumn(label: Text('Kode')),
+              DataColumn(label: Text('Produk')),
+              DataColumn(label: Text('Week 1')),
+              DataColumn(label: Text('Pembanding')),
+              DataColumn(label: Text('Perubahan')),
+              DataColumn(label: Text('Kategori')),
+              DataColumn(label: Text('Tren harian')),
+            ],
+            rows: [
+              for (final o in outcomes)
+                DataRow(
+                  cells: [
+                    DataCell(Text(o.participant.code)),
+                    DataCell(Text(o.type == 'rokok' ? 'Rokok' : 'Vape')),
+                    DataCell(Text(_week(o.first, o.firstZeroDays, o.unit))),
+                    DataCell(
+                      Text(
+                        o.lastWeek == null
+                            ? '–'
+                            : 'Week ${o.lastWeek}: '
+                                  '${_week(o.last, o.lastZeroDays, o.unit)}',
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        o.change == null
+                            ? '–'
+                            : _UsageBlock._changeText(
+                                o.lastWeek! - 1,
+                                o.first!,
+                                o.last!,
+                              ),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        o.category,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        o.slopePerWeek == null
+                            ? 'perlu ≥ 8 hari tercatat'
+                            : '${o.slopePerWeek! > 0 ? '+' : ''}'
+                                  '${_number(o.slopePerWeek!)} ${o.unit}/hari '
+                                  'per week (${o.loggedDays} hari)',
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Kategori: turun ≥ 50%, turun 20–49%, stabil dalam ±20%, naik lebih '
+          'dari 20%. Hari nol = total 0 yang dikonfirmasi peserta. Tren '
+          'harian = kemiringan garis dari semua hari tercatat.',
+          style: TextStyle(color: c.muted, fontSize: 12.5),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => onDownload(
+            'youwell-perubahan-konsumsi.csv',
+            toCsv(usageOutcomeCsvColumns, usageOutcomeCsvRows(outcomes)),
+          ),
+          icon: const Icon(Icons.download_rounded, size: 18),
+          label: const Text('Unduh perubahan konsumsi (CSV)'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CountChip extends StatelessWidget {
+  const _CountChip({required this.label, this.count, this.text});
+  final String label;
+  final int? count;
+  final String? text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 120),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text ?? '${count ?? 0}',
+            style: TextStyle(
+              color: c.text,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(label, style: TextStyle(color: c.muted, fontSize: 12.5)),
+        ],
+      ),
     );
   }
 }
