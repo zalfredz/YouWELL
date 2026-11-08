@@ -30,8 +30,6 @@ class AdminOverviewPage extends StatefulWidget {
 class _AdminOverviewPageState extends State<AdminOverviewPage> {
   ResearchStore? _store;
   List<ParticipantOverview>? _people;
-  List<JsonMap> _log = const [];
-  List<JsonMap>? _history;
   String? _error, _account;
   AdminProgressEditor? _editor;
   bool _loading = false, _saving = false;
@@ -64,18 +62,11 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
     setState(() => _loading = true);
     try {
       final rows = await store.progressOverview();
-      var log = const <JsonMap>[];
-      try {
-        log = await store.interventions();
-      } catch (_) {
-        // Before phase 10 there is no log; editing reports that on save.
-      }
       if (!mounted) return;
       setState(() {
         _people = [
           for (final row in rows) ?ParticipantOverview.fromRow(row, now: _now),
         ]..sort(byParticipantCode);
-        _log = log;
         _error = null;
         final person = _person;
         _editor = person == null
@@ -100,7 +91,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       _account = person.account;
       _editor = AdminProgressEditor(person.payload, now: _now);
       _edits.clear();
-      _history = null;
       _reason.clear();
     });
   }
@@ -209,46 +199,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       _toast(error is StateError ? error.message : 'Belum tersimpan.');
     } finally {
       if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _loadHistory() async {
-    final person = _person;
-    if (person == null) return;
-    try {
-      final rows = await _store!.history(person.account);
-      if (mounted) setState(() => _history = rows);
-    } catch (error) {
-      if (mounted) {
-        setState(() => _history = const []);
-        _toast(error is StateError ? error.message : 'Riwayat belum dimuat.');
-      }
-    }
-  }
-
-  Future<void> _restore(int revision) async {
-    final person = _person;
-    final reason = _reason.text.trim();
-    if (person == null) return;
-    if (reason.length < 5) {
-      _toast('Tulis alasan intervensi dulu (minimal 5 karakter).');
-      return;
-    }
-    if (!await _confirm('Pulihkan salinan revisi $revision?', [
-      'Progres sekarang diganti salinan itu (salinan sekarang tetap '
-          'tersimpan di riwayat).',
-      'Alasan: $reason',
-    ])) {
-      return;
-    }
-    try {
-      await _store!.restoreRevision(person.account, revision, reason);
-      _reason.clear();
-      _toast('Dipulihkan. HP peserta mengambilnya saat sinkron berikutnya.');
-      _history = null;
-      await _load();
-    } catch (error) {
-      _toast(error is StateError ? error.message : 'Belum dipulihkan.');
     }
   }
 
@@ -382,7 +332,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       for (final warning in (plan['warnings'] as List).whereType<String>())
         'PERINGATAN: $warning',
       'Login dan quest tidak diubah. Data lama rokok/vape pada jendela 28 hari '
-          'diganti sesuai preview; snapshot sebelumnya masuk riwayat.',
+          'diganti sesuai preview; salinan sebelumnya tetap tersimpan di server.',
     ];
     if (!await _confirm('Terapkan koreksi UAT ke enam peserta?', summary)) {
       return;
@@ -439,7 +389,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         savedCount++;
       }
       _toast(
-        'Koreksi tersimpan untuk $savedCount peserta. Riwayat dan log admin diperbarui.',
+        'Koreksi tersimpan untuk $savedCount peserta sebagai intervensi admin.',
       );
       await _load();
     } catch (error) {
@@ -699,45 +649,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
           ],
         ),
       ),
-      const SizedBox(height: 20),
-      _Section(title: 'Log intervensi', child: _logView(context, person)),
-      ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        title: const Text(
-          'Salinan sebelumnya',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        subtitle: Text(
-          'Server menyimpan 60 salinan terakhir sejak migration tahap 10. '
-          'Pakai ini jika progres tertimpa dari HP.',
-          style: TextStyle(color: c.muted, fontSize: 12.5),
-        ),
-        onExpansionChanged: (open) {
-          if (open && _history == null) _loadHistory();
-        },
-        children: [
-          if (_history == null)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(),
-            )
-          else if (_history!.isEmpty)
-            const ListTile(title: Text('Belum ada salinan sebelumnya.'))
-          else
-            for (final row in _history!)
-              ListTile(
-                title: Text(
-                  'Revisi ${row['revision']} · ${row['quests_done']} quest '
-                  'selesai · ${row['days']} hari',
-                ),
-                subtitle: Text(_date(row['saved_at'])),
-                trailing: TextButton(
-                  onPressed: () => _restore((row['revision'] as num).toInt()),
-                  child: const Text('Pulihkan'),
-                ),
-              ),
-        ],
-      ),
     ];
   }
 
@@ -882,40 +793,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       ),
     );
   }
-
-  Widget _logView(BuildContext context, ParticipantOverview person) {
-    final rows = _log.where((row) => row['account'] == person.account);
-    if (rows.isEmpty) {
-      return Text(
-        'Belum ada intervensi untuk peserta ini.',
-        style: TextStyle(color: context.colors.muted),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final row in rows)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${_date(row['created_at'])} · ${row['reason']}',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                for (final change
-                    in ((row['changes'] ?? const []) as List).whereType<Map>())
-                  Text(
-                    '• ${describeChange(change)}',
-                    style: TextStyle(color: context.colors.muted),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 const _weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -925,13 +802,6 @@ String _dayLabel(String day) {
   return date == null
       ? day
       : '${_weekdays[date.weekday - 1]} ${date.day}/${date.month}';
-}
-
-String _date(Object? value) {
-  final time = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
-  if (time == null) return '–';
-  return '${time.day}/${time.month} ${time.hour.toString().padLeft(2, '0')}:'
-      '${time.minute.toString().padLeft(2, '0')}';
 }
 
 class _Section extends StatelessWidget {

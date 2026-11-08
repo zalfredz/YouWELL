@@ -316,18 +316,16 @@ void main() {
       debounce: const Duration(hours: 1),
     );
     addTearDown(sync.dispose);
-    // This phone never synced and holds its own copy: a conflict.
-    await sync.open(CloudProgress.apply(payload, null));
-    expect(sync.hasConflict, isTrue);
-
-    // Even a request for the phone's copy (older screens) takes the cloud.
-    await sync.resolve(useCloud: false);
+    // This phone never synced and holds its own copy: the cloud wins
+    // without asking (team decision, 8 Nov 2026).
+    final opened = await sync.open(CloudProgress.apply(payload, null));
     expect(sync.hasConflict, isFalse);
     expect(cloud.snapshot!.revision, 1, reason: 'the cloud is not replaced');
     expect(
-      phoneWith(CloudProgress.project(applied!), now).ladderSteps['Body'],
+      phoneWith(CloudProgress.project(opened!), now).ladderSteps['Body'],
       3,
     );
+    expect(applied, isNull, reason: 'the app opens with it directly');
     expect(sync.recovery, isNotNull, reason: 'the phone copy is backed up');
   });
 

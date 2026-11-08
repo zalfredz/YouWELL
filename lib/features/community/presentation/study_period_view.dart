@@ -345,7 +345,7 @@ void _showDataInfo(BuildContext context) => showDialog<void>(
         'Log 28 hari mendukung evaluasi penerimaan dan pengalaman penggunaan YouWELL. '
         'Skor kuesioner, hasil UAT, dan wawancara berasal dari instrumen penelitian terpisah.\n\n'
         'Koreksi admin memulihkan catatan peserta dan selalu masuk dalam grafik serta CSV. '
-        'Riwayat koreksi tersedia pada detail peserta.\n\n'
+        'Item hasil koreksi admin ditandai pada detail peserta.\n\n'
         'Rata-rata wellness memakai minggu yang selesai. Tanda * berarti minggu berjalan. '
         'Perbandingan konsumsi memerlukan minimal 4 hari tercatat pada kedua minggu. '
         'Hari kosong tidak dianggap nol; rokok dan vape memakai satuan terpisah.\n\n'

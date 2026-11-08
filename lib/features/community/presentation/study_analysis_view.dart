@@ -551,7 +551,7 @@ void _showDataInfo(BuildContext context) => showDialog<void>(
         'Log 28 hari mendukung evaluasi penerimaan dan pengalaman penggunaan YouWELL. '
         'Skor kuesioner, hasil UAT, dan wawancara berasal dari instrumen penelitian terpisah.\n\n'
         'Koreksi admin memulihkan catatan peserta dan selalu masuk dalam grafik serta CSV. '
-        'Riwayat koreksi tersedia pada detail peserta.\n\n'
+        'Item hasil koreksi admin ditandai pada detail peserta.\n\n'
         'Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7), bukan minggu kalender. '
         'Angka kelompok memakai week yang sudah selesai; n = jumlah peserta. Tanda * '
         'berarti week itu masih berjalan. '
