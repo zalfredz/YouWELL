@@ -331,8 +331,8 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
             '${(p['daily'] as List).length} catatan konsumsi + hasil Swap',
       for (final warning in (plan['warnings'] as List).whereType<String>())
         'PERINGATAN: $warning',
-      'Login dan quest tidak diubah. Data lama rokok/vape pada jendela 28 hari '
-          'diganti sesuai preview; salinan sebelumnya tetap tersimpan di server.',
+      'Login dan quest tidak diubah. Konsumsi, hasil Swap, dan jumlah dicoba '
+          'pada jendela 28 hari diganti sesuai preview; salinan lama tersimpan di server.',
     ];
     if (!await _confirm('Terapkan koreksi UAT ke enam peserta?', summary)) {
       return;
@@ -450,10 +450,24 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
             'skipped': newSwap[key]?['skipped'],
             'used': newSwap[key]?['used'],
           },
+      for (final day in window)
+        if (_habitSwapCount(before['habitSwaps'], day) !=
+            _habitSwapCount(after['habitSwaps'], day))
+          {
+            'kind': 'habit_swap',
+            'day': day,
+            'from': _habitSwapCount(before['habitSwaps'], day),
+            'to': _habitSwapCount(after['habitSwaps'], day),
+          },
       {'kind': 'product_choice', 'to': participant['proposedProductChoice']},
     ];
     return changes;
   }
+
+  int _habitSwapCount(Object? rows, String day) => (rows as List? ?? const [])
+      .whereType<Map>()
+      .where((row) => row['day'] == day)
+      .length;
 
   @override
   Widget build(BuildContext context) {

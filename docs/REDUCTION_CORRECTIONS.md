@@ -17,7 +17,9 @@ Angka peserta disimpan di `.tools/reduction-import/` yang diabaikan Git.
   Data konsumsi/Swap hanya diisi pada tanggal login yang tercatat.
 - Selama jendela studi 28 hari, total dan hasil Swap rokok/vape lama diganti:
   P5–P7 hanya berisi rokok, P8–P10 hanya vape. Hari N+1 sampai 28 tidak
-  mendapat angka sumber baru. Data di luar jendela 28 hari dipertahankan.
+  mendapat angka sumber baru. Jumlah `habitSwaps` harian juga disetel sama
+  dengan `skipped + used`, supaya penghitung "dicoba" cocok dengan hasilnya.
+  Data di luar jendela 28 hari dipertahankan.
 - Semua 168 nilai konsumsi dan 24 total mingguan Habit Swap sumber cocok.
   Batas maksimum rokok 15 hanya aturan dataset ini, bukan batas server semua
   pengguna. Definisi sesi vape tiga menit pada sumber perlu tetap dibedakan

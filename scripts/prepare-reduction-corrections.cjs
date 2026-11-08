@@ -100,6 +100,14 @@ function prepare(source, overview, asOf) {
       ...daily.map(r => ({ day: r.day, type: r.type, tried: r.swapAttempted,
         skipped: r.swapSkipped, used: r.swapUsed, source: 'admin' })),
     ].sort((a, b) => `${a.day}:${a.type}`.localeCompare(`${b.day}:${b.type}`));
+    const existingAttempts = row.payload.habitSwaps ?? [];
+    assert.ok(Array.isArray(existingAttempts), 'Malformed habitSwaps needs repair before preview');
+    const habitSwaps = [
+      ...existingAttempts.filter(r => !studyWindow.has(r.day)),
+      ...daily.flatMap(r => Array.from({ length: r.swapAttempted }, (_, i) => ({
+        id: `admin-swap-${r.day}-${i}`, day: r.day,
+      }))),
+    ];
     const weeks = Array.from({ length: 4 }, (_, w) => {
       const days = daily.filter(d => d.sourceWeek === w + 1);
       return { week: w + 1, days: days.length,
@@ -114,6 +122,7 @@ function prepare(source, overview, asOf) {
     };
     proposedPayload.usageTotals = usageTotals;
     proposedPayload.swapResults = swapResults;
+    proposedPayload.habitSwaps = habitSwaps;
     const warnings = loginDays.length < 18
       ? [`${p.code} memiliki ${loginDays.length} hari login; ekspektasi pengguna 18–20.`]
       : [];
@@ -129,6 +138,7 @@ function prepare(source, overview, asOf) {
       proposedProductChoice: productChoice,
       proposedUsageTotals: usageTotals,
       proposedSwapResults: swapResults,
+      proposedHabitSwaps: habitSwaps,
       proposedPayload,
       // A result is not a timestamp or a login. No quest/XP/card is inferred.
       unchanged: ['profile', 'openedDays', 'adminOpenedDays', 'activityDays', 'days', 'capacity', 'XP'],
