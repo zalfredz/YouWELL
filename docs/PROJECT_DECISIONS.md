@@ -6,6 +6,20 @@ Aturan misi lebih rinci ada di [CHALLENGE_SPEC.md](CHALLENGE_SPEC.md), alur
 rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
+## 8 November 2026 — sinkron mengikuti cloud
+
+- Bila progres di HP dan di cloud sama-sama berubah (perangkat lain atau edit
+  admin), HP selalu memakai salinan cloud tanpa dialog. Salinan HP dicadangkan
+  di cache akun sebelum diganti; cloud tidak pernah ditimpa otomatis.
+- Simpan edit admin dibersihkan seperti simpan dari HP (field khusus perangkat
+  dibuang), karena snapshot lama masih bisa memuatnya.
+- Laporan week terbaru tetap tersedia sebagai **Ringkasan studi**. Perbandingan
+  minggu tunggal/gabungan, heatmap, dan tabel progres gabungan lokal tersedia
+  melalui **Analisis periode**, supaya kedua bentuk analisis tetap dapat dipakai.
+- Tahap 15 menyesuaikan format v3 lama tanpa mematikan pemeriksaan payload,
+  MFA, atau revisi. Field opsional yang belum dikenal aplikasi lama serta
+  koreksi admin dipertahankan. Hanya reset eksplisit yang menghapus progres.
+
 ## 6 November 2026 — hasil Habit Swap sebagai data riset
 
 - Per hari dan per produk, aplikasi mengirim jumlah momen Habit Swap yang

@@ -65,11 +65,12 @@ lokal. Progress reset bukan penghapusan akun Supabase.
 4. Perubahan disimpan ke cache dahulu; upload dikelompokkan dengan debounce
    dua detik. Aplikasi memeriksa versi cloud saat kembali aktif dan tiap 30
    detik di foreground. Poll hanya membaca revision kecil bila tidak berubah.
-5. Penulisan memakai expected revision. Versi yang berubah menghasilkan konflik,
-   bukan penimpaan. Retry setelah respons hilang mengenali snapshot identik
+5. Penulisan memakai expected revision. Bila cloud ikut berubah (perangkat
+   lain atau edit admin), **cloud selalu dipakai** tanpa bertanya (keputusan
+   8 Nov 2026); salinan HP dicadangkan dulu, cloud tidak pernah ditimpa. Retry setelah respons hilang mengenali snapshot identik
    sehingga tidak menambah reward/revisi dua kali.
-6. Update cloud saat aplikasi sedang dipakai tidak mengganti timer/draw yang
-   terbuka. Banner dan panel Profil meminta pengguna memilih salinan.
+6. Pilihan salinan hanya muncul bila salinan cloud hilang (misalnya akun
+   direset di server); saat itu hanya progres perangkat yang bisa dipakai.
 7. Sebelum menerapkan pilihan, aplikasi menutup route interaktif, menunggu cache
    lokal selesai, lalu memeriksa revisi lagi. Pilihan lama tidak boleh menimpa
    update baru dari perangkat lain. Resolusi cloud dapat kembali ke Home.
@@ -89,10 +90,9 @@ dipartisi; versi UAT 28 hari tetap diuji terhadap batas ini.
 Di Profil tersedia Sinkron sekarang dan status cloud. Banner ringkas muncul
 ketika pending, offline, atau konflik; tidak memakai snackbar putih.
 
-- **Gunakan cloud:** mengganti progres lokal dengan salinan cloud; catatan/file
-  lokal yang masih memiliki ID cocok tetap dipertahankan.
-- **Gunakan progres perangkat ini:** mengganti cloud dengan progres lokal,
-  hanya bila revision yang ditampilkan belum berubah.
+- Bila HP dan cloud sama-sama berubah, salinan cloud dipakai otomatis;
+  catatan/file lokal yang masih memiliki ID cocok tetap dipertahankan.
+- **Gunakan progres perangkat ini** hanya muncul bila salinan cloud tidak ada.
 - Sebelum penggantian, versi lokal dicadangkan ke cache akun. Saat menimpa
   cloud, salinan cloud sebelumnya juga dicadangkan lokal. Keduanya bisa diekspor
   dari panel Profil untuk pemulihan manual. File foto tidak masuk ekspor.
@@ -121,8 +121,8 @@ bukan rute GPS.
 4. Masuk akun sama pada browser berbeda/APK terbaru; pastikan kartu, XP, level
    dan status task sama. APK lama harus di-rebuild agar memuat kode sync ini.
 5. Buat perubahan offline, sambungkan kembali dan Sinkron sekarang.
-6. Buat perubahan berbeda pada dua perangkat; pastikan konflik muncul, dan
-   pilihan salinan memerlukan konfirmasi tanpa menggandakan XP.
+6. Buat perubahan berbeda pada dua perangkat; perangkat yang sinkron belakangan
+   mengikuti cloud tanpa dialog, dan XP tidak berlipat.
 7. Akun B tidak boleh membaca progres A; admin tidak mempunyai akses khusus
    ke progres peserta. Anonymous select/RPC harus ditolak.
 8. Foto hanya bisa dilihat di perangkat asal. Bukti metadata tetap menyelesaikan

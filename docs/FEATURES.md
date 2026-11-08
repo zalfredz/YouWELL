@@ -6,7 +6,7 @@
 | --- | --- |
 | Login (tahap 1) | Google OAuth PKCE, pemulihan sesi, logout, timeout/coba lagi; membutuhkan konfigurasi Supabase |
 | Isolasi akun | Cache per project/surface/UID, impor progres tamu eksplisit tanpa menghapus backup |
-| Sinkron progres (tahap 2) | Profil + snapshot quest/XP/reward, cache offline, expected revision, konflik eksplisit, backup sebelum penggantian; perlu migration kedua |
+| Sinkron progres (tahap 2) | Profil + snapshot quest/XP/reward, cache offline, expected revision, cloud menang saat berbeda, backup sebelum penggantian; perlu migration kedua |
 | Onboarding | Pilih arah wellness/reduction, pace, low-impact, alias, companion |
 | Home mobile | Companion hero animasi/sentuh, feedback XP, 3–5 quest, tawaran tangga |
 | Companion mobile | 5 tahap tumbuh, evolusi visual, lemari aksesori/latar, target hadiah berikutnya |

@@ -82,6 +82,48 @@ void main() {
     expect(editor.changes.where((c) => c['kind'] == 'card'), hasLength(1));
   });
 
+  test('An admin save drops device-only keys an older snapshot still has', () {
+    final payload = <String, dynamic>{
+      'schemaVersion': 1,
+      'version': 3,
+      'profile': {'alias': 'Rina', 'path': 'reduction', 'note': 'kept'},
+      'oldField': true,
+      'days': {
+        '2026-11-01': {
+          'quests': [
+            {'id': 'q1', 'Activity': 'jalan', 'title': 'Jalan'},
+          ],
+          'note': 'pribadi',
+        },
+      },
+      'usageTotals': [
+        {'day': '2026-11-01', 'type': 'vape', 'total': 3, 'confirmed': true},
+      ],
+      'swapResults': [
+        {
+          'day': '2026-11-01',
+          'type': 'vape',
+          'tried': 3,
+          'skipped': 2,
+          'used': 1,
+          'source': 'admin',
+        },
+      ],
+    };
+    final safe = CloudProgress.serverSafe(payload);
+    expect(safe.containsKey('oldField'), isFalse);
+    expect(safe['days'], {
+      '2026-11-01': {
+        'quests': [
+          {'id': 'q1', 'title': 'Jalan'},
+        ],
+      },
+    });
+    expect(safe['usageTotals'], payload['usageTotals']);
+    expect(safe['swapResults'], payload['swapResults']);
+    expect(safe['profile'], same(payload['profile']));
+  });
+
   test('Usage, Habit Swap, opened days and levels reach the phone and '
       'the research export, marked as admin', () async {
     final (payload, now) = await lapsedParticipant();

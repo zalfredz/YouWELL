@@ -4,6 +4,7 @@ import 'package:youwell/application/research_overview.dart';
 import 'package:youwell/application/study_dashboard.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
+import 'study_period_view.dart';
 
 /// "Analisis studi" in the researcher dashboard, kept to one screen: four
 /// key numbers, up to three conclusions, two charts with how to read them,
@@ -35,6 +36,7 @@ const _groups = {
 };
 
 class _StudyAnalysisViewState extends State<StudyAnalysisView> {
+  bool _byPeriod = false;
   String _group = 'all';
   String? _detail, _usageParticipant;
 
@@ -164,6 +166,28 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
+    final reportPicker = SegmentedButton<bool>(
+      segments: const [
+        ButtonSegment(value: false, label: Text('Ringkasan studi')),
+        ButtonSegment(value: true, label: Text('Analisis periode')),
+      ],
+      selected: {_byPeriod},
+      onSelectionChanged: (value) => setState(() => _byPeriod = value.single),
+    );
+    if (_byPeriod) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          reportPicker,
+          const SizedBox(height: 16),
+          StudyPeriodView(
+            people: widget.people,
+            now: widget.now,
+            onDownload: widget.onDownload,
+          ),
+        ],
+      );
+    }
     final c = context.colors;
     final people = [
       for (final person in widget.people)
@@ -210,6 +234,8 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        reportPicker,
+        const SizedBox(height: 16),
         Wrap(
           spacing: 8,
           runSpacing: 8,

@@ -6,6 +6,7 @@ import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/features/auth/presentation/account_scope.dart';
 import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
+import 'package:youwell/features/sync/domain/cloud_progress.dart';
 
 /// Admin Overview (phase 10): restores progress a participant lost, per
 /// account. Quests are ticked (XP and level follow), daily smoking/vaping
@@ -155,7 +156,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       final saved = await store.writeProgress(
         account: person.account,
         expectedRevision: person.revision,
-        payload: editor.payload,
+        payload: CloudProgress.serverSafe(editor.payload),
         reason: reason,
         changes: changes,
       );

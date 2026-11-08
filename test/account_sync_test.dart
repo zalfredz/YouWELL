@@ -89,16 +89,19 @@ Future<AccountCache> newCache([Map<String, Object> values = const {}]) async {
 }
 
 void main() {
-  test('An unreadable account snapshot is kept aside, not overwritten', () async {
-    final cache = await newCache();
-    final key = cache.keyFor('u1');
-    await cache.preferences.setString(key, '{"version": 99}');
-    expect(await cache.read('u1'), isNull);
-    expect(cache.preferences.getString('$key.unreadable'), '{"version": 99}');
-    expect(cache.preferences.getString(key), isNull);
-    expect(cache.takeRecovered('u1'), isTrue);
-    expect(cache.takeRecovered('u1'), isFalse, reason: 'reported once');
-  });
+  test(
+    'An unreadable account snapshot is kept aside, not overwritten',
+    () async {
+      final cache = await newCache();
+      final key = cache.keyFor('u1');
+      await cache.preferences.setString(key, '{"version": 99}');
+      expect(await cache.read('u1'), isNull);
+      expect(cache.preferences.getString('$key.unreadable'), '{"version": 99}');
+      expect(cache.preferences.getString(key), isNull);
+      expect(cache.takeRecovered('u1'), isTrue);
+      expect(cache.takeRecovered('u1'), isFalse, reason: 'reported once');
+    },
+  );
 
   test('Declined guest progress is never offered to another account', () async {
     final cache = await newCache({'youwell.local.v3': state('tamu')});
@@ -157,6 +160,36 @@ void main() {
     expect(cloud.snapshot?.payload['themeMode'], 'light');
   });
 
+  test('When phone and cloud both changed, the cloud wins without asking; '
+      'the phone copy is backed up', () async {
+    final cache = await newCache();
+    final cloud = FakeCloud();
+    String? applied;
+    final sync = ProgressSyncController(
+      userId: 'u1',
+      cache: cache,
+      remote: cloud,
+      onApplied: (raw) => applied = raw,
+      debounce: const Duration(hours: 1),
+    );
+    addTearDown(sync.dispose);
+    await sync.open(state('satu'));
+
+    // Another device (or an admin) saves first.
+    await cloud.save(
+      CloudProgress.project(state('satu', theme: 'dark')),
+      expectedRevision: 1,
+    );
+    await sync.write(state('satu', theme: 'light'));
+    await sync.syncNow();
+
+    expect(sync.hasConflict, isFalse);
+    expect(sync.stage, SyncStage.idle);
+    expect(cloud.snapshot?.revision, 2, reason: 'the cloud is not overwritten');
+    expect(jsonDecode(applied!)['themeMode'], 'dark');
+    expect(jsonDecode(sync.recovery!)['themeMode'], 'light');
+  });
+
   test('Account deletion only clears local data after the server', () async {
     final cache = await newCache();
     await cache.write('u1', state('peserta'));
@@ -185,9 +218,7 @@ void main() {
     expect(await cache.read('u1'), isNotNull);
 
     gateway.failDelete = false;
-    await auth.deleteAccount(
-      deleteLocalFiles: () async => filesDeleted = true,
-    );
+    await auth.deleteAccount(deleteLocalFiles: () async => filesDeleted = true);
     expect(gateway.deleted, isTrue);
     expect(filesDeleted, isTrue);
     expect(auth.stage, AuthStage.signedOut);

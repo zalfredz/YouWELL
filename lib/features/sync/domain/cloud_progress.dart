@@ -70,10 +70,15 @@ abstract final class CloudProgress {
       if (source.containsKey(key)) key: source[key],
   };
 
+  // The server compares keys case-insensitively.
+  static final _privateLower = {
+    for (final key in _privateKeys) key.toLowerCase(),
+  };
+
   static Object? _strip(Object? value) => switch (value) {
     Map() => {
       for (final entry in value.entries)
-        if (!_privateKeys.contains(entry.key))
+        if (!_privateLower.contains(entry.key.toString().toLowerCase()))
           entry.key.toString(): _strip(entry.value),
     },
     List() => [for (final item in value) _strip(item)],
@@ -184,6 +189,27 @@ abstract final class CloudProgress {
       (a, b) => '${a['day']}${a['type']}'.compareTo('${b['day']}${b['type']}'),
     );
   }
+
+  /// An edited cloud payload (admin Overview) cleaned like a phone save:
+  /// known top-level fields only, device-only keys removed at any depth.
+  /// Snapshots stored by older app versions can still carry such keys.
+  /// The profile is kept as is because the server requires it unchanged.
+  static JsonMap serverSafe(JsonMap payload) => {
+    for (final key in [
+      'schemaVersion',
+      'version',
+      'profile',
+      ..._shared,
+      'workoutSessions',
+      'mealCheckIns',
+      'habitDelays',
+      'habitSwaps',
+      'usageTotals',
+      'swapResults',
+    ])
+      if (payload.containsKey(key))
+        key: key == 'profile' ? payload[key] : _strip(payload[key]),
+  };
 
   static const _usageTypes = {'cigarette': 'rokok', 'vape': 'vape'};
 

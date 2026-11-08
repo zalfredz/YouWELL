@@ -448,5 +448,15 @@ void main() {
     await tester.tap(find.text('Data lengkap'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Analisis periode'));
+    await tester.tap(find.text('Analisis periode'));
+    await tester.pumpAndSettle();
+    expect(find.text('Periode analisis'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Ringkasan studi'));
+    await tester.tap(find.text('Ringkasan studi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Salin untuk slide'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

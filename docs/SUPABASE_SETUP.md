@@ -128,6 +128,14 @@ Tahap 14 (`20261106120000_habit_swap_results_admin.sql`) menerima tanda
 yang dipulihkan admin di Overview bisa dibedakan. Jalankan setelah tahap 13.
 Schema `private` tidak boleh ditambahkan ke daftar exposed schemas.
 
+Tahap 15 (`20261108120000_legacy_progress_compatibility.sql`) dijalankan
+setelah tahap 14. Adapter server menerima koleksi opsional v3 lama yang
+hilang/kosong dan representasi angka bulat yang dikenal, tanpa mematikan
+validasi data atau revisi. Koreksi admin dan `swapResults` tetap dipertahankan
+ketika HP lama mengirim data kosong. Jumlah di luar batas dan tanggal rusak
+tetap ditolak. Panduan serta alat preview koreksi peserta ada di
+`REDUCTION_CORRECTIONS.md`. Migrasi tidak dijalankan otomatis oleh deploy Render.
+
 Tabel `public.youwell_profiles` memakai RLS pemilik (`auth.uid() = user_id`)
 dan izin eksplisit. Tidak ada email/nama Google/role admin di tabel profil.
 Allowlist ada di `private.youwell_admins`; client tidak bisa membacanya atau
@@ -196,7 +204,7 @@ Setelah login, akun dengan cache kosong ditawari impor progres tamu bila ada.
 Pengguna harus memilih: gunakan progres tamu atau mulai baru. Impor tidak
 menimpa cache akun yang sudah ada, tidak menghapus salinan lama, dan hanya
 bisa diklaim satu akun/project. Dengan migration tahap 2, progres tersinkron
-otomatis; file foto/catatan pribadi tidak ikut. Konflik meminta pilihan.
+otomatis; file foto/catatan pribadi tidak ikut. Bila berbeda, cloud selalu dipakai.
 
 Pilihan "mulai baru" juga dicatat sebagai keputusan akun itu, sehingga akun
 lain di perangkat yang sama tidak pernah ditawari progres tamu orang lain.

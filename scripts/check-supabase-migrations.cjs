@@ -240,9 +240,9 @@ async function main() {
       const withUsage = { ...payload, usageTotals: [{ day: '2026-10-23', type: 'rokok', total: 4, confirmed: true }] };
       assert.equal((await db.query('select public.save_youwell_progress($1, $2) as r', [withUsage, current])).rows[0].r.saved, true);
       for (const bad of [
-        [{ day: '2026-10-23', type: 'cigarette', total: 4 }],
+        [{ day: '2026-10-23', type: 'unknown', total: 4 }],
         [{ day: '2026-10-23', type: 'rokok', total: 900 }],
-        [{ day: '2026-10-23', type: 'rokok', total: 4, time: '08:00' }],
+        [{ day: '2026-10-23', type: 'rokok', total: 4.5 }],
       ]) {
         await assert.rejects(
           () => db.query('select public.save_youwell_progress($1, $2)', [{ ...payload, usageTotals: bad }, current + 1]),
@@ -337,7 +337,7 @@ async function main() {
       assert.equal((await db.query('select public.save_youwell_progress($1, $2) as r', [ok, current])).rows[0].r.saved, true);
       for (const bad of [
         [{ day: '2026-11-01', type: 'cigarette', tried: 1, skipped: 1, used: 0 }],
-        [{ day: '2026-11-01', type: 'rokok', tried: 1, skipped: 1, used: 0, trigger: 'stress' }],
+        [{ day: '2026-11-01', type: 'rokok', tried: 1, skipped: 1, used: 0, unexpectedCount: 2 }],
         [{ day: '2026-11-01', type: 'rokok', tried: 999, skipped: 1, used: 0 }],
         [{ day: '2026-11-01 08:00', type: 'rokok', tried: 1, skipped: 1, used: 0 }],
       ]) {
@@ -356,6 +356,7 @@ async function main() {
     });
     console.log('Habit Swap results passed: daily counts accepted, admin restores marked, product names, extra keys, times, large counts and unknown sources refused.');
     console.log('Study cohort passed: empty group filled on the next assignment, then locked across code changes, removal and re-assignment, and path switches.');
+    await require('./check-progress-compatibility.cjs')({ db, asUser, owner, reader, admin });
   } finally { await db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
 import 'research_overview.dart';
@@ -141,6 +143,103 @@ class StudyWeek {
     return UsageWeek(
       logged.fold(0, (sum, d) => sum + d.usage[type]!),
       logged.length,
+    );
+  }
+}
+
+/// Weeks [from]–[to] of the study, e.g. the week-2 checkpoint (1–2).
+typedef StudyPeriod = ({int from, int to});
+
+const studyPeriods = <StudyPeriod>[
+  (from: 1, to: 2),
+  (from: 3, to: 4),
+  (from: 1, to: 4),
+  (from: 1, to: 1),
+  (from: 2, to: 2),
+  (from: 3, to: 3),
+  (from: 4, to: 4),
+];
+
+String periodLabel(StudyPeriod p) =>
+    p.from == p.to ? 'Minggu ${p.from}' : 'Minggu ${p.from}–${p.to}';
+
+/// Proposal sample (§3.4): 4 wellness, 6 smoking/vaping (3 rokok, 3 vape).
+const plannedWellness = 4, plannedReduction = 6;
+
+/// Proposal criterion 3: at least 6 of 10 participants active in week 4.
+const engagementTarget = 6, plannedParticipants = 10;
+
+/// Heatmap level of one day: 0 no data, 1 opened or logged without a core
+/// mission, 2 some core missions done, 3 every core mission done.
+int dayLevel(StudyDay day) {
+  if (day.coreTotal > 0 && day.coreDone == day.coreTotal) return 3;
+  if (day.coreDone > 0) return 2;
+  return day.hasData ? 1 : 0;
+}
+
+/// n, mean, sample SD, min and max of one value per participant.
+class Describe {
+  Describe(Iterable<num> values) : values = values.toList();
+  final List<num> values;
+
+  int get n => values.length;
+  double? get mean => n == 0 ? null : values.fold<num>(0, (a, b) => a + b) / n;
+  double? get sd {
+    final m = mean;
+    if (m == null || n < 2) return null;
+    final sum = values.fold<num>(0, (a, v) => a + (v - m) * (v - m));
+    return math.sqrt(sum / (n - 1));
+  }
+
+  num? get min => n == 0 ? null : values.reduce(math.min);
+  num? get max => n == 0 ? null : values.reduce(math.max);
+}
+
+/// One group over one period. Means use participants whose every week of
+/// the period is over (the "completed weeks only" rule); [running] counts
+/// those still inside it.
+class PeriodStats {
+  PeriodStats(Iterable<StudyParticipant> people, this.period)
+    : people = people.toList();
+  final List<StudyParticipant> people;
+  final StudyPeriod period;
+
+  List<StudyParticipant> get complete =>
+      people.where((p) => p.completed(period)).toList();
+  int get running => people
+      .where((p) => p.weeks.length >= period.from && !p.completed(period))
+      .length;
+
+  Describe _per(num Function(StudyWeek w) value) => Describe([
+    for (final p in complete)
+      p.weeksIn(period).fold<num>(0, (sum, w) => sum + value(w)),
+  ]);
+
+  Describe get activeDays => _per((w) => w.activeDays);
+  Describe get coreDone => _per((w) => w.coreDone);
+  Describe get swaps => _per((w) => w.swaps);
+  Describe get workouts => _per((w) => w.workouts);
+
+  /// Core missions done ÷ offered, pooled over completed participants.
+  double? get coreRate {
+    var done = 0, total = 0;
+    for (final p in complete) {
+      for (final w in p.weeksIn(period)) {
+        done += w.coreDone;
+        total += w.coreTotal;
+      }
+    }
+    return total == 0 ? null : done / total;
+  }
+
+  /// Active in the period's last week, among everyone who reached it;
+  /// provisional while that week is still running for someone.
+  ({int active, int reached, bool provisional}) activeInWeek(int week) {
+    final inWeek = people.where((p) => p.weeks.length >= week);
+    return (
+      active: inWeek.where((p) => p.weeks[week - 1].activeDays > 0).length,
+      reached: inWeek.length,
+      provisional: inWeek.any((p) => !p.weeks[week - 1].complete),
     );
   }
 }
@@ -338,6 +437,79 @@ class StudyParticipant {
 
   /// Week 4 is over, so its activity is final.
   bool get finished => weeks.length == 4 && weeks.last.complete;
+
+  List<StudyWeek> weeksIn(StudyPeriod period) => [
+    for (final w in weeks)
+      if (w.week >= period.from && w.week <= period.to) w,
+  ];
+
+  /// Every week of [period] is over for this participant.
+  bool completed(StudyPeriod period) =>
+      weeks.length >= period.to && weeks[period.to - 1].complete;
+
+  /// Product group from the logged totals: rokok, vape, both, or none yet.
+  String get product => switch (types) {
+    ['rokok', 'vape'] => 'keduanya',
+    [final only] => only,
+    _ => 'belum dicatat',
+  };
+}
+
+/// Descriptive statistics per path for one period, ready for a report
+/// table; numbers come from [PeriodStats], like the charts.
+const periodCsvColumns = [
+  'period',
+  'group',
+  'participants',
+  'participants_complete',
+  'participants_running',
+  'active_days_mean',
+  'active_days_sd',
+  'active_days_min',
+  'active_days_max',
+  'core_quests_done_mean',
+  'core_quests_done_sd',
+  'core_quest_completion_rate',
+  'habit_swaps_mean',
+  'active_in_last_week',
+  'reached_last_week',
+  'last_week_provisional',
+];
+
+List<JsonMap> periodCsvRows(List<StudyParticipant> people, StudyPeriod period) {
+  String? fixed(num? value) => value?.toStringAsFixed(2);
+  return [
+    for (final (group, members) in [
+      ('semua', people),
+      ('wellness', people.where((p) => !p.reduction).toList()),
+      ('rokok_vape', people.where((p) => p.reduction).toList()),
+    ])
+      () {
+        final s = PeriodStats(members, period);
+        final last = s.activeInWeek(period.to);
+        return <String, dynamic>{
+          'period': periodLabel(period),
+          'group': group,
+          'participants': members.length,
+          'participants_complete': s.complete.length,
+          'participants_running': s.running,
+          'active_days_mean': fixed(s.activeDays.mean),
+          'active_days_sd': fixed(s.activeDays.sd),
+          'active_days_min': s.activeDays.min,
+          'active_days_max': s.activeDays.max,
+          'core_quests_done_mean': fixed(s.coreDone.mean),
+          'core_quests_done_sd': fixed(s.coreDone.sd),
+          'core_quest_completion_rate': fixed(s.coreRate),
+          // Habit Swap exists only on the smoking/vaping path.
+          'habit_swaps_mean': group == 'rokok_vape'
+              ? fixed(s.swaps.mean)
+              : null,
+          'active_in_last_week': last.active,
+          'reached_last_week': last.reached,
+          'last_week_provisional': last.provisional,
+        };
+      }(),
+  ];
 }
 
 class StudySummary {

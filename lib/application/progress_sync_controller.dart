@@ -162,7 +162,7 @@ class ProgressSyncController extends ChangeNotifier {
           return;
         }
         if (_hasProfile) {
-          await _upload();
+          await _upload(notifyApp: !initial);
         } else {
           _base = localKey;
           _set(SyncStage.idle);
@@ -175,9 +175,7 @@ class ProgressSyncController extends ChangeNotifier {
               (_base == null && !_hasProfile) ||
               localKey == _base)) {
         await _adopt(cloud, notifyApp: false);
-      } else if (!initial &&
-          localKey == _base &&
-          cloud.revision > _revision) {
+      } else if (!initial && localKey == _base && cloud.revision > _revision) {
         // Nothing changed here since the last sync and the cloud is newer,
         // e.g. an admin restored progress: take it without asking.
         await _adopt(cloud, notifyApp: true);
@@ -187,18 +185,19 @@ class ProgressSyncController extends ChangeNotifier {
         // progress; the local copy is kept as a backup by _adopt.
         await _adopt(cloud, notifyApp: true);
       } else if (_revision == cloud.revision && _base == cloudKey) {
-        await _upload();
+        await _upload(notifyApp: !initial);
       } else if (cloudKey == _sent) {
         // Our own upload committed but its reply was lost: not a conflict.
         await _ack(cloud);
         if (pending) {
-          await _upload();
+          await _upload(notifyApp: !initial);
         } else {
           _set(SyncStage.idle);
         }
       } else {
-        // Runtime pulls never replace a running timer or an open draw dialog.
-        _conflict(cloud);
+        // Team decision: when this phone and the cloud both changed, the
+        // cloud wins without asking. The phone's copy is kept as a backup.
+        await _adopt(cloud, notifyApp: !initial);
       }
     } catch (error) {
       errorDetail = _describe(error);
@@ -217,7 +216,7 @@ class ProgressSyncController extends ChangeNotifier {
     }
   }
 
-  Future<void> _upload() async {
+  Future<void> _upload({bool notifyApp = true}) async {
     final raw = _raw;
     if (raw == null || _disposed) return;
     final payload = CloudProgress.project(raw);
@@ -228,7 +227,12 @@ class ProgressSyncController extends ChangeNotifier {
         .timeout(timeout);
     if (_disposed) return;
     if (!result.saved) {
-      _conflict(result.snapshot);
+      // The cloud changed meanwhile: follow it (see _exchange).
+      if (result.snapshot case final cloud?) {
+        await _adopt(cloud, notifyApp: notifyApp);
+      } else {
+        _conflict(null);
+      }
       return;
     }
     if (result.snapshot == null) {
@@ -271,8 +275,7 @@ class ProgressSyncController extends ChangeNotifier {
       if (useCloud) {
         if (current == null) {
           _conflict(null);
-          error =
-              'Salinan cloud tidak tersedia. Pilih progres perangkat ini.';
+          error = 'Salinan cloud tidak tersedia. Pilih progres perangkat ini.';
           _notify();
           return;
         }
