@@ -298,6 +298,141 @@ void main() {
     expect(find.textContaining('dicentang'), findsWidgets);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  test('A conflict always continues from the cloud copy', () async {
+    final (payload, now) = await lapsedParticipant();
+    final cache = await newCache();
+    final cloud = FakeCloud();
+    await cloud.save(
+      (AdminProgressEditor(payload, now: now)..setStep('Body', 3)).payload,
+      expectedRevision: 0,
+    );
+    String? applied;
+    final sync = ProgressSyncController(
+      userId: 'u1',
+      cache: cache,
+      remote: cloud,
+      onApplied: (raw) => applied = raw,
+      debounce: const Duration(hours: 1),
+    );
+    addTearDown(sync.dispose);
+    // This phone never synced and holds its own copy: a conflict.
+    await sync.open(CloudProgress.apply(payload, null));
+    expect(sync.hasConflict, isTrue);
+
+    // Even a request for the phone's copy (older screens) takes the cloud.
+    await sync.resolve(useCloud: false);
+    expect(sync.hasConflict, isFalse);
+    expect(cloud.snapshot!.revision, 1, reason: 'the cloud is not replaced');
+    expect(
+      phoneWith(CloudProgress.project(applied!), now).ladderSteps['Body'],
+      3,
+    );
+    expect(sync.recovery, isNotNull, reason: 'the phone copy is backed up');
+  });
+
+  test('A quest finished in an older version that no longer counts can be '
+      'ticked by the admin, and unticked back', () async {
+    final (payload, now) = await lapsedParticipant();
+    final day1 = AdminProgressEditor(payload, now: now).days.last;
+    final task = ((payload['days'] as Map)[day1]['quests'] as List)
+        .whereType<Map>()
+        .firstWhere((t) => t['status'] == 'completed');
+    task['validationInvalidated'] = true;
+    final before = ParticipantOverview.fromRow({'payload': payload}, now: now)!;
+
+    final editor = AdminProgressEditor(payload, now: now);
+    final old = editor.questsOn(day1).firstWhere((t) => t['id'] == task['id']);
+    expect(AdminProgressEditor.doneByApp(old), isFalse);
+    expect(AdminProgressEditor.invalidByApp(old), isTrue);
+    editor.setQuestDone(day1, task['id'].toString(), true);
+    expect(editor.changes.map(describeChange), [
+      '$day1: "${task['title']}" dicentang',
+    ]);
+    final after = ParticipantOverview.fromRow({
+      'payload': editor.payload,
+    }, now: now)!;
+    expect(after.questsDone, before.questsDone + 1);
+
+    // The phone keeps the admin's tick instead of re-checking evidence.
+    final phone = CloudProgress.project(
+      phoneWith(editor.payload, now).export(),
+    );
+    final kept = ((phone['days'] as Map)[day1]['quests'] as List)
+        .whereType<Map>()
+        .firstWhere((t) => t['id'] == task['id']);
+    expect(kept['validationInvalidated'], isFalse);
+    expect(kept['adminCompleted'], isTrue);
+
+    editor.setQuestDone(day1, task['id'].toString(), false);
+    expect(editor.changed, isFalse, reason: 'back to the app record');
+  });
+
+  testWidgets('Overview: a save after the phone synced applies the same '
+      'edits to the newest copy', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (payload, now) = await lapsedParticipant();
+    final store = FakeResearch([
+      {
+        'account': 'acc-1',
+        'code': 'P3',
+        'alias': 'daunpagi',
+        'revision': 4,
+        'payload': payload,
+      },
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AdminOverviewPage(store: store, now: now),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('P3 · daunpagi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Hari 1 ·'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find
+          .byWidgetPredicate(
+            (w) =>
+                w is CheckboxListTile &&
+                w.value == false &&
+                w.onChanged != null,
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    // Meanwhile the phone syncs: a newer revision on the server.
+    final synced = jsonDecode(jsonEncode(payload)) as JsonMap;
+    (synced['openedDays'] as List).add('2026-10-26');
+    store.rows[0] = {...store.rows[0], 'revision': 5, 'payload': synced};
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Alasan intervensi'),
+      'Data hilang setelah install ulang',
+    );
+    await tester.tap(find.text('Simpan intervensi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Simpan'));
+    await tester.pumpAndSettle();
+
+    expect(store.writes, hasLength(1));
+    expect(store.rows[0]['revision'], 6);
+    final saved = store.rows[0]['payload'] as JsonMap;
+    expect(saved['openedDays'], contains('2026-10-26'), reason: 'phone kept');
+    final quests = ((saved['days'] as Map).values.expand(
+      (d) => (d as Map)['quests'] as List? ?? const [],
+    )).whereType<Map>();
+    expect(quests.where((t) => t['adminCompleted'] == true), hasLength(1));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 String phoneWithEmpty() => WellnessController().export();

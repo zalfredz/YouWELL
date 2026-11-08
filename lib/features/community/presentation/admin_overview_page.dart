@@ -79,6 +79,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         _editor = person == null
             ? null
             : AdminProgressEditor(person.payload, now: _now);
+        _edits.clear();
       });
     } catch (_) {
       if (mounted) {
@@ -96,13 +97,20 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
     setState(() {
       _account = person.account;
       _editor = AdminProgressEditor(person.payload, now: _now);
+      _edits.clear();
       _history = null;
       _reason.clear();
     });
   }
 
-  void _edit(void Function(AdminProgressEditor editor) change) =>
-      setState(() => change(_editor!));
+  /// The admin's edits since loading, replayed onto a newer snapshot when
+  /// the participant's phone synced before the save.
+  final _edits = <void Function(AdminProgressEditor editor)>[];
+
+  void _edit(void Function(AdminProgressEditor editor) change) => setState(() {
+    change(_editor!);
+    _edits.add(change);
+  });
 
   void _toast(String message) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -153,21 +161,48 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
     }
     setState(() => _saving = true);
     try {
-      final saved = await store.writeProgress(
-        account: person.account,
-        expectedRevision: person.revision,
-        payload: CloudProgress.serverSafe(editor.payload),
-        reason: reason,
-        changes: changes,
-      );
+      var (revision, latest, saved) = (person.revision, editor, false);
+      // The phone may sync between loading and saving (a newer revision):
+      // apply the same edits to the newest snapshot instead of failing.
+      for (var attempt = 0; attempt < 3 && !saved; attempt++) {
+        if (attempt > 0) {
+          final fresh = [
+            for (final row in await store.progressOverview())
+              ?ParticipantOverview.fromRow(row, now: _now),
+          ].where((p) => p.account == person.account).firstOrNull;
+          if (fresh == null) break;
+          revision = fresh.revision;
+          latest = AdminProgressEditor(fresh.payload, now: _now);
+          for (final change in _edits) {
+            change(latest);
+          }
+          if (!latest.changed) {
+            saved = true; // The phone already holds every edit.
+            break;
+          }
+        }
+        saved = await store.writeProgress(
+          account: person.account,
+          expectedRevision: revision,
+          payload: CloudProgress.serverSafe(latest.payload),
+          reason: reason,
+          changes: latest.changes,
+        );
+      }
       _toast(
         saved
             ? 'Tersimpan. HP peserta mengambilnya saat sinkron berikutnya.'
-            : 'Peserta baru saja sinkron. Data dimuat ulang; ulangi '
-                  'perubahannya.',
+            : 'Peserta sedang aktif sinkron. Perubahanmu tetap ada; coba '
+                  'simpan lagi sebentar lagi.',
       );
       if (saved) _reason.clear();
+      final pending = saved
+          ? const <void Function(AdminProgressEditor)>[]
+          : [..._edits];
       await _load();
+      if (mounted && pending.isNotEmpty && _editor != null) {
+        pending.forEach(_edit);
+      }
     } catch (error) {
       _toast(error is StateError ? error.message : 'Belum tersimpan.');
     } finally {
@@ -386,12 +421,13 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                 TextButton(
                   onPressed: changes.isEmpty
                       ? null
-                      : () => setState(
-                          () => _editor = AdminProgressEditor(
+                      : () => setState(() {
+                          _editor = AdminProgressEditor(
                             person.payload,
                             now: _now,
-                          ),
-                        ),
+                          );
+                          _edits.clear();
+                        }),
                   child: const Text('Batalkan perubahan'),
                 ),
               ],
@@ -499,7 +535,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              value: task['status'] == 'completed',
+              value: AdminProgressEditor.isDone(task),
               onChanged: AdminProgressEditor.doneByApp(task)
                   ? null
                   : (value) => _edit(
@@ -511,8 +547,12 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                   '${task['xp'] ?? 15} XP',
                   if (AdminProgressEditor.doneByApp(task))
                     'selesai di aplikasi'
+                  else if (task['adminRevalidated'] == true)
+                    'versi lama, disahkan admin'
                   else if (task['adminCompleted'] == true)
-                    'dicentang admin',
+                    'dicentang admin'
+                  else if (AdminProgressEditor.invalidByApp(task))
+                    'selesai di versi lama, belum dihitung',
                 ].join(' · '),
               ),
             ),

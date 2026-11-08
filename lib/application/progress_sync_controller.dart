@@ -117,7 +117,7 @@ class ProgressSyncController extends ChangeNotifier {
     _missingConflict = value == null;
     _set(
       SyncStage.conflict,
-      'Ada perbedaan progres lokal dan cloud. Pilih salinan yang ingin dilanjutkan; tidak digabung otomatis.',
+      'Ada perbedaan progres HP dan cloud. Progres dilanjutkan dari cloud; salinan HP disimpan sebagai cadangan.',
     );
   }
 
@@ -272,23 +272,18 @@ class ProgressSyncController extends ChangeNotifier {
         _conflict(current);
         return;
       }
-      if (useCloud) {
-        if (current == null) {
-          _conflict(null);
-          error = 'Salinan cloud tidak tersedia. Pilih progres perangkat ini.';
-          _notify();
-          return;
-        }
+      // The cloud copy always wins; this phone's copy is only uploaded when
+      // the account has none.
+      if (current != null) {
         await _adopt(current, notifyApp: true);
+      } else if (useCloud) {
+        _conflict(null);
+        error = 'Salinan cloud tidak tersedia. Simpan progres HP ini ke cloud.';
+        _notify();
+        return;
       } else {
         if (_raw != null) await cache.backup(userId, _raw!);
-        if (current != null) {
-          await cache.backupCloud(
-            userId,
-            CloudProgress.apply(current.payload, null),
-          );
-        }
-        _revision = current?.revision ?? 0;
+        _revision = 0;
         await _upload();
         if (stage == SyncStage.idle) conflict = null;
       }

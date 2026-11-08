@@ -101,18 +101,29 @@ class ProgressSyncPanel extends StatelessWidget {
                 ),
                 _SnapshotLine(label: 'Cloud', payload: sync.conflict?.payload),
                 const SizedBox(height: 8),
-                const Text('Pilih salinan yang mau dilanjutkan.'),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: sync.conflict == null
-                      ? null
-                      : () => _confirm(context, useCloud: true),
-                  child: const Text('Gunakan cloud'),
-                ),
-                OutlinedButton(
-                  onPressed: () => _confirm(context, useCloud: false),
-                  child: const Text('Gunakan progres perangkat ini'),
-                ),
+                // Cloud is the source of truth (admin restores live there).
+                // Only an account with no cloud copy at all keeps this phone's.
+                if (sync.conflict != null) ...[
+                  const Text(
+                    'Progres dilanjutkan dari cloud. Salinan di HP ini '
+                    'disimpan sebagai cadangan.',
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: () => _confirm(context, useCloud: true),
+                    child: const Text('Gunakan progres cloud'),
+                  ),
+                ] else ...[
+                  const Text(
+                    'Akun ini belum punya salinan di cloud. Progres HP ini '
+                    'akan menjadi salinan cloud.',
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: () => _confirm(context, useCloud: false),
+                    child: const Text('Simpan progres HP ini ke cloud'),
+                  ),
+                ],
               ] else
                 FilledButton.icon(
                   onPressed: sync.stage == SyncStage.syncing
@@ -135,13 +146,13 @@ class ProgressSyncPanel extends StatelessWidget {
         title: Text(
           useCloud
               ? 'Lanjutkan progres cloud?'
-              : 'Ganti cloud dengan progres perangkat ini?',
+              : 'Simpan progres HP ini ke cloud?',
         ),
         content: SingleChildScrollView(
           child: Text(
             useCloud
                 ? 'Quest dan progres pada perangkat ini akan diganti dengan salinan cloud. Catatan/foto lokal yang masih cocok tetap di perangkat. Salinan pemulihan disimpan lokal.'
-                : 'Salinan cloud diganti dengan progres perangkat ini. Perubahan berbeda dari perangkat lain tidak digabung. Perangkat lain akan diminta memilih jika memiliki perubahan sendiri.',
+                : 'Akun ini belum punya salinan cloud, jadi progres HP ini yang dipakai.',
           ),
         ),
         actions: [

@@ -19,6 +19,11 @@ rokok/vape di [REDUCTION_UAT.md](REDUCTION_UAT.md), dan setup server di
 - Tahap 15 menyesuaikan format v3 lama tanpa mematikan pemeriksaan payload,
   MFA, atau revisi. Field opsional yang belum dikenal aplikasi lama serta
   koreksi admin dipertahankan. Hanya reset eksplisit yang menghapus progres.
+- Quest yang selesai di versi aplikasi lama tetapi buktinya tidak lagi dihitung
+  dapat dicentang admin di Overview (ditandai `adminRevalidated`). Membatalkan
+  centang mengembalikan catatan aplikasi seperti semula.
+- Jika HP peserta sinkron saat admin sedang mengedit, perubahan admin diterapkan
+  ulang ke salinan terbaru sebelum disimpan, bukan dibuang.
 
 ## 6 November 2026 — hasil Habit Swap sebagai data riset
 

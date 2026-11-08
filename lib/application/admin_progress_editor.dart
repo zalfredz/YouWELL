@@ -107,20 +107,28 @@ class AdminProgressEditor {
   }
 
   /// Ticks or unticks a quest. Quests the app already completed stay.
+  /// A quest finished in an older app version whose evidence no longer
+  /// counts (`validationInvalidated`) can be ticked; unticking it puts the
+  /// app's record back as it was.
   void setQuestDone(String day, String id, bool done) {
     final quests = (_days[day]?['quests'] as List?)?.whereType<Map>();
-    final task = quests?.where((task) => task['id'] == id).firstOrNull;
-    if (task == null) return;
-    final byApp =
-        task['status'] == 'completed' && task['adminCompleted'] != true;
-    if (byApp) return;
+    final task = quests
+        ?.where((task) => task['id']?.toString() == id)
+        .firstOrNull;
+    if (task == null || doneByApp(task) || isDone(task) == done) return;
     if (done) {
+      if (task['status'] == 'completed') task['adminRevalidated'] = true;
       task
         ..['status'] = 'completed'
         ..['done'] = true
         ..['adminCompleted'] = true
         ..['validationInvalidated'] = false
         ..remove('partial');
+    } else if (task['adminRevalidated'] == true) {
+      task
+        ..['validationInvalidated'] = true
+        ..remove('adminCompleted')
+        ..remove('adminRevalidated');
     } else {
       task
         ..['status'] = 'committed'
@@ -129,8 +137,19 @@ class AdminProgressEditor {
     }
   }
 
+  /// Counts as finished: completed, and its evidence still holds.
+  static bool isDone(Map task) =>
+      task['status'] == 'completed' && task['validationInvalidated'] != true;
+
   static bool doneByApp(Map task) =>
-      task['status'] == 'completed' && task['adminCompleted'] != true;
+      isDone(task) && task['adminCompleted'] != true;
+
+  /// Finished in the app (often an older version) but its evidence does not
+  /// count any more, so it earns nothing until an admin ticks it.
+  static bool invalidByApp(Map task) =>
+      task['status'] == 'completed' &&
+      task['validationInvalidated'] == true &&
+      task['adminCompleted'] != true;
 
   // ---------------------------------------------------------- opened days
 
@@ -288,16 +307,12 @@ class AdminProgressEditor {
           {'kind': 'opened', 'day': day, 'opened': openedOn(day)},
         if (!before.hasCard(day) && hasCard(day)) {'kind': 'card', 'day': day},
         for (final task in questsOn(day))
-          if (before
-                  .questsOn(day)
-                  .where((old) => old['id'] == task['id'])
-                  .firstOrNull?['status'] !=
-              task['status'])
+          if (_doneBefore(before, day, task) != isDone(task))
             {
               'kind': 'quest',
               'day': day,
               'title': task['title'],
-              'done': task['status'] == 'completed',
+              'done': isDone(task),
             },
         for (final type in const ['rokok', 'vape'])
           if (before.usage(day, type) != usage(day, type))
@@ -329,6 +344,14 @@ class AdminProgressEditor {
   }
 
   bool get changed => changes.isNotEmpty;
+
+  static bool _doneBefore(AdminProgressEditor before, String day, Map task) {
+    final old = before
+        .questsOn(day)
+        .where((old) => old['id'] == task['id'])
+        .firstOrNull;
+    return old != null && isDone(old);
+  }
 }
 
 /// One line per change, for the confirmation and the intervention log.
