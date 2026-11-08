@@ -33,12 +33,26 @@ class AdminProgressEditor {
   List<String> get reductionProducts {
     final choice = (payload['reductionSettings'] as Map?)?['product']
         ?.toString();
-    return switch (choice) {
+    final explicit = switch (choice) {
       'cigarette' => const ['rokok'],
       'vape' => const ['vape'],
       'both' => const ['rokok', 'vape'],
-      _ => const ['rokok', 'vape'],
+      _ => null,
     };
+    if (explicit != null) return explicit;
+    // Product choice is device-private and older UAT snapshots may not have
+    // synced it. Once research totals exist, infer the menu from their types.
+    final recorded = <String>{
+      for (final row in _usage.whereType<Map>())
+        if (const ['rokok', 'vape'].contains(row['type']))
+          row['type'] as String,
+      for (final row
+          in ((payload['swapResults'] ?? const []) as List).whereType<Map>())
+        if (const ['rokok', 'vape'].contains(row['type']))
+          row['type'] as String,
+    };
+    if (recorded.length == 1) return [recorded.single];
+    return const ['rokok', 'vape'];
   }
 
   bool get _lowImpact => _profile['lowImpact'] == true;
