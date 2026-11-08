@@ -27,6 +27,20 @@ class AdminProgressEditor {
 
   Map get _profile => (payload['profile'] as Map?) ?? const {};
   bool get reduction => _profile['path'] == 'reduction';
+
+  /// Products the participant chose at setup. Keep both visible for legacy
+  /// accounts with no saved choice so an admin can still repair their data.
+  List<String> get reductionProducts {
+    final choice = (payload['reductionSettings'] as Map?)?['product']
+        ?.toString();
+    return switch (choice) {
+      'cigarette' => const ['rokok'],
+      'vape' => const ['vape'],
+      'both' => const ['rokok', 'vape'],
+      _ => const ['rokok', 'vape'],
+    };
+  }
+
   bool get _lowImpact => _profile['lowImpact'] == true;
   String get started => _profile['started']?.toString() ?? today;
 
@@ -314,7 +328,7 @@ class AdminProgressEditor {
               'title': task['title'],
               'done': isDone(task),
             },
-        for (final type in const ['rokok', 'vape'])
+        for (final type in reductionProducts)
           if (before.usage(day, type) != usage(day, type))
             {
               'kind': 'usage',
@@ -330,7 +344,7 @@ class AdminProgressEditor {
             'from': before.swapsOn(day),
             'to': swapsOn(day),
           },
-        for (final type in const ['rokok', 'vape'])
+        for (final type in reductionProducts)
           if (before.swapResult(day, type) != swapResult(day, type))
             {
               'kind': 'swap_result',

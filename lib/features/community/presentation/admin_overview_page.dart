@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:youwell/application/admin_progress_editor.dart';
 import 'package:youwell/application/research_overview.dart';
@@ -250,6 +252,259 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
     }
   }
 
+  Future<void> _importCorrectionPlan() async {
+    final store = _store;
+    if (store == null || _saving) return;
+    final input = TextEditingController();
+    final raw = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Impor koreksi UAT'),
+        content: SizedBox(
+          width: 720,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Tempel seluruh isi file preview JSON. Data akan dicek '
+                'terhadap revisi terbaru sebelum disimpan.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: input,
+                minLines: 8,
+                maxLines: 16,
+                keyboardType: TextInputType.multiline,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '{ "mode": "preview-only", ... }',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, input.text),
+            child: const Text('Periksa preview'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (raw == null || raw.trim().isEmpty || !mounted) return;
+
+    late final JsonMap plan;
+    late final List<JsonMap> participants;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        throw const FormatException('Root JSON harus object.');
+      }
+      plan = Map<String, dynamic>.from(decoded);
+      if (plan['mode'] != 'preview-only' || plan['applied'] != false) {
+        throw const FormatException(
+          'File harus preview koreksi yang belum diterapkan.',
+        );
+      }
+      final rows = plan['participants'];
+      if (rows is! List) {
+        throw const FormatException('Daftar peserta tidak ada.');
+      }
+      if (plan['warnings'] is! List) {
+        throw const FormatException('Ringkasan peringatan tidak ada.');
+      }
+      participants = [
+        for (final row in rows)
+          if (row is Map) Map<String, dynamic>.from(row),
+      ];
+      const requiredCodes = {'P5', 'P6', 'P7', 'P8', 'P9', 'P10'};
+      if (participants.length != requiredCodes.length ||
+          participants.map((p) => p['code']).toSet().length !=
+              requiredCodes.length ||
+          !participants
+              .map((p) => p['code'])
+              .toSet()
+              .containsAll(requiredCodes)) {
+        throw const FormatException(
+          'Preview harus berisi P5 sampai P10 tepat satu kali.',
+        );
+      }
+      for (final p in participants) {
+        final days = p['daily'];
+        final logins = p['loginDayKeys'];
+        final payload = p['proposedPayload'];
+        final code = p['code']?.toString();
+        final expectedProduct = const {
+          'P5': 'cigarette',
+          'P6': 'cigarette',
+          'P7': 'cigarette',
+          'P8': 'vape',
+          'P9': 'vape',
+          'P10': 'vape',
+        }[code];
+        if (!RegExp(
+              r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+              caseSensitive: false,
+            ).hasMatch(p['account']?.toString() ?? '') ||
+            (p['expectedRevision'] as num?)?.toInt() == null ||
+            p['actualLoginDays'] is! int ||
+            p['actualLoginDays'] != (logins is List ? logins.length : -1) ||
+            days is! List ||
+            days.length != p['actualLoginDays'] ||
+            payload is! Map ||
+            (payload['profile'] is! Map) ||
+            (payload['profile'] as Map)['path'] != 'reduction' ||
+            p['proposedProductChoice'] != expectedProduct ||
+            (p['studyWindowDays'] is! List ||
+                (p['studyWindowDays'] as List).length != 28) ||
+            p['warnings'] is! List) {
+          throw FormatException('Preview untuk ${p['code']} tidak lengkap.');
+        }
+      }
+    } catch (error) {
+      _toast(
+        error is FormatException ? error.message : 'File preview tidak valid.',
+      );
+      return;
+    }
+
+    final summary = [
+      for (final p in participants)
+        '${p['code']}: ${p['actualLoginDays']} hari · '
+            '${p['proposedProductChoice'] == 'cigarette' ? 'rokok' : 'vape'} · '
+            '${(p['daily'] as List).length} catatan konsumsi + hasil Swap',
+      for (final warning in (plan['warnings'] as List).whereType<String>())
+        'PERINGATAN: $warning',
+      'Login dan quest tidak diubah. Data lama rokok/vape pada jendela 28 hari '
+          'diganti sesuai preview; snapshot sebelumnya masuk riwayat.',
+    ];
+    if (!await _confirm('Terapkan koreksi UAT ke enam peserta?', summary)) {
+      return;
+    }
+
+    setState(() => _saving = true);
+    var savedCount = 0;
+    try {
+      // Check all six snapshots before the first write so stale plans do not
+      // partially apply just because one account changed before confirmation.
+      final latest = await store.progressOverview();
+      final byCode = <String, JsonMap>{
+        for (final row in latest)
+          if (row['code'] is String) row['code'] as String: row,
+      };
+      for (final p in participants) {
+        final current = byCode[p['code']];
+        if (current == null ||
+            current['account'] != p['account'] ||
+            (current['revision'] as num?)?.toInt() != p['expectedRevision']) {
+          throw StateError(
+            '${p['code']} berubah sejak preview. Muat ulang overview dan buat preview baru.',
+          );
+        }
+        final before = current['payload'];
+        final after = p['proposedPayload'];
+        if (before is! Map ||
+            after is! Map ||
+            jsonEncode(before['profile']) != jsonEncode(after['profile'])) {
+          throw StateError('${p['code']}: profil tidak cocok dengan preview.');
+        }
+      }
+
+      const reason =
+          'Koreksi UAT dari tabel acuan peneliti; data diisi pada '
+          'tanggal login tercatat, tanpa menambah login.';
+      for (final p in participants) {
+        final current = byCode[p['code']]!;
+        final before = Map<String, dynamic>.from(current['payload'] as Map);
+        final after = Map<String, dynamic>.from(p['proposedPayload'] as Map);
+        final changes = _correctionChanges(before, after, p);
+        final saved = await store.writeProgress(
+          account: p['account'] as String,
+          expectedRevision: (p['expectedRevision'] as num).toInt(),
+          payload: CloudProgress.serverSafe(after),
+          reason: reason,
+          changes: changes,
+        );
+        if (!saved) {
+          throw StateError(
+            '${p['code']} berubah saat disimpan; berhenti setelah $savedCount peserta.',
+          );
+        }
+        savedCount++;
+      }
+      _toast(
+        'Koreksi tersimpan untuk $savedCount peserta. Riwayat dan log admin diperbarui.',
+      );
+      await _load();
+    } catch (error) {
+      final message = error is StateError
+          ? error.message
+          : 'Koreksi belum selesai.';
+      _toast(
+        savedCount == 0
+            ? message
+            : '$message Sudah tersimpan untuk $savedCount peserta; periksa Overview sebelum melanjutkan.',
+      );
+      await _load();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  List<JsonMap> _correctionChanges(
+    JsonMap before,
+    JsonMap after,
+    JsonMap participant,
+  ) {
+    final window = (participant['studyWindowDays'] as List)
+        .cast<String>()
+        .toSet();
+    Map<String, Map> indexed(Object? rows) => {
+      for (final row in (rows as List? ?? const []).whereType<Map>())
+        if (window.contains(row['day']) &&
+            ['rokok', 'vape'].contains(row['type']))
+          '${row['day']}:${row['type']}': row,
+    };
+    final oldUsage = indexed(before['usageTotals']);
+    final newUsage = indexed(after['usageTotals']);
+    final oldSwap = indexed(before['swapResults']);
+    final newSwap = indexed(after['swapResults']);
+    final changes = <JsonMap>[
+      for (final key in {...oldUsage.keys, ...newUsage.keys})
+        if (oldUsage[key]?['total'] != newUsage[key]?['total'] ||
+            oldUsage[key]?['source'] != newUsage[key]?['source'])
+          {
+            'kind': 'usage',
+            'day': (newUsage[key] ?? oldUsage[key])!['day'],
+            'type': (newUsage[key] ?? oldUsage[key])!['type'],
+            'from': oldUsage[key]?['total'],
+            'to': newUsage[key]?['total'],
+          },
+      for (final key in {...oldSwap.keys, ...newSwap.keys})
+        if (oldSwap[key]?['tried'] != newSwap[key]?['tried'] ||
+            oldSwap[key]?['skipped'] != newSwap[key]?['skipped'] ||
+            oldSwap[key]?['used'] != newSwap[key]?['used'] ||
+            oldSwap[key]?['source'] != newSwap[key]?['source'])
+          {
+            'kind': 'swap_result',
+            'day': (newSwap[key] ?? oldSwap[key])!['day'],
+            'type': (newSwap[key] ?? oldSwap[key])!['type'],
+            'from_tried': oldSwap[key]?['tried'],
+            'tried': newSwap[key]?['tried'],
+            'skipped': newSwap[key]?['skipped'],
+            'used': newSwap[key]?['used'],
+          },
+      {'kind': 'product_choice', 'to': participant['proposedProductChoice']},
+    ];
+    return changes;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -268,6 +523,15 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         const Text(
           'Overview',
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: _saving ? null : _importCorrectionPlan,
+            icon: const Icon(Icons.upload_file_rounded),
+            label: const Text('Impor koreksi UAT'),
+          ),
         ),
         const SizedBox(height: 6),
         Text(
@@ -375,7 +639,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         title: 'Harian',
         subtitle:
             'Buka satu hari untuk mencentang quest'
-            '${editor.reduction ? ', mengisi total rokok/vape, Habit Swap, dan hasilnya (tidak jadi / tetap memakai)' : ''}. '
+            '${editor.reduction ? ', mengisi total ${editor.reductionProducts.join(' / ')}, Habit Swap, dan hasilnya' : ''}. '
             'Quest yang selesai di aplikasi tidak bisa diubah.',
         child: Column(
           children: [
@@ -490,10 +754,12 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       editor.openedOn(day) ? 'dibuka' : 'tidak dibuka',
       quests.isEmpty ? 'belum ada kartu' : '$done/${quests.length} quest',
       if (editor.reduction) ...[
-        if (rokok != null) 'rokok $rokok',
-        if (vape != null) 'vape $vape',
+        if (editor.reductionProducts.contains('rokok') && rokok != null)
+          'rokok $rokok',
+        if (editor.reductionProducts.contains('vape') && vape != null)
+          'vape $vape',
         if (editor.swapsOn(day) > 0) 'Habit Swap ${editor.swapsOn(day)}',
-        for (final type in const ['rokok', 'vape'])
+        for (final type in editor.reductionProducts)
           if (editor.swapResult(day, type) case final r?)
             '$type: ${r.skipped} tidak jadi, ${r.used} tetap',
       ],
@@ -562,22 +828,15 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
               spacing: 16,
               runSpacing: 10,
               children: [
-                _Counter(
-                  label: 'Rokok (batang)',
-                  value: rokok,
-                  min: 0,
-                  max: 500,
-                  onChanged: (v) =>
-                      _edit((e) => e.setUsage(day, 'rokok', v ?? 0)),
-                ),
-                _Counter(
-                  label: 'Vape (sesi)',
-                  value: vape,
-                  min: 0,
-                  max: 500,
-                  onChanged: (v) =>
-                      _edit((e) => e.setUsage(day, 'vape', v ?? 0)),
-                ),
+                for (final type in editor.reductionProducts)
+                  _Counter(
+                    label: type == 'rokok' ? 'Rokok (batang)' : 'Vape (sesi)',
+                    value: editor.usage(day, type),
+                    min: 0,
+                    max: 500,
+                    onChanged: (v) =>
+                        _edit((e) => e.setUsage(day, type, v ?? 0)),
+                  ),
                 _Counter(
                   label: 'Habit Swap dicoba',
                   value: editor.swapsOn(day),
@@ -597,9 +856,9 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
               spacing: 16,
               runSpacing: 10,
               children: [
-                for (final type in const ['rokok', 'vape']) ...[
+                for (final type in editor.reductionProducts) ...[
                   _Counter(
-                    label: 'Tidak jadi $type',
+                    label: 'Tidak jadi ${type == 'rokok' ? 'merokok' : 'vape'}',
                     value: editor.swapResult(day, type)?.skipped,
                     min: 0,
                     max: 200,
@@ -608,7 +867,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                     ),
                   ),
                   _Counter(
-                    label: 'Tetap memakai $type',
+                    label: 'Tetap ${type == 'rokok' ? 'merokok' : 'vape'}',
                     value: editor.swapResult(day, type)?.used,
                     min: 0,
                     max: 200,

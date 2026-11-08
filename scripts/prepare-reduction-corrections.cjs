@@ -50,16 +50,35 @@ function prepare(source, overview, asOf) {
     assert.ok(Number.isSafeInteger(Number(row.revision)) && Number(row.revision) > 0, 'Missing revision');
     assert.ok(row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload), 'Missing snapshot');
     assert.equal(row.study_path ?? row.payload.profile?.path, 'reduction', `${p.code} is not in the reduction study group`);
-    // Never invent the start date or change it to make the data fit Mondays.
+    const selected = row.payload.reductionSettings?.product ?? row.payload.profile?.nicotineProduct;
+    const productChoice = p.type === 'rokok' ? 'cigarette' : 'vape';
+    assert.ok(selected == null || selected === productChoice,
+      `${p.code}: saved product conflicts with the supplied UAT mapping`);
+    // Source values are Monday–Sunday. Preserve the participant's real
+    // study dates and choose the matching weekday value for each login day.
     const started = row.study_started ?? row.payload.profile?.started;
     const start = date(started);
-    const elapsed = Math.max(0, Math.min(28, Math.floor((until - start) / 86400000) + 1));
-    const daily = Array.from({ length: elapsed }, (_, offset) => {
+    const opened = row.payload.openedDays;
+    assert.ok(Array.isArray(opened), `${p.code}: openedDays is missing or malformed`);
+    const loginDays = [...new Set(opened.map(day => {
+      const value = String(day);
+      date(value);
+      return value;
+    }))].filter(day => day >= started && day <= asOf).sort();
+    assert.ok(loginDays.length > 0 && loginDays.length <= 20,
+      `${p.code}: expected 1–20 recorded login days; found ${loginDays.length}`);
+    const dayMs = 86400000;
+    const monday = start - ((new Date(start).getUTCDay() + 6) % 7) * dayMs;
+    const daily = loginDays.map(day => {
+      const offset = (date(day) - monday) / dayMs;
       const week = Math.floor(offset / 7), index = offset % 7;
+      assert.ok(week >= 0 && week < 4, `${p.code}: login ${day} falls outside the 28-day source`);
       const [skipped, used] = p.swaps[week][index];
       return {
-        studyDay: offset + 1,
-        day: new Date(start + offset * 86400000).toISOString().slice(0, 10),
+        studyDay: Math.floor((date(day) - start) / dayMs) + 1,
+        sourceWeek: week + 1,
+        sourceWeekday: index + 1,
+        day,
         type: p.type, total: p.consumption[week][index],
         confirmed: true, source: 'admin',
         swapAttempted: skipped + used, swapSkipped: skipped, swapUsed: used,
@@ -68,33 +87,49 @@ function prepare(source, overview, asOf) {
     });
     const existingUsage = row.payload.usageTotals ?? [];
     assert.ok(Array.isArray(existingUsage), 'Malformed usageTotals needs repair before preview');
-    const covered = new Set(daily.map(r => r.day));
+    const studyWindow = new Set(Array.from({ length: 28 }, (_, offset) =>
+      new Date(start + offset * dayMs).toISOString().slice(0, 10)));
     const usageTotals = [
-      ...existingUsage.filter(r => !(r.type === p.type && covered.has(r.day))),
+      ...existingUsage.filter(r => !(['rokok', 'vape'].includes(r.type) && studyWindow.has(r.day))),
       ...daily.map(({ day, type, total, confirmed, source }) => ({ day, type, total, confirmed, source })),
     ].sort((a, b) => `${a.day}:${a.type}`.localeCompare(`${b.day}:${b.type}`));
     const existingResults = row.payload.swapResults ?? [];
     assert.ok(Array.isArray(existingResults), 'Malformed swapResults needs repair before preview');
     const swapResults = [
-      ...existingResults.filter(r => !(r.type === p.type && covered.has(r.day))),
+      ...existingResults.filter(r => !(['rokok', 'vape'].includes(r.type) && studyWindow.has(r.day))),
       ...daily.map(r => ({ day: r.day, type: r.type, tried: r.swapAttempted,
         skipped: r.swapSkipped, used: r.swapUsed, source: 'admin' })),
     ].sort((a, b) => `${a.day}:${a.type}`.localeCompare(`${b.day}:${b.type}`));
-    const weeks = Array.from({ length: Math.ceil(elapsed / 7) }, (_, w) => {
-      const days = daily.slice(w * 7, (w + 1) * 7);
+    const weeks = Array.from({ length: 4 }, (_, w) => {
+      const days = daily.filter(d => d.sourceWeek === w + 1);
       return { week: w + 1, days: days.length,
         consumptionTotal: days.reduce((sum, d) => sum + d.total, 0),
         swaps: days.reduce((sum, d) => sum + d.swapAttempted, 0),
         skipped: days.reduce((sum, d) => sum + d.swapSkipped, 0),
         used: days.reduce((sum, d) => sum + d.swapUsed, 0) };
-    });
+    }).filter(w => w.days > 0);
+    const proposedPayload = JSON.parse(JSON.stringify(row.payload));
+    proposedPayload.reductionSettings = {
+      ...(proposedPayload.reductionSettings ?? {}), product: productChoice,
+    };
+    proposedPayload.usageTotals = usageTotals;
+    proposedPayload.swapResults = swapResults;
+    const warnings = loginDays.length < 18
+      ? [`${p.code} memiliki ${loginDays.length} hari login; ekspektasi pengguna 18–20.`]
+      : [];
     return {
       code: p.code, sourceId: p.sourceId, account: row.account,
-      expectedRevision: Number(row.revision), studyStarted: started, throughStudyDay: elapsed,
+      expectedRevision: Number(row.revision), studyStarted: started,
+      actualLoginDays: loginDays.length, loginDayKeys: loginDays,
+      throughStudyDay: Math.max(...daily.map(d => d.studyDay)),
+      warnings,
+      studyWindowDays: [...studyWindow],
       originalPayloadSha256: crypto.createHash('sha256').update(JSON.stringify(row.payload)).digest('hex'),
       daily, weeks,
+      proposedProductChoice: productChoice,
       proposedUsageTotals: usageTotals,
       proposedSwapResults: swapResults,
+      proposedPayload,
       // A result is not a timestamp or a login. No quest/XP/card is inferred.
       unchanged: ['profile', 'openedDays', 'adminOpenedDays', 'activityDays', 'days', 'capacity', 'XP'],
       habitSwapPlan: {
@@ -109,6 +144,7 @@ function prepare(source, overview, asOf) {
   return { mode: 'preview-only', asOf, applied: false, changesLoginDays: false,
     identitySource: 'existing admin overview, matched by participant code',
     rawSourceIsParticipantRecord: 'user attested; preserve source outside Git',
+    warnings: participants.flatMap(p => p.warnings),
     requiredBeforeApply: ['fresh server revision checks', 'snapshot backup and audit reason', 'server migrations 13-15 applied and a reviewed preview'],
     participants };
 }
@@ -122,6 +158,6 @@ if (require.main === module) {
     // Never overwrite the source records or the snapshot backup.
     assert.ok(![sourcePath, overviewPath].includes(outputPath), 'Output must be a separate file');
     fs.writeFileSync(outputPath, JSON.stringify(plan, null, 2), { flag: 'wx' });
-    console.log(JSON.stringify({ applied: false, changesLoginDays: false, participants: plan.participants.map(p => ({ code: p.code, throughStudyDay: p.throughStudyDay, weeks: p.weeks })) }, null, 2));
+    console.log(JSON.stringify({ applied: false, changesLoginDays: false, participants: plan.participants.map(p => ({ code: p.code, actualLoginDays: p.actualLoginDays, throughStudyDay: p.throughStudyDay, weeks: p.weeks })) }, null, 2));
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

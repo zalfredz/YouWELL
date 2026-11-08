@@ -8,11 +8,16 @@ Angka peserta disimpan di `.tools/reduction-import/` yang diabaikan Git.
 
 - P5/P6/P7 mengikuti R1/R2/R3 (batang rokok); P8/P9/P10 mengikuti V1/V2/V3
   (sesi vape). Pengelola menyatakan angka sumber sebagai koreksi catatan nyata.
-- Hari pertama mengikuti `study_started` yang dikunci per akun, dengan
-  `profile.started` hanya sebagai fallback. Urutan sumber dipakai sebagai hari
-  studi 1–28, bukan memindahkan tanggal mulai supaya cocok dengan Senin.
-- Potong hingga hari studi yang sudah dicapai pada tanggal pemeriksaan,
-  maksimum 28. Tidak ada pembuatan tanggal, aktivitas, atau quest masa depan.
+- Tanggal memakai `study_started` yang dikunci per akun, dengan
+  `profile.started` hanya sebagai fallback. Untuk setiap tanggal di `openedDays`,
+  sumber dipilih berdasarkan minggu kalender dan hari Senin–Minggunya; tanggal
+  mulai peserta tidak digeser.
+- Jumlah hari koreksi mengikuti tanggal `openedDays` aktual (maksimum 20).
+  Jika kurang dari 18, preview memberi peringatan; tidak membuat login baru.
+  Data konsumsi/Swap hanya diisi pada tanggal login yang tercatat.
+- Selama jendela studi 28 hari, total dan hasil Swap rokok/vape lama diganti:
+  P5–P7 hanya berisi rokok, P8–P10 hanya vape. Hari N+1 sampai 28 tidak
+  mendapat angka sumber baru. Data di luar jendela 28 hari dipertahankan.
 - Semua 168 nilai konsumsi dan 24 total mingguan Habit Swap sumber cocok.
   Batas maksimum rokok 15 hanya aturan dataset ini, bukan batas server semua
   pengguna. Definisi sesi vape tiga menit pada sumber perlu tetap dibedakan
@@ -41,10 +46,13 @@ Angka peserta disimpan di `.tools/reduction-import/` yang diabaikan Git.
 node scripts/prepare-reduction-corrections.cjs .tools/reduction-import/source.json .tools/reduction-import/overview.json 2026-11-08 .tools/reduction-import/preview.json
 ```
 
-Preview mengandung pemetaan akun, revisi awal, hash snapshot, jumlah hari,
-rincian harian, total mingguan, dan usulan `usageTotals`/`swapResults`. Tidak ada fungsi
-yang mengirim hasil ini ke Supabase. Jika kode ambigu, akun ganda, tanggal
-rusak, atau total harian berbeda dari total mingguan, preview berhenti.
+Preview mengandung pemetaan akun, revisi awal, hash snapshot, jumlah hari
+login yang dihitung dari `openedDays`, rincian harian, total mingguan, dan
+usulan `usageTotals`/`swapResults`. Tidak ada fungsi yang mengirim hasil ini
+ke Supabase. Jika kode ambigu, akun ganda, pilihan produk tidak cocok, login
+lebih dari 20 hari, tanggal rusak, atau total mingguan tidak cocok, preview
+berhenti. Pilihan produk yang hilang dipulihkan dari pemetaan P5–P10 yang
+disediakan pengelola; pilihan eksplisit yang bertentangan menghentikan preview.
 
 Penulisan yang kelak dilakukan harus memakai revisi terbaru, mencadangkan
 snapshot asli, mencatat alasan dan bukti koreksi, menjaga data di luar cakupan,
