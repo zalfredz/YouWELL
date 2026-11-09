@@ -368,6 +368,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // BAB 4 is the default; this test covers "Ringkasan studi".
+    await tester.tap(find.text('Ringkasan studi'));
+    await tester.pumpAndSettle();
     for (final chip in ['Semua (2)', 'Wellness (1)', 'Rokok (1)', 'Vape (0)']) {
       expect(find.text(chip), findsOneWidget, reason: chip);
     }
@@ -442,6 +445,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ringkasan studi'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rokok (1)'));
     await tester.pumpAndSettle();

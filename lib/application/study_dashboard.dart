@@ -46,6 +46,9 @@ class StudyDay {
   int mealApproved = 0, mealRejected = 0, mealPending = 0, mealUnverified = 0;
   final targets = <String>{};
 
+  /// Mission level per ladder recorded on this day's card.
+  final steps = <String, int>{};
+
   /// Confirmed daily total per type; a missing type was not logged.
   final usage = <String, int>{};
   final usageByAdmin = <String>{};
@@ -104,6 +107,11 @@ class StudyWeek {
       days.fold(0, (sum, day) => sum + value(day));
 
   int get activeDays => days.where((d) => d.active).length;
+  int get openedDays => days.where((d) => d.opened).length;
+
+  /// Mission level of [category] on the week's last recorded card.
+  int? stepAt(String category) =>
+      days.reversed.map((d) => d.steps[category]).whereType<int>().firstOrNull;
   int get coreDone => _sum((d) => d.coreDone);
   int get coreTotal => _sum((d) => d.coreTotal);
   double? get coreRate => coreTotal == 0 ? null : coreDone / coreTotal;
@@ -321,6 +329,11 @@ class StudyParticipant {
         in ((payload['days'] ?? const {}) as Map).entries) {
       final day = on(key);
       if (day == null || value is! Map) continue;
+      if (value['ladderSteps'] case final Map steps) {
+        for (final MapEntry(:key, :value) in steps.entries) {
+          if (value is num) day.steps[key.toString()] = value.toInt();
+        }
+      }
       for (final task
           in ((value['quests'] ?? const []) as List).whereType<Map>()) {
         if (task['bonus'] == true) continue;

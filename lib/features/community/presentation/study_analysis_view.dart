@@ -4,6 +4,7 @@ import 'package:youwell/application/research_overview.dart';
 import 'package:youwell/application/study_dashboard.dart';
 import 'package:youwell/core/theme/app_colors.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
+import 'bab4_analysis_view.dart';
 import 'study_period_view.dart';
 
 /// "Analisis studi" in the researcher dashboard, kept to one screen: four
@@ -36,7 +37,8 @@ const _groups = {
 };
 
 class _StudyAnalysisViewState extends State<StudyAnalysisView> {
-  bool _byPeriod = false;
+  /// 'bab4' (default), 'summary' or 'period'.
+  String _view = 'bab4';
   String _group = 'all';
   String? _detail, _usageParticipant;
 
@@ -166,15 +168,30 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
-    final reportPicker = SegmentedButton<bool>(
+    final reportPicker = SegmentedButton<String>(
       segments: const [
-        ButtonSegment(value: false, label: Text('Ringkasan studi')),
-        ButtonSegment(value: true, label: Text('Analisis periode')),
+        ButtonSegment(value: 'bab4', label: Text('BAB 4')),
+        ButtonSegment(value: 'summary', label: Text('Ringkasan studi')),
+        ButtonSegment(value: 'period', label: Text('Analisis periode')),
       ],
-      selected: {_byPeriod},
-      onSelectionChanged: (value) => setState(() => _byPeriod = value.single),
+      selected: {_view},
+      onSelectionChanged: (value) => setState(() => _view = value.single),
     );
-    if (_byPeriod) {
+    if (_view == 'bab4') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          reportPicker,
+          const SizedBox(height: 16),
+          Bab4AnalysisView(
+            people: widget.people,
+            now: widget.now,
+            onDownload: widget.onDownload,
+          ),
+        ],
+      );
+    }
+    if (_view == 'period') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
