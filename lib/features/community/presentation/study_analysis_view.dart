@@ -157,12 +157,6 @@ class _StudyAnalysisViewState extends State<StudyAnalysisView> {
         );
       }
     }
-    if (summary.adminItems > 0) {
-      lines.add(
-        '${summary.adminItems} isian dipulihkan admin '
-        '(${summary.adminPeople} peserta).',
-      );
-    }
     return lines;
   }
 
@@ -567,8 +561,6 @@ void _showDataInfo(BuildContext context) => showDialog<void>(
       child: Text(
         'Log 28 hari mendukung evaluasi penerimaan dan pengalaman penggunaan YouWELL. '
         'Skor kuesioner, hasil UAT, dan wawancara berasal dari instrumen penelitian terpisah.\n\n'
-        'Koreksi admin memulihkan catatan peserta dan selalu masuk dalam grafik serta CSV. '
-        'Item hasil koreksi admin ditandai pada detail peserta.\n\n'
         'Week = 7 hari sejak peserta mulai (Week 1 = hari 1–7), bukan minggu kalender. '
         'Angka kelompok memakai week yang sudah selesai; n = jumlah peserta. Tanda * '
         'berarti week itu masih berjalan. '
@@ -1423,15 +1415,12 @@ class _DailyBars extends StatelessWidget {
   Widget _bar(BuildContext context, StudyDay? day, int number, num scale) {
     final c = context.colors;
     final value = day?.usage[type];
-    final byAdmin = day?.usageByAdmin.contains(type) ?? false;
     final note = day?.measurementNote;
     final message = day == null
         ? 'Hari $number: belum berjalan'
         : [
             'Hari $number (${day.day})',
-            value == null
-                ? 'tidak dicatat'
-                : '$value $unit${byAdmin ? ' · koreksi admin' : ''}',
+            value == null ? 'tidak dicatat' : '$value $unit',
             ?note,
           ].join('\n');
     return Tooltip(
@@ -1543,7 +1532,6 @@ class _DetailTable extends StatelessWidget {
             Text('Jalur studi: ${p.reduction ? 'rokok/vape' : 'wellness'}'),
             Text('Mulai: ${p.started}'),
             Text('Sinkron: ${_sync(p.lastSync)}'),
-            Text('Koreksi admin: ${p.adminItems}'),
             Text('Hari berisi data: ${p.daysWithData}/${p.elapsed}'),
           ],
         ),
@@ -1631,7 +1619,6 @@ class _DetailTable extends StatelessWidget {
                           '$tried dicoba',
                           if (skipped + used > 0)
                             '$skipped tidak jadi · $used tetap',
-                          if (d.swapResultsByAdmin.isNotEmpty) '(admin)',
                         ].join(' · ');
                       }()),
                     ),
@@ -1639,8 +1626,6 @@ class _DetailTable extends StatelessWidget {
                       Text(
                         [
                           if (!d.hasData) 'tanpa data',
-                          if (d.adminItems > 0)
-                            'koreksi admin: ${d.adminItems}',
                           ?d.measurementNote,
                         ].join(' · '),
                         style: TextStyle(color: c.muted),

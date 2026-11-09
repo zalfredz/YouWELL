@@ -344,8 +344,6 @@ void _showDataInfo(BuildContext context) => showDialog<void>(
       child: Text(
         'Log 28 hari mendukung evaluasi penerimaan dan pengalaman penggunaan YouWELL. '
         'Skor kuesioner, hasil UAT, dan wawancara berasal dari instrumen penelitian terpisah.\n\n'
-        'Koreksi admin memulihkan catatan peserta dan selalu masuk dalam grafik serta CSV. '
-        'Item hasil koreksi admin ditandai pada detail peserta.\n\n'
         'Rata-rata wellness memakai minggu yang selesai. Tanda * berarti minggu berjalan. '
         'Perbandingan konsumsi memerlukan minimal 4 hari tercatat pada kedua minggu. '
         'Hari kosong tidak dianggap nol; rokok dan vape memakai satuan terpisah.\n\n'
@@ -941,15 +939,12 @@ class _DailyBars extends StatelessWidget {
   Widget _bar(BuildContext context, StudyDay? day, int number, num scale) {
     final c = context.colors;
     final value = day?.usage[type];
-    final byAdmin = day?.usageByAdmin.contains(type) ?? false;
     final note = day?.measurementNote;
     final message = day == null
         ? 'Hari $number: belum berjalan'
         : [
             'Hari $number (${day.day})',
-            value == null
-                ? 'tidak dicatat'
-                : '$value $unit${byAdmin ? ' · koreksi admin' : ''}',
+            value == null ? 'tidak dicatat' : '$value $unit',
             ?note,
           ].join('\n');
     return Tooltip(
@@ -1088,7 +1083,6 @@ class _ProgressTable extends StatelessWidget {
           DataColumn(label: Text('Minggu aktif')),
           DataColumn(label: Text('Level · XP')),
           DataColumn(label: Text('Rokok/vape')),
-          DataColumn(label: Text('Koreksi admin'), numeric: true),
           DataColumn(label: Text('Sinkron')),
         ],
         rows: [
@@ -1148,7 +1142,6 @@ class _ProgressTable extends StatelessWidget {
                   ),
                   DataCell(Text('${p.source.level} · ${p.source.xp}')),
                   DataCell(Text(_usage(p))),
-                  DataCell(Text('${p.adminItems}')),
                   DataCell(Text(_sync(p.lastSync))),
                 ],
               );
@@ -1178,7 +1171,6 @@ class _DetailTable extends StatelessWidget {
             Text('Jalur studi: ${p.reduction ? 'rokok/vape' : 'wellness'}'),
             Text('Mulai: ${p.started}'),
             Text('Sinkron: ${_sync(p.lastSync)}'),
-            Text('Koreksi admin: ${p.adminItems}'),
             Text('Hari berisi data: ${p.daysWithData}/${p.elapsed}'),
           ],
         ),
@@ -1254,8 +1246,6 @@ class _DetailTable extends StatelessWidget {
                       Text(
                         [
                           if (!d.hasData) 'tanpa data',
-                          if (d.adminItems > 0)
-                            'koreksi admin: ${d.adminItems}',
                           ?d.measurementNote,
                         ].join(' · '),
                         style: TextStyle(color: c.muted),
@@ -1748,7 +1738,6 @@ class _Heatmap extends StatelessWidget {
         _levelLabels[level],
         if (day.coreTotal > 0) 'misi inti ${day.coreDone}/${day.coreTotal}',
         if (day.swaps > 0) 'Habit Swap ${day.swaps}',
-        if (day.adminItems > 0) 'koreksi admin ${day.adminItems}',
         ?day.measurementNote,
       ].join('\n'),
       child: Stack(

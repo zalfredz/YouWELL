@@ -602,8 +602,6 @@ final dashboardCsvColumns = [
     'swap_${type}_skipped',
     'swap_${type}_used',
   ],
-  'admin_items',
-  'includes_admin_data',
   'synced_at',
 ];
 
@@ -646,8 +644,6 @@ List<JsonMap> dashboardCsvRows(Iterable<StudyParticipant> people) => [
           'swap_${type}_skipped': week.swapResult(type).skipped,
           'swap_${type}_used': week.swapResult(type).used,
         },
-        'admin_items': week.adminItems,
-        'includes_admin_data': true,
         'synced_at': p.lastSync?.toIso8601String(),
       },
 ];
@@ -842,13 +838,6 @@ List<WeekRow> weekReport(
         people,
         (p, w) => w.days.where((d) => d.hasData).length / w.days.length * 100,
       ),
-    ),
-    WeekRow(
-      group: 'Kualitas data',
-      label: 'Isian koreksi admin',
-      unit: ' isian',
-      note: 'jumlah',
-      cells: cells(people, (p, w) => w.adminItems, sum: true),
     ),
   ];
 }

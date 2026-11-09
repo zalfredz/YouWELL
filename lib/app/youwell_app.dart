@@ -7,6 +7,7 @@ import 'package:youwell/core/theme/app_theme.dart';
 import 'package:youwell/core/theme/appearance_scope.dart';
 import 'package:youwell/features/onboarding/presentation/onboarding_page.dart';
 import 'package:youwell/features/community/presentation/admin_shell.dart';
+import 'package:youwell/features/community/presentation/admin_overview_page.dart';
 
 /// One codebase with separate moderator web and phone app entry points.
 class YouWellApp extends StatefulWidget {
@@ -96,9 +97,7 @@ class _YouWellAppState extends State<YouWellApp> {
 
   Widget _buildApp() => MaterialApp(
     // Short browser tab title, the same name as index.html and the manifest.
-    title: _admin
-        ? '${AppEnvironment.appName} Admin'
-        : AppEnvironment.appName,
+    title: _admin ? '${AppEnvironment.appName} Admin' : AppEnvironment.appName,
     debugShowCheckedModeBanner: false,
     theme: _admin
         ? AppTheme.light
@@ -118,6 +117,8 @@ class _YouWellAppState extends State<YouWellApp> {
     routes: {
       '/app': (_) => _entry,
       '/admin': (_) => _admin ? _entry : const _AdminUnavailablePage(),
+      '/overview': (_) =>
+          _admin ? const AdminOverviewPage() : const _AdminUnavailablePage(),
     },
     home: _entry,
   );

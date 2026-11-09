@@ -10,10 +10,7 @@ import 'package:youwell/features/home/domain/quest_ladder.dart';
 import 'package:youwell/features/progress/domain/research_store.dart';
 import 'package:youwell/features/sync/domain/cloud_progress.dart';
 
-/// Admin Overview (phase 10): restores progress a participant lost, per
-/// account. Quests are ticked (XP and level follow), daily smoking/vaping
-/// totals and Habit Swaps are set, and mission levels changed. Every save is
-/// an admin intervention with a reason; the phone takes it on its next sync.
+/// Admin-only participant progress editor, available by direct /overview URL.
 class AdminOverviewPage extends StatefulWidget {
   const AdminOverviewPage({super.key, this.store, this.now});
 
@@ -141,13 +138,13 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
     if (person == null || editor == null || store == null || _saving) return;
     final reason = _reason.text.trim();
     if (reason.length < 5) {
-      _toast('Tulis alasan intervensi dulu (minimal 5 karakter).');
+      _toast('Tulis catatan minimal 5 karakter.');
       return;
     }
     final changes = editor.changes;
-    if (!await _confirm('Simpan sebagai intervensi admin?', [
+    if (!await _confirm('Simpan perubahan?', [
       for (final change in changes) describeChange(change),
-      'Alasan: $reason',
+      'Catatan: $reason',
     ])) {
       return;
     }
@@ -332,7 +329,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
       for (final warning in (plan['warnings'] as List).whereType<String>())
         'PERINGATAN: $warning',
       'Login dan quest tidak diubah. Konsumsi, hasil Swap, dan jumlah dicoba '
-          'pada jendela 28 hari diganti sesuai preview; salinan lama tersimpan di server.',
+          'pada jendela 28 hari diganti sesuai preview.',
     ];
     if (!await _confirm('Terapkan koreksi UAT ke enam peserta?', summary)) {
       return;
@@ -388,9 +385,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
         }
         savedCount++;
       }
-      _toast(
-        'Koreksi tersimpan untuk $savedCount peserta sebagai intervensi admin.',
-      );
+      _toast('Perubahan tersimpan untuk $savedCount peserta.');
       await _load();
     } catch (error) {
       final message = error is StateError
@@ -498,11 +493,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          'Pulihkan progres peserta yang hilang. Setiap simpan dicatat '
-          'sebagai intervensi admin dan ditandai di ekspor riset.',
-          style: TextStyle(color: c.muted),
-        ),
         const SizedBox(height: 20),
         if (_error != null)
           Text(_error!, style: TextStyle(color: c.amber))
@@ -534,7 +524,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
           const SizedBox(height: 24),
           if (editor == null || person == null)
             Text(
-              'Pilih peserta untuk melihat dan memulihkan progresnya.',
+              'Pilih peserta untuk melihat progresnya.',
               style: TextStyle(color: c.muted),
             )
           else
@@ -632,10 +622,8 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
               controller: _reason,
               maxLength: 500,
               decoration: const InputDecoration(
-                labelText: 'Alasan intervensi',
-                hintText:
-                    'Contoh: data hilang setelah install ulang, dikonfirmasi '
-                    'peserta lewat chat 27 Okt',
+                labelText: 'Catatan',
+                hintText: 'Catatan perubahan (opsional)',
               ),
             ),
             Wrap(
@@ -644,7 +632,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                 FilledButton.icon(
                   onPressed: changes.isEmpty || _saving ? null : _save,
                   icon: const Icon(Icons.save_rounded),
-                  label: Text(_saving ? 'Menyimpan...' : 'Simpan intervensi'),
+                  label: Text(_saving ? 'Menyimpan...' : 'Simpan perubahan'),
                 ),
                 TextButton(
                   onPressed: changes.isEmpty
@@ -712,7 +700,7 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
               editor.openedByApp(day)
                   ? 'tercatat dari aplikasi'
                   : editor.openedOn(day)
-                  ? 'ditandai admin'
+                  ? 'tercatat'
                   : 'tidak tercatat',
             ),
           ),
@@ -738,10 +726,6 @@ class _AdminOverviewPageState extends State<AdminOverviewPage> {
                   '${task['xp'] ?? 15} XP',
                   if (AdminProgressEditor.doneByApp(task))
                     'selesai di aplikasi'
-                  else if (task['adminRevalidated'] == true)
-                    'versi lama, disahkan admin'
-                  else if (task['adminCompleted'] == true)
-                    'dicentang admin'
                   else if (AdminProgressEditor.invalidByApp(task))
                     'selesai di versi lama, belum dihitung',
                 ].join(' · '),

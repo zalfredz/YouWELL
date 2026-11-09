@@ -608,15 +608,11 @@ class _Quality extends StatelessWidget {
   Widget build(BuildContext context) {
     final elapsed = people.fold(0, (s, p) => s + p.elapsed);
     final withData = people.fold(0, (s, p) => s + p.daysWithData);
-    final admin = people.fold(0, (s, p) => s + p.adminItems);
-    final adminPeople = people.where((p) => p.adminItems > 0).length;
     return Text(
       [
         'Hari berisi data: '
             '${elapsed == 0 ? '–' : '${(withData / elapsed * 100).round()}%'} '
             '($withData dari $elapsed hari studi).',
-        'Isian dipulihkan admin: $admin ($adminPeople peserta). Isian ini '
-            'tetap dihitung dan ditandai di CSV.',
       ].join('\n'),
     );
   }

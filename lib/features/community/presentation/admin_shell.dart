@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/theme/appearance_scope.dart';
 import 'admin_meal_page.dart';
-import 'admin_overview_page.dart';
 import 'admin_moderation_page.dart';
 import 'research_dashboard_page.dart';
 import 'package:youwell/features/auth/presentation/account_scope.dart';
 
-/// Admin web: participant Overview (restores lost progress as admin
-/// interventions), Community moderation, Meal Snap verification and the
-/// researcher dashboard.
+/// Admin web: Community moderation, Meal Snap verification and researcher
+/// dashboard. The participant Overview remains available at /overview.
 /// No wellness onboarding or quests of its own.
 class AdminShell extends StatelessWidget {
   const AdminShell({super.key, required this.controller});
@@ -25,7 +23,7 @@ class AdminShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
-    length: 4,
+    length: 3,
     child: Scaffold(
       appBar: AppBar(
         title: const Text('YouWELL Admin'),
@@ -40,7 +38,6 @@ class AdminShell extends StatelessWidget {
         ],
         bottom: const TabBar(
           tabs: [
-            Tab(text: 'Overview'),
             Tab(text: 'Community'),
             Tab(text: 'Verif makanan'),
             Tab(text: 'Dashboard peneliti'),
@@ -49,7 +46,6 @@ class AdminShell extends StatelessWidget {
       ),
       body: TabBarView(
         children: [
-          _page(const AdminOverviewPage()),
           AnimatedBuilder(
             animation: controller,
             builder: (_, _) =>
