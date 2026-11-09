@@ -45,6 +45,7 @@ services:
     buildCommand: bash scripts/render-build.sh admin
     staticPublishPath: build/web
     pullRequestPreviewsEnabled: false
+    autoDeployTrigger: commit
     routes:
       - type: rewrite
         source: /*
