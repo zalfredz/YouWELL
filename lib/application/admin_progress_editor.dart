@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:youwell/core/types/json_map.dart';
 import 'package:youwell/core/utils/date_key.dart';
@@ -84,8 +85,8 @@ class AdminProgressEditor {
 
   bool hasCard(String day) => questsOn(day).isNotEmpty;
 
-  /// Gives a day without a committed card the card the app would have
-  /// recommended (same generator, the participant's levels and tempo).
+  /// Gives a day without a committed card one of that day's five cards at
+  /// random (3–5 missions, same generator and the participant's levels).
   /// Levels in force on [day]: the last ones recorded up to that day,
   /// else today's.
   Map<String, int> stepsOn(String day) {
@@ -106,7 +107,7 @@ class AdminProgressEditor {
     };
   }
 
-  void createCard(String day) {
+  void createCard(String day, {Random? random}) {
     if (hasCard(day)) return;
     final steps = stepsOn(day);
     final packs = const DailyCardGenerator().cardPacks(
@@ -118,9 +119,8 @@ class AdminProgressEditor {
       hour: 7,
       wellnessUat: true,
     );
-    final card =
-        packs.where((pack) => pack['recommended'] == true).firstOrNull ??
-        packs.first;
+    // Not the recommended card: its size follows tempo, so it was always 3.
+    final card = packs[(random ?? Random()).nextInt(packs.length)];
     final existing = (_days[day] as Map?) ?? const {};
     _days[day] = {
       ...existing,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:youwell/application/admin_progress_editor.dart';
@@ -187,6 +188,22 @@ void main() {
         (payload['days'] as Map)['2026-10-20']['ladderSteps']['Body'];
     expect(day['ladderSteps']['Body'], recorded);
     if (body.isNotEmpty) expect(body.first['step'], recorded);
+  });
+
+  test('Admin cards are drawn from all five cards, 3 to 5 missions', () async {
+    now = DateTime(2026, 10, 20, 9);
+    final c = await participant(pace: 1);
+    final payload = jsonDecode(c.export()) as JsonMap;
+    final editor = AdminProgressEditor(payload, now: DateTime(2026, 11, 8, 9));
+    final random = Random(7);
+    final sizes = <int>{};
+    for (var day = 21; day <= 31; day++) {
+      final key = '2026-10-$day';
+      editor.createCard(key, random: random);
+      sizes.add(editor.questsOn(key).length);
+    }
+    expect(sizes.length, greaterThan(1));
+    expect(sizes.every((n) => n >= 3 && n <= 5), isTrue);
   });
 
   test('Dashboard group mean uses completed weeks only', () {
