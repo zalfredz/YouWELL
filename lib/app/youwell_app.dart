@@ -114,14 +114,35 @@ class _YouWellAppState extends State<YouWellApp> {
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
     },
-    routes: {
-      '/app': (_) => _entry,
-      '/admin': (_) => _admin ? _entry : const _AdminUnavailablePage(),
-      '/overview': (_) =>
-          _admin ? const AdminOverviewPage() : const _AdminUnavailablePage(),
-    },
-    home: _entry,
+    routes: _routes,
+    // One page for the opening URL, matched on its path only, so the Google
+    // login return ("/?code=…") or an unknown path opens the app without a
+    // stacked back button.
+    onGenerateInitialRoutes: (name) => [
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: name),
+        builder: _routes[Uri.parse(name).path] ?? (_) => _entry,
+      ),
+    ],
   );
+
+  Map<String, WidgetBuilder> get _routes => {
+    '/': (_) => _entry,
+    '/app': (_) => _entry,
+    '/admin': (_) => _admin ? _entry : const _AdminUnavailablePage(),
+    '/overview': (_) => _admin
+        ? Scaffold(
+            appBar: AppBar(title: const Text('YouWELL Admin')),
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: const AdminOverviewPage(),
+              ),
+            ),
+          )
+        : const _AdminUnavailablePage(),
+  };
 }
 
 class _AdminUnavailablePage extends StatelessWidget {

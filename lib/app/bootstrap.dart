@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youwell/application/wellness_controller.dart';
 import 'package:youwell/core/config/app_environment.dart';
@@ -11,6 +12,8 @@ import 'authenticated_app.dart';
 
 /// Connect storage and application state once, before rendering any screen.
 Future<void> bootstrap() async {
+  // Real paths (/overview) instead of /#/overview; a no-op off the web.
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   final preferences = await SharedPreferences.getInstance();
   if (AppEnvironment.authEnabled) {

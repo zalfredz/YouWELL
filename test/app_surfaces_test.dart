@@ -140,4 +140,34 @@ void main() {
       await saving;
     },
   );
+
+  testWidgets('Admin opens Overview only by its direct /overview URL', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearDefaultRouteNameTestValue);
+
+    tester.platformDispatcher.defaultRouteNameTestValue = '/overview';
+    await tester.pumpWidget(
+      YouWellApp(controller: WellnessController(), surface: AppSurface.admin),
+    );
+    await tester.pumpAndSettle();
+    // Without an account there is no store; the page itself still opens.
+    expect(find.text('Overview butuh login admin.'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Community'), findsNothing);
+
+    // The Google login return carries a query: one admin page, no back button.
+    tester.platformDispatcher.defaultRouteNameTestValue = '/?code=abc';
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      YouWellApp(controller: WellnessController(), surface: AppSurface.admin),
+    );
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Tab, 'Community'), findsOneWidget);
+    expect(find.byType(BackButton), findsNothing);
+    expect(find.text('Overview butuh login admin.'), findsNothing);
+  });
 }
