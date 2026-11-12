@@ -15,6 +15,8 @@ Future<void> bootstrap() async {
   // Real paths (/overview) instead of /#/overview; a no-op off the web.
   usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
+  YouWellApp.openingRoute =
+      WidgetsBinding.instance.platformDispatcher.defaultRouteName;
   final preferences = await SharedPreferences.getInstance();
   if (AppEnvironment.authEnabled) {
     runApp(AuthenticatedApp(preferences: preferences));

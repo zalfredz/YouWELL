@@ -15,6 +15,11 @@ class YouWellApp extends StatefulWidget {
 
   final WellnessController controller;
   final AppSurface? surface;
+
+  /// The path the browser opened with, kept at startup because the login
+  /// screen's navigator resets the platform's default route to "/".
+  static String? openingRoute;
+
   @override
   State<YouWellApp> createState() => _YouWellAppState();
 }
@@ -115,6 +120,7 @@ class _YouWellAppState extends State<YouWellApp> {
       _ => ThemeMode.system,
     },
     routes: _routes,
+    initialRoute: YouWellApp.openingRoute,
     // One page for the opening URL, matched on its path only, so the Google
     // login return ("/?code=…") or an unknown path opens the app without a
     // stacked back button.
